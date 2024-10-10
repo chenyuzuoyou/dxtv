@@ -628,8 +628,6 @@ http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/57250
 http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/57422
 #EXTINF:-1 tvg-id="eentertainment.ca" tvg-name="CA: E! CANADA HD" tvg-logo="" group-title="CANADA",CA: E! CANADA HD
 http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/57249
-#EXTINF:-1 tvg-id="tv5.ca" tvg-name="CA (FR) TV5 " tvg-logo="" group-title="Canada French",CA (FR) TV5 
-http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/57288
 #EXTINF:-1 tvg-id="discoveryfamilia.us" tvg-name="US Discovery Family " tvg-logo="" group-title="KIDS ZONE",US Discovery Family 
 http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/57347
 #EXTINF:-1 tvg-id="familyjr.ca" tvg-name="CA: Family Jr HD" tvg-logo="" group-title="KIDS ZONE",CA: Family Jr HD
@@ -724,8 +722,6 @@ http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/57277
 http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/57276
 #EXTINF:-1 tvg-id="peachtree.ca" tvg-name="CA Peachtree TV HD (R)" tvg-logo="" group-title="CANADA",CA Peachtree TV HD (R)
 http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/47362
-#EXTINF:-1 tvg-id="rds.ca" tvg-name="CA (FR) RDS (R)" tvg-logo="https://bellmedia-images.imgix.net/lede/wp-content/uploads/2014/02/tv1_rdsinfo.png" group-title="Canada French",CA (FR) RDS (R)
-http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/57325
 #EXTINF:-1 tvg-id="showcase.ca" tvg-name="CA: Showcase HD" tvg-logo="" group-title="CANADA",CA: Showcase HD
 http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/47366
 #EXTINF:-1 tvg-id="slice.ca" tvg-name="CA Slice TV " tvg-logo="" group-title="CANADA",CA Slice TV 
@@ -804,8 +800,6 @@ http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/57470
 http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/57471
 #EXTINF:-1 tvg-id="yestv.ca" tvg-name="CA YES TV (R)" tvg-logo="" group-title="CANADA",CA YES TV (R)
 http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/57472
-#EXTINF:-1 tvg-id="" tvg-name="Carib ESPN" tvg-logo="" group-title="Sports Fanatic's ",Carib ESPN
-http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/66372
 #EXTINF:-1 tvg-id="foxsports1.us" tvg-name="US FOX Sports 1 " tvg-logo="" group-title="USA ",US FOX Sports 1 
 http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/46792
 #EXTINF:-1 tvg-id="ballysportsflorida.us" tvg-name="US Bally Sports Florida (A)" tvg-logo="" group-title="Sports Fanatic's ",US Bally Sports Florida (A)
@@ -984,8 +978,6 @@ http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/36
 http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/78424
 #EXTINF:-1 tvg-id="starzencoreblack.us" tvg-name="US STARZ ENCORE Black" tvg-logo="https://thestreamable.com/media/pages/news/flash-sale-get-6-months-of-starz-for-only-3-33-a-month-so-you-can-binge-power-outlander-and-american-gods/3821036974-1583185843/starz.png" group-title="MOVIE NETWORKS",US STARZ ENCORE Black
 http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/16141
-#EXTINF:-1 tvg-id="" tvg-name="LAT: TELEMUNDO 51 MIAMI HD" tvg-logo="" group-title="LATINO",LAT: TELEMUNDO 51 MIAMI HD
-http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/56410
 #EXTINF:-1 tvg-id="wwe.us" tvg-name="US: WWE NETWORK" tvg-logo="https://seeklogo.com/images/W/wwe-logo-71A46059D8-seeklogo.com.png" group-title="Sports Fanatic's ",US: WWE NETWORK
 http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/11645
 #EXTINF:-1 tvg-id="nbc36kxan.us" tvg-name="US NBC (KXAN) Austin (F)" tvg-logo="" group-title="USA | NEWS | REGIONALS ",US NBC (KXAN) Austin (F)
@@ -1470,8 +1462,6 @@ http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/100454
 http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/100455
 #EXTINF:-1 tvg-id="wild.ca" tvg-name="CA WILD TV " tvg-logo="" group-title="CANADA",CA WILD TV 
 http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/100456
-#EXTINF:-1 tvg-id="" tvg-name="CA (Carib) FEVA (E)" tvg-logo="" group-title="Caribbean",CA (Carib) FEVA (E)
-http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/100457
 #EXTINF:-1 tvg-id="superchannelheartandhome.ca" tvg-name="CA Super Channel Heart & Home (R)" tvg-logo="" group-title="CANADA",CA Super Channel Heart & Home (R)
 http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/100460
 #EXTINF:-1 tvg-id="cbcwinnipeg.ca" tvg-name="CA: CBC Winnipeg" tvg-logo="" group-title="CANADA",CA: CBC Winnipeg
@@ -1504,10 +1494,6 @@ http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/111067
 http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/115349
 #EXTINF:-1 tvg-id="ctvlifechannel.ca" tvg-name="CA CTV LIFE (E)" tvg-logo="" group-title="CANADA",CA CTV LIFE (E)
 http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/116506
-#EXTINF:-1 tvg-id="canalvie.ca" tvg-name="CA (FR) Canal Vie HD" tvg-logo="" group-title="Canada French",CA (FR) Canal Vie HD
-http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/116947
-#EXTINF:-1 tvg-id="casatv.ca" tvg-name="CA (FR) CASA SD (P)" tvg-logo="" group-title="Canada French",CA (FR) CASA SD (P)
-http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/116948
 #EXTINF:-1 tvg-id="qvc.us" tvg-name="US: QVC" tvg-logo="" group-title="USA ",US: QVC
 http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/117707
 #EXTINF:-1 tvg-id="" tvg-name="CINEBOX: ANIMATION" tvg-logo="" group-title="24/7 CHANNELS ",CINEBOX: ANIMATION
@@ -1572,3 +1558,138 @@ http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/119451
 http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/161450
 #EXTINF:-1 tvg-id="newenglandsportsnetworkplus.us" tvg-name="US NESN PLUS" tvg-logo="" group-title="Sports Fanatic's ",US NESN PLUS
 http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/161451
+#EXTM3U
+#EXTINF:-1 group-title="None",POPC
+http://live.hkdvb.com/hls/live/801.m3u8?token=275839252920364
+#EXTINF:-1 group-title="None",NOW星影台
+http://live.hkdvb.com/hls/live/138.m3u8?token=275839252920364
+#EXTINF:-1 group-title="None",美亚电影台
+http://live.hkdvb.com/hls/live/802.m3u8?token=275839252920364
+#EXTINF:-1 group-title="None",华语剧台
+http://live.hkdvb.com/hls/live/803.m3u8?token=275839252920364
+#EXTINF:-1 group-title="None",戏曲台
+http://live.hkdvb.com/hls/live/804.m3u8?token=275839252920364
+#EXTINF:-1 group-title="None",NOW新闻
+http://live.hkdvb.com/hls/live/332.m3u8?token=275839252920364
+#EXTINF:-1 group-title="None",NOW英超
+http://live.hkdvb.com/hls/live/621.m3u8?token=275839252920364
+#EXTINF:-1 group-title="None",翡翠台
+http://php.jdshipin.com:8880/smt.php?id=jade_twn
+#EXTINF:-1 group-title="None",翡翠台
+http://php.jdshipin.com:8880/TVOD/iptv.php?id=fct4
+#EXTINF:-1 group-title="None",翡翠台
+http://php.jdshipin.com:8880/TVOD/iptv.php?id=fct3
+#EXTINF:-1 group-title="None",无线华丽台
+http://php.jdshipin.com:8880/TVOD/iptv.php?id=huali
+#EXTINF:-1 group-title="None",有线综合台
+http://php.jdshipin.com:8880/TVOD/iptv.php?id=hoytv
+#EXTINF:-1 group-title="None",千禧经典台
+http://php.jdshipin.com:8880/TVOD/iptv.php?id=tvbc
+#EXTINF:-1 group-title="None",凤凰资讯
+http://php.jdshipin.com:8880/TVOD/iptv.php?id=fhzx
+#EXTINF:-1 group-title="None",VIUTV
+http://php.jdshipin.com:8880/TVOD/iptv.php?id=viutv
+#EXTINF:-1 group-title="None",TVB星河
+http://php.jdshipin.com:8880/TVOD/iptv.php?id=xinghe
+#EXTINF:-1 group-title="None",Astro AOD
+http://php.jdshipin.com:8880/TVOD/iptv.php?id=aod
+#EXTINF:-1 group-title="None",TVB星河
+http://php.jdshipin.com:8880/smt.php?id=Xinhe
+#EXTINF:-1 group-title="None",澳门莲花
+http://php.jdshipin.com:8880/amlh.php
+#EXTINF:-1 group-title="None",C+頻道
+https://stream1.freetv.fun/8809ef652c64001910cceaa72e6190b5bfe53d1f7478b98f2bcac0531f8c436d.m3u8
+#EXTINF:-1 group-title="None",RTHK34
+https://stream1.freetv.fun/d17812c05918dba947a45b34c857dd68746f3a3bd7eccb9c39964b0515b008c7.m3u8
+#EXTINF:-1 group-title="None",RTHK35
+https://stream1.freetv.fun/cabd18457f278cda40ac160bccabf77a6b0ad341e50a00bd62620d78819dd220.m3u8
+#EXTINF:-1 group-title="None",RTHK35
+https://stream1.freetv.fun/86564020a11d3ce6598f1e944855570a59fed9e02ab9471a5f04509c1e110938.m3u8
+#EXTINF:-1 group-title="None",環球電視臺
+https://stream1.freetv.fun/6234a9bcbe41073ea5f86dfdea0d0241a0f06a064046d72c42128f714889299c.m3u8
+#EXTINF:-1 group-title="None",TVBS
+https://stream1.freetv.fun/1f12cb14745f743ccca1433e22f418c19224a0d4610c6edce055b0fa399b8b6a.ctv
+#EXTINF:-1 group-title="None",TVBS NEWS
+https://stream1.freetv.fun/38e422e8760b731a44f2edf723aad66e82223336f5a8b4cd23a345e02a089165.m3u8
+#EXTINF:-1 group-title="None",TVBS 亞洲
+https://stream1.freetv.fun/c88adc69fe22cc05c7ff2984ad14db99f461e6dda12687cb7bbaf5e03a357a38.m3u8
+#EXTINF:-1 group-title="None",TVBS新聞
+https://stream1.freetv.fun/tvbsxin-wen-9.m3u8
+#EXTINF:-1 group-title="None",TVBS歡樂
+https://stream1.freetv.fun/bddb60f3ed16f8742e1193ec7ec4e1f3ff85d6d04dfc8a55a49174401788ca5b.ctv
+#EXTINF:-1 group-title="None",三立台灣台
+https://stream1.freetv.fun/f85e0aed9779c6b1b6865708da72d0aa4e3b8b2b30c2760700f3e3123553f0ee.ctv
+#EXTINF:-1 group-title="None",三立戏剧
+https://stream1.freetv.fun/38b16d6f182cd55b7a542696a148d850cf352ea7c01b6a76d452002644e34fbb.m3u8
+#EXTINF:-1 group-title="None",三立新聞
+https://stream1.freetv.fun/e12a5ecb3e0328b72c684ffe48cb7382b9b3e283c0c99492612b5af06b539153.ctv
+#EXTINF:-1 group-title="None",三立綜合
+https://stream1.freetv.fun/fdf2bf897e0217754c91e5064b1ac7855f31eda692af574b11db9c97d9b5e23b.m3u8
+#EXTINF:-1 group-title="None",中天
+https://stream1.freetv.fun/acc8e0da66479a3f14682ca5885ae331941e02776a01687bab0f186a80bac6de.ctv
+#EXTINF:-1 group-title="None",中天娛樂
+https://stream1.freetv.fun/5b0d7d9b8e3eaf3cbcef5aadfff18d6711afb9a3d41be927f3649bda058dc497.m3u8
+#EXTINF:-1 group-title="None",中視
+https://stream1.freetv.fun/zhong-shi-3.m3u8
+#EXTINF:-1 group-title="None",中視新聞
+https://stream1.freetv.fun/20ff0b7ee9b33568cc8a08d08cb857240e5285c864869e3ebbb4d3292834f755.m3u8
+#EXTINF:-1 group-title="None",八大戏剧
+https://stream1.freetv.fun/d29f5b90988c837bb8afc96017dd772aa68cb99981f807169cafc79cdf7ac12f.m3u8
+#EXTINF:-1 group-title="None",八大综合
+https://stream1.freetv.fun/e7df67a1a8400d4741889391ccc7e8a2b3f623a4f19544ae0863ae2c184bbe2c.m3u8
+#EXTINF:-1 group-title="None",博斯網球
+https://stream1.freetv.fun/adb432ed9c5aa0930de59da773d78e8f4eaad4e8cad452618b0c953250414b50.m3u8
+#EXTINF:-1 group-title="None",博斯運動
+https://stream1.freetv.fun/6336ddc3c7f5f2207f760c9c702f6ea835ab0f1ba340a8318ca990da0a8176b4.m3u8
+#EXTINF:-1 group-title="None",台视新闻
+https://stream1.freetv.fun/4c8adef47c01115677bc13b65593946135e6fe8c470fad1db810248c3ca10150.m3u8
+#EXTINF:-1 group-title="None",台视新聞
+https://stream1.freetv.fun/3494a155d6e7afad40f588196589dc0504ac51f3ba233b6338181e20b7e5428b.m3u8
+#EXTINF:-1 group-title="None",台视新闻台
+https://stream1.freetv.fun/d4774ec8a87985b129d45af1ff8f45ad7c554acd0d1cb9ce6cbf122255b2140a.m3u8
+#EXTINF:-1 group-title="None",東森美洲
+https://stream1.freetv.fun/41fd1dc90b335e2c39f811e013a8bc45d966113d4b326afb8bed450591629da1.m3u8
+#EXTINF:-1 group-title="None",東森戲劇
+https://stream1.freetv.fun/63afc04b6f48d6ab1be98e6ac787f6a5ae5341600353f7f32af5bd39bd544b07.m3u8
+#EXTINF:-1 group-title="None",東森新聞
+https://stream1.freetv.fun/dong-sen-xin-wen-4.m3u8
+#EXTINF:-1 group-title="None",S超視34.5
+https://stream1.freetv.fun/41abf308e03f0e00cf97633b2892d5477b3329bae64920ad101c87398baf61a6.m3u8
+#EXTINF:-1 group-title="None",民視台灣台
+https://stream1.freetv.fun/6de6fc3073fd98a8f878df8d20a3bc89656f040bfec5801acaa1e8cd2e112cb8.m3u8
+#EXTINF:-1 group-title="None",民视新闻
+https://stream1.freetv.fun/327c04d14d84294b71f2f6d67abb2565bc8313d24eb4190dfa2c5e6e5ab1428f.m3u8
+#EXTINF:-1 group-title="None",緯來精采
+https://stream1.freetv.fun/d7fb67b6ad553367e15a443a726eb62c44d1775de9b706ebde77eead8d67ba58.m3u8
+#EXTINF:-1 group-title="None",緯來體育
+https://stream1.freetv.fun/b972b56855f08c1e06c90358613ad336cf197fddacbc2868b5abdd7294b4dc83.ctv
+#EXTINF:-1 group-title="None",采昌影劇
+https://stream1.freetv.fun/cai-chang-ying-ju-4.m3u8
+#EXTINF:-1 group-title="None",靖天國際
+https://stream1.freetv.fun/jing-tian-guo-ji-1.m3u8
+#EXTINF:-1 group-title="None",靖天戲劇
+https://stream1.freetv.fun/jing-tian-xi-ju-3.m3u8
+#EXTINF:-1 group-title="None",靖天日本
+https://stream1.freetv.fun/jing-tian-ri-ben-2.m3u8
+#EXTINF:-1 group-title="None",靖天育樂
+https://stream1.freetv.fun/jing-tian-yu-le-3.m3u8
+#EXTINF:-1 group-title="None",非凡商業
+https://stream1.freetv.fun/fei-fan-shang-ye-1.m3u8
+#EXTINF:-1 group-title="None",amc电影
+https://stream1.freetv.fun/ceb8e5d09e9af65624a0023241c486d3d4ba222029e8e745bcd4901f47d95445.m3u8
+#EXTINF:-1 group-title="None",CNA亚洲新闻
+https://stream1.freetv.fun/98eb74ca7a9f28132802504e43b676e6ff74d4a89e623ad4b8e9a92c14b5b287.m3u8
+#EXTINF:-1 group-title="None",discovery east
+https://stream1.freetv.fun/21bc6fc8b394ab3ca60cfa793c4acef84154900498bf749c5ae0f5dce2f66dce.ctv
+#EXTINF:-1 group-title="None",discovery west
+https://stream1.freetv.fun/446f010a5a72bea8c071685545455ee33fa68e50387ec66b81a7d87943f4bcbf.ctv
+#EXTINF:-1 group-title="None",love nature 4k
+https://stream1.freetv.fun/b7c862d77522bb4eb385226c1f6f1c64c5e955b151c3b01cff7621aa0e83e3a6.m3u8
+#EXTINF:-1 group-title="None",lovenature4k
+https://stream1.freetv.fun/2e37ff89d6a1e5d6f1b7a3268b983005fd5a1dcd53a0bfff8d2a7d7f2a77b9d8.m3u8
+#EXTINF:-1 group-title="None",lovenature4k
+https://stream1.freetv.fun/87d579967081ff5b32bab0daa8ffe78e34cea8cf5f988ecbc049539ea55e9857.m3u8
+#EXTINF:-1 group-title="None",nat geo
+https://stream1.freetv.fun/a920d05e5ca5c23ed112e7c8b33f6b2b44258e5a7f2d36465bccdbb8843d9590.ctv
+#EXTINF:-1 group-title="None",tennis channel
+https://stream1.freetv.fun/9d741f7a69392950497ff7540a55c1dffda3c541e9e2e672be1d8ce8eb40afc0.ctv
