@@ -1486,8 +1486,6 @@ http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/108136
 http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/108178
 #EXTINF:-1 tvg-id="univisiontlnovelas.us" tvg-name="US Latin Univision " tvg-logo="" group-title="USA ",US Latin Univision 
 http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/108248
-#EXTINF:-1 tvg-id="" tvg-name="Carib Justice_Central" tvg-logo="" group-title="Caribbean",Carib Justice_Central
-http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/108547
 #EXTINF:-1 tvg-id="globalcalgary.ca" tvg-name="CA Global News Calgary (D)" tvg-logo="" group-title="CANADA",CA Global News Calgary (D)
 http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/111067
 #EXTINF:-1 tvg-id="globalcalgary.ca" tvg-name="CA Global Calgary " tvg-logo="" group-title="CANADA",CA Global Calgary 
@@ -1558,7 +1556,6 @@ http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/119451
 http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/161450
 #EXTINF:-1 tvg-id="newenglandsportsnetworkplus.us" tvg-name="US NESN PLUS" tvg-logo="" group-title="Sports Fanatic's ",US NESN PLUS
 http://cord-cutter.net:8080/kbc223@gmail.com/kbc223@2023/161451
-#EXTM3U
 #EXTINF:-1 group-title="None",POPC
 http://live.hkdvb.com/hls/live/801.m3u8?token=275839252920364
 #EXTINF:-1 group-title="None",NOW星影台
