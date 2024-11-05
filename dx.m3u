@@ -233,3 +233,25 @@ https://stream1.freetv.fun/87d579967081ff5b32bab0daa8ffe78e34cea8cf5f988ecbc0495
 https://stream1.freetv.fun/a920d05e5ca5c23ed112e7c8b33f6b2b44258e5a7f2d36465bccdbb8843d9590.ctv
 #EXTINF:-1 group-title="None",tennis channel
 https://stream1.freetv.fun/9d741f7a69392950497ff7540a55c1dffda3c541e9e2e672be1d8ce8eb40afc0.ctv
+#EXTINF:-1 group-title="None",民视
+rtmp://f13h.mine.nu/sat/tv051
+#EXTINF:-1 group-title="None",台视
+rtmp://f13h.mine.nu/sat/tv071
+#EXTINF:-1 group-title="None",中视
+rtmp://f13h.mine.nu/sat/tv091
+#EXTINF:-1 group-title="None",华视
+rtmp://f13h.mine.nu/sat/tv111
+#EXTINF:-1 group-title="None",纬来体育
+rtmp://f13h.mine.nu/sat/tv721
+#EXTINF:-1 group-title="None",纬来育乐
+rtmp://f13h.mine.nu/sat/tv701
+#EXTINF:-1 group-title="None",纬来日本
+rtmp://f13h.mine.nu/sat/tv771
+#EXTINF:-1 group-title="None",东森超视
+rtmp://f13h.mine.nu/sat/tv331
+#EXTINF:-1 group-title="None",MoMoTV
+rtmp://f13h.mine.nu/sat/tv761
+#EXTINF:-1 group-title="None",ELEVEN体育1
+rtmp://f13h.mine.nu/sat/tv731
+#EXTINF:-1 group-title="None",ELEVEN体育2
+rtmp://f13h.mine.nu/sat/tv741
