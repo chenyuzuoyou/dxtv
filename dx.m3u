@@ -1,4 +1,6 @@
 #EXTM3U x-tvg-url="https://epg.iill.top/epg"
+#EXTINF:-1 group-title="台湾",CNN
+https://turnerlive.warnermediacdn.com/hls/live/586495/cnngo/cnn_slate/VIDEO_3_1464000.m3u8
 #EXTINF:-1 group-title="台湾",民視
 rtmp://f13h.mine.nu/sat/tv051
 #EXTINF:-1 group-title="台湾",華視
