@@ -496,12 +496,26 @@ const KG = (function () {
 const KW = (function () {
   async function fetchJson(url) { return safeArgs((await $fetch.get(url, { headers: withKwHeaders() })).data); }
   function mapSong(item) {
-    const rid = `${item?.rid ?? `${item?.musicrid ?? ''}`.replace(/^MUSIC_/, '') ?? ''}`;
-    const artistName = cleanText(item?.artist ?? item?.artistName ?? '');
-    const songName = cleanText(item?.name ?? item?.songName ?? '');
+    const rid = `${item?.rid || item?.MUSICRID || item?.musicrid || ''}`.replace(/^MUSIC_/, '');
+    const artistName = cleanText(item?.artist || item?.artistName || item?.ARTIST || '');
+    const songName = cleanText(item?.name || item?.songName || item?.SONGNAME || '');
     return {
-      id: rid, name: songName, cover: toHttps(item?.pic ?? item?.albumpic ?? ''), duration: parseInt(item?.duration ?? item?.DURATION ?? 0),
-      artist: { id: `${item?.artistid ?? item?.artistId ?? ''}`, name: artistName, cover: '' }, ext: { source: 'kw', songmid: rid, rid, singer: artistName, songName: songName }
+      id: rid,
+      name: songName,
+      cover: toHttps(item?.pic || item?.albumpic || ''),
+      duration: parseInt(item?.duration || item?.DURATION || 0),
+      artist: {
+        id: `${item?.artistid || item?.artistId || item?.ARTISTID || ''}`,
+        name: artistName,
+        cover: ''
+      },
+      ext: {
+        source: 'kw',
+        songmid: rid,
+        rid: rid,
+        singer: artistName,
+        songName: songName
+      }
     };
   }
   function mapToplistCard(item) {
