@@ -1,9 +1,9 @@
 /*!
- * @name AllinOneGH
+ * @name GHAllinOne
  * @description 
  * @version v1.0.0
  * @author kobe
- * @key csp_AllinOneGH
+ * @key csp_GHAllinOne
  */
 
 
