@@ -1,7 +1,7 @@
 /*!
  * @name AllinOneCatch
  * @description 全网聚合音乐 - 增强版：红心改为“红心（缓存）” + 自动最近播放（离线缓存）
- * @version v1.0.3.3
+ * @version v1.0.1
  * @author kobe (增强 by Grok)
  * @key csp_AllinOneCatch
  */
@@ -113,19 +113,29 @@ const appConfig = {
   tabSearch: {
     name: '搜索',
     groups: [
-      // 第一排：搜索内容类型（原有逻辑）
-      { name: '单曲', type: 'song',     ext: { type: 'song',     source: 'all' } },
-      { name: '歌单', type: 'playlist', ext: { type: 'playlist', source: 'all' } },
-      { name: '专辑', type: 'album',    ext: { type: 'album',    source: 'all' } },
-      { name: '歌手', type: 'artist',   ext: { type: 'artist',   source: 'all' } },
-
-      // 第二排：平台选择（独立一行，点击后仅限该平台搜索）
-      { name: '全部', type: 'song',     ext: { type: 'song',     source: 'all' } },
-      { name: 'QQ',   type: 'song',     ext: { type: 'song',     source: 'tx' } },
-      { name: '网易', type: 'song',     ext: { type: 'song',     source: 'wy' } },
-      { name: '酷我', type: 'song',     ext: { type: 'song',     source: 'kw' } },
-      { name: '酷狗', type: 'song',     ext: { type: 'song',     source: 'kg' } },
-      { name: '喜马', type: 'song',     ext: { type: 'song',     source: 'xm' } }
+      { name: '单曲', type: 'song', ext: { type: 'song', source: 'all' } },
+	    { name: '歌单', type: 'playlist', ext: { type: 'playlist', source: 'all' } },
+      { name: '专辑', type: 'album', ext: { type: 'album', source: 'all' } },
+      { name: '歌手', type: 'artist', ext: { type: 'artist', source: 'all' } },
+      { name: 'QQ单曲', type: 'song', ext: { type: 'song', source: 'tx' } },
+			{ name: 'QQ歌单', type: 'playlist', ext: { type: 'playlist', source: 'tx' } },
+			{ name: 'QQ专辑', type: 'album', ext: { type: 'album', source: 'tx' } },
+			{ name: 'QQ歌手', type: 'artist', ext: { type: 'artist', source: 'tx' } },
+      { name: '网易单曲', type: 'song', ext: { type: 'song', source: 'wy' } },
+			{ name: '网易歌单', type: 'playlist', ext: { type: 'playlist', source: 'wy' } },
+			{ name: '网易专辑', type: 'album', ext: { type: 'album', source: 'wy' } },
+			{ name: '网易歌手', type: 'artist', ext: { type: 'artist', source: 'wy' } },
+      { name: '酷我单曲', type: 'song', ext: { type: 'song', source: 'kw' } },
+			{ name: '酷我歌单', type: 'playlist', ext: { type: 'playlist', source: 'kw' } },
+			{ name: '酷我专辑', type: 'album', ext: { type: 'album', source: 'kw' } },
+			{ name: '酷我歌手', type: 'artist', ext: { type: 'artist', source: 'kw' } },
+      { name: '酷狗单曲', type: 'song', ext: { type: 'song', source: 'kg' } },
+			{ name: '酷狗歌单', type: 'playlist', ext: { type: 'playlist', source: 'kg' } },
+			{ name: '酷狗专辑', type: 'album', ext: { type: 'album', source: 'kg' } },
+			{ name: '酷狗歌手', type: 'artist', ext: { type: 'artist', source: 'kg' } },
+      { name: '喜马单曲', type: 'song', ext: { type: 'song', source: 'xm' } },
+  	  { name: '喜马专辑', type: 'album', ext: { type: 'album', source: 'xm' } },
+  	  { name: '喜马歌手', type: 'artist', ext: { type: 'artist', source: 'xm' } } 
     ]
   }
 };
@@ -850,39 +860,13 @@ async function getArtists(ext) {
   return jsonify({ list: [] });
 }
 async function search(ext) {
-  const args = argsify(ext);
-  let source = args.source || 'all';
-  const searchType = args.type || 'song';
-
-  // 如果是平台切换按钮，使用 source 参数
-  if (args.isPlatform === true) {
-    source = args.source || 'all';
-  }
-
+  const args = argsify(ext), source = args.source || 'all';
   if (source === 'all') {
-    // 全网聚合搜索
-    const promises = [
-      WY.search({ ...args, type: searchType }).catch(() => ({ list: [] })),
-      QQ.search({ ...args, type: searchType }).catch(() => ({ list: [] })),
-      KG.search({ ...args, type: searchType }).catch(() => ({ list: [] })),
-      KW.search({ ...args, type: searchType }).catch(() => ({ list: [] })),
-      MG.search({ ...args, type: searchType }).catch(() => ({ list: [] })),
-    ];
-    if (['song', 'album', 'artist'].includes(searchType)) {
-      promises.push(XM.search({ ...args, type: searchType === 'song' ? 'track' : searchType }).catch(() => ({ list: [] })));
-    }
-    const results = await Promise.all(promises);
-    return jsonify({ list: mixArrays(...results.map(r => r.list || [])) });
+    const promises = [WY.search(args).catch(() => ({ list: [] })), QQ.search(args).catch(() => ({ list: [] })), KG.search(args).catch(() => ({ list: [] })), KW.search(args).catch(() => ({ list: [] })), MG.search(args).catch(() => ({ list: [] }))];
+    if (args.type === 'album' || args.type === 'song' || args.type === 'artist') promises.push(XM.search(args).catch(() => ({ list: [] })));
+    return jsonify({ list: mixArrays(...(await Promise.all(promises)).map(r => r.list || [])) });
   }
-
-  // 单个平台搜索
-  if (source === 'wy') return jsonify(await WY.search({ ...args, type: searchType }));
-  if (source === 'tx') return jsonify(await QQ.search({ ...args, type: searchType }));
-  if (source === 'kg') return jsonify(await KG.search({ ...args, type: searchType }));
-  if (source === 'kw') return jsonify(await KW.search({ ...args, type: searchType }));
-  if (source === 'mg') return jsonify(await MG.search({ ...args, type: searchType }));
-  if (source === 'xm') return jsonify(await XM.search({ ...args, type: searchType === 'song' ? 'track' : searchType }));
-
+  if (source === 'wy') return jsonify(await WY.search(args)); if (source === 'tx') return jsonify(await QQ.search(args)); if (source === 'kg') return jsonify(await KG.search(args)); if (source === 'kw') return jsonify(await KW.search(args)); if (source === 'mg') return jsonify(await MG.search(args)); if (source === 'xm') return jsonify(await XM.search(args));
   return jsonify({ list: [] });
 }
 
