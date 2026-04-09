@@ -1,9 +1,9 @@
 /*!
  * @name catchQQ
- * @description catchQQ
+ * @description catchQQ 收藏进最近播放
  * @version v1.0.0
  * @author codex
- * @key csp_qqfm
+ * @key csp_catchQQ
  */
 
 const $config = argsify($config_str)
@@ -320,10 +320,24 @@ async function loadPlaylistSongs(id, page) {
   return list.slice((page - 1)*PAGE_LIMIT, page*PAGE_LIMIT)
 }
 
-async function loadTagPlaylists(cid, sid, page) {
-  const s = (page-1)*PAGE_LIMIT, e = s+PAGE_LIMIT-1
-  const d = await fetchJson(`https://c.y.qq.com/splcloud/fcgi-bin/fcg_get_diss_by_tag.fcg?categoryId=${cid}&sortId=${sid}&sin=${s}&ein=${e}`)
-  return d?.data?.list ?? []
+// ✅ 修复：替换失效的标签歌单接口
+async function loadTagPlaylists(categoryId, sortId, page) {
+  const param = {
+    categoryId: Number(categoryId),
+    sortId: Number(sortId),
+    pageSize: PAGE_LIMIT,
+    pageNo: page
+  };
+  const payload = {
+    comm: { ct: 24 },
+    category: {
+      module: "music.musicCategory.CategoryPlaylistServer",
+      method: "GetCategoryPlaylist",
+      param
+    }
+  };
+  const d = await fetchJson(buildMusicuUrl(payload));
+  return d?.category?.data?.list || [];
 }
 
 async function loadSingerList() {
