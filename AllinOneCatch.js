@@ -1,7 +1,7 @@
 /*!
  * @name AllinOneCatch
  * @description 全网聚合音乐 - 增强版：红心改为“红心（缓存）” + 自动最近播放（离线缓存）
- * @version v1.0.3.2
+ * @version v1.0.3.3
  * @author kobe (增强 by Grok)
  * @key csp_AllinOneCatch
  */
@@ -852,10 +852,15 @@ async function getArtists(ext) {
 async function search(ext) {
   const args = argsify(ext);
   let source = args.source || 'all';
-  const searchType = args.type || 'song';   // 支持单曲/歌单/专辑/歌手切换
+  const searchType = args.type || 'song';
+
+  // 如果是平台切换按钮，使用 source 参数
+  if (args.isPlatform === true) {
+    source = args.source || 'all';
+  }
 
   if (source === 'all') {
-    // 全部平台聚合搜索
+    // 全网聚合搜索
     const promises = [
       WY.search({ ...args, type: searchType }).catch(() => ({ list: [] })),
       QQ.search({ ...args, type: searchType }).catch(() => ({ list: [] })),
@@ -870,7 +875,7 @@ async function search(ext) {
     return jsonify({ list: mixArrays(...results.map(r => r.list || [])) });
   }
 
-  // 指定单个平台搜索
+  // 单个平台搜索
   if (source === 'wy') return jsonify(await WY.search({ ...args, type: searchType }));
   if (source === 'tx') return jsonify(await QQ.search({ ...args, type: searchType }));
   if (source === 'kg') return jsonify(await KG.search({ ...args, type: searchType }));
