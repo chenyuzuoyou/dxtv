@@ -1,21 +1,21 @@
 /*!
- * @name Geminiqqfm
- * @description Geminiqqfm
+ * @name qqfm
+ * @description qqfm
  * @version v1.0.0
  * @author codex
- * @key csp_Geminiqqfm
+ * @key csp_qqfm
  */
 
-const $config = argsify($config_str)
-const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
-const headers = {
+var $config = argsify($config_str)
+var UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
+var headers = {
   'User-Agent': UA,
 }
 
-const PAGE_LIMIT = 20
-const SEARCH_PAGE_LIMIT = 5
-const QQ_SOURCE = 'tx'
-const GID = {
+var PAGE_LIMIT = 20
+var SEARCH_PAGE_LIMIT = 5
+var QQ_SOURCE = 'tx'
+var GID = {
   TOPLISTS: '1',
   TOP_ARTISTS: '2',
   ARTIST_SONGS: '3',
@@ -23,15 +23,14 @@ const GID = {
   ALBUM_SONGS: '5',
   SEARCH_PLAYLISTS: '6',
   TAG_PLAYLISTS: '7',
-  RECENT_PLAYED: '8', // 新增：最近播放分组ID
+  RECENT_PLAYED: '8'
 }
 
-// 内存中的最近播放列表和链接缓存池
-let recentSongsList = []
-const urlCacheMap = new Map()
-const RECENT_MAX_LIMIT = 200
+var recentSongsList = []
+var urlCacheMap = new Map()
+var RECENT_MAX_LIMIT = 200
 
-const appConfig = {
+var appConfig = {
   ver: 1,
   name: 'qqfm',
   message: '',
@@ -137,7 +136,7 @@ const appConfig = {
   tabMe: {
     name: '我的',
     groups: [{
-      name: '最近播放（缓存歌曲）', // 新增分组
+      name: '最近播放(缓存)',
       type: 'song',
       ext: {
         gid: GID.RECENT_PLAYED
@@ -194,22 +193,22 @@ function toHttps(url) {
   if (!url) {
     return ''
   }
-
-  return `${url}`.replace(/^http:\/\//, 'https://')
+  return ('' + url).replace(/^http:\/\//, 'https://')
 }
 
-function withQqHeaders(extra = {}) {
-  return {
-    ...headers,
+function withQqHeaders(extra) {
+  var extHeaders = extra || {}
+  return Object.assign({}, headers, {
     Referer: 'https://y.qq.com/',
     Origin: 'https://y.qq.com',
-    Cookie: 'uin=0;',
-    ...extra,
-  }
+    Cookie: 'uin=0;'
+  }, extHeaders)
 }
 
-function buildSearchUrl(text, page, searchType = 0, limit = PAGE_LIMIT) {
-  const payload = {
+function buildSearchUrl(text, page, searchType, limit) {
+  var searchTypeVal = searchType === undefined ? 0 : searchType
+  var limitVal = limit === undefined ? PAGE_LIMIT : limit
+  var payload = {
     comm: {
       ct: '19',
       cv: '1859',
@@ -220,46 +219,41 @@ function buildSearchUrl(text, page, searchType = 0, limit = PAGE_LIMIT) {
       module: 'music.search.SearchCgiService',
       param: {
         grp: 1,
-        num_per_page: limit,
+        num_per_page: limitVal,
         page_num: page,
         query: text,
-        search_type: searchType,
+        search_type: searchTypeVal,
       }
     }
   }
-
-  return `https://u.y.qq.com/cgi-bin/musicu.fcg?format=json&data=${encodeURIComponent(JSON.stringify(payload))}`
+  return 'https://u.y.qq.com/cgi-bin/musicu.fcg?format=json&data=' + encodeURIComponent(JSON.stringify(payload))
 }
 
 function buildMusicuUrl(payload) {
-  return `https://u.y.qq.com/cgi-bin/musicu.fcg?format=json&data=${encodeURIComponent(JSON.stringify(payload))}`
+  return 'https://u.y.qq.com/cgi-bin/musicu.fcg?format=json&data=' + encodeURIComponent(JSON.stringify(payload))
 }
 
-async function fetchJson(url, extraHeaders = {}) {
-  const { data } = await $fetch.get(url, {
-    headers: withQqHeaders(extraHeaders),
+async function fetchJson(url, extraHeaders) {
+  var headerParams = extraHeaders || {}
+  var res = await $fetch.get(url, {
+    headers: withQqHeaders(headerParams),
   })
-
-  return safeArgs(data)
+  return safeArgs(res.data)
 }
 
-async function fetchHtml(url, extraHeaders = {}) {
-  const { data } = await $fetch.get(url, {
-    headers: {
-      ...headers,
-      ...extraHeaders,
-    },
+async function fetchHtml(url, extraHeaders) {
+  var headerParams = extraHeaders || {}
+  var res = await $fetch.get(url, {
+    headers: Object.assign({}, headers, headerParams),
   })
-
-  return `${data ?? ''}`
+  return '' + (res.data || '')
 }
 
 function parseInitialData(html) {
-  const match = html.match(/__INITIAL_DATA__\s*=\s*({[\s\S]*?})<\/script>/)
-  if (!match?.[1]) {
+  var match = html.match(/__INITIAL_DATA__\s*=\s*({[\s\S]*?})<\/script>/)
+  if (!match || !match[1]) {
     return {}
   }
-
   return safeArgs(match[1])
 }
 
@@ -268,7 +262,7 @@ function singerListOf(song) {
 }
 
 function singerNameOf(song) {
-  return singerListOf(song).map((artist) => artist?.name ?? artist?.singer_name ?? '').filter(Boolean).join('/')
+  return singerListOf(song).map(function(artist) { return artist?.name ?? artist?.singer_name ?? '' }).filter(Boolean).join('/')
 }
 
 function albumMidOf(song) {
@@ -284,27 +278,27 @@ function songMidOf(song) {
 }
 
 function mapSong(rawSong) {
-  const song = rawSong?.songInfo ?? rawSong ?? {}
-  const singers = singerListOf(song)
-  const singer = singerNameOf(song)
-  const songmid = songMidOf(song)
-  const albumMid = albumMidOf(song)
+  var song = rawSong?.songInfo ?? rawSong ?? {}
+  var singers = singerListOf(song)
+  var singer = singerNameOf(song)
+  var songmid = songMidOf(song)
+  var albumMid = albumMidOf(song)
 
   return {
-    id: `${songmid || song?.id || ''}`,
+    id: '' + (songmid || song?.id || ''),
     name: song?.name ?? song?.title ?? '',
-    cover: albumMid ? `https://y.gtimg.cn/music/photo_new/T002R800x800M000${albumMid}.jpg` : '',
+    cover: albumMid ? ('https://y.gtimg.cn/music/photo_new/T002R800x800M000' + albumMid + '.jpg') : '',
     duration: parseInt(song?.interval ?? 0),
     artist: {
-      id: `${singers[0]?.mid ?? singers[0]?.singer_mid ?? singers[0]?.id ?? singers[0]?.singer_id ?? ''}`,
+      id: '' + (singers[0]?.mid ?? singers[0]?.singer_mid ?? singers[0]?.id ?? singers[0]?.singer_id ?? ''),
       name: singer,
       cover: singers[0]?.mid || singers[0]?.singer_mid
-        ? `https://y.qq.com/music/photo_new/T001R500x500M000${singers[0]?.mid ?? singers[0]?.singer_mid}.jpg`
+        ? ('https://y.qq.com/music/photo_new/T001R500x500M000' + (singers[0]?.mid ?? singers[0]?.singer_mid) + '.jpg')
         : '',
     },
     ext: {
       source: QQ_SOURCE,
-      songmid: `${songmid}`,
+      songmid: '' + songmid,
       singer: singer,
       songName: song?.name ?? song?.title ?? '',
       albumName: albumNameOf(song),
@@ -314,7 +308,7 @@ function mapSong(rawSong) {
 
 function mapToplistCard(item) {
   return {
-    id: `${item?.topId ?? ''}`,
+    id: '' + (item?.topId ?? ''),
     name: item?.title ?? '',
     cover: toHttps(item?.headPicUrl ?? item?.frontPicUrl ?? item?.mbHeadPicUrl ?? item?.mbFrontPicUrl ?? ''),
     artist: {
@@ -324,7 +318,7 @@ function mapToplistCard(item) {
     },
     ext: {
       gid: GID.TOPLISTS,
-      id: `${item?.topId ?? ''}`,
+      id: '' + (item?.topId ?? ''),
       period: item?.period ?? '',
       type: 'playlist',
     }
@@ -332,12 +326,12 @@ function mapToplistCard(item) {
 }
 
 function mapArtistCard(artist) {
-  const artistId = `${artist?.singerMID ?? artist?.singer_mid ?? artist?.mid ?? artist?.singer_mid ?? ''}`
-  const artistName = artist?.singerName ?? artist?.singer_name ?? artist?.name ?? ''
-  const artistCover = toHttps(
+  var artistId = '' + (artist?.singerMID ?? artist?.singer_mid ?? artist?.mid ?? artist?.singer_mid ?? '')
+  var artistName = artist?.singerName ?? artist?.singer_name ?? artist?.name ?? ''
+  var artistCover = toHttps(
     artist?.singerPic
     ?? artist?.singer_pic
-    ?? (artistId ? `https://y.qq.com/music/photo_new/T001R500x500M000${artistId}.jpg` : '')
+    ?? (artistId ? ('https://y.qq.com/music/photo_new/T001R500x500M000' + artistId + '.jpg') : '')
   )
 
   return {
@@ -367,23 +361,23 @@ function mapArtistCard(artist) {
 }
 
 function mapAlbumCard(album) {
-  const albumMid = `${album?.albumMID ?? album?.albumMid ?? album?.album_mid ?? ''}`
-  const singers = album?.singer_list ?? album?.singers ?? []
-  const firstSinger = singers[0] ?? {}
-  const singerName = album?.singerName ?? album?.singer_name ?? singers.map((artist) => artist?.name ?? artist?.singer_name ?? '').filter(Boolean).join('/') ?? ''
-  const singerMid = `${album?.singerMID ?? album?.singer_mid ?? firstSinger?.mid ?? firstSinger?.singer_mid ?? ''}`
+  var albumMid = '' + (album?.albumMID ?? album?.albumMid ?? album?.album_mid ?? '')
+  var singers = album?.singer_list ?? album?.singers ?? []
+  var firstSinger = singers[0] ?? {}
+  var singerName = album?.singerName ?? album?.singer_name ?? singers.map(function(artist) { return artist?.name ?? artist?.singer_name ?? '' }).filter(Boolean).join('/') ?? ''
+  var singerMid = '' + (album?.singerMID ?? album?.singer_mid ?? firstSinger?.mid ?? firstSinger?.singer_mid ?? '')
 
   return {
     id: albumMid,
     name: album?.albumName ?? album?.album_name ?? '',
     cover: toHttps(
       album?.albumPic
-      ?? (albumMid ? `https://y.gtimg.cn/music/photo_new/T002R800x800M000${albumMid}.jpg` : '')
+      ?? (albumMid ? ('https://y.gtimg.cn/music/photo_new/T002R800x800M000' + albumMid + '.jpg') : '')
     ),
     artist: {
       id: singerMid,
       name: singerName,
-      cover: singerMid ? `https://y.qq.com/music/photo_new/T001R500x500M000${singerMid}.jpg` : '',
+      cover: singerMid ? ('https://y.qq.com/music/photo_new/T001R500x500M000' + singerMid + '.jpg') : '',
     },
     ext: {
       gid: GID.ALBUM_SONGS,
@@ -394,14 +388,14 @@ function mapAlbumCard(album) {
 }
 
 function mapPlaylistCard(playlist) {
-  const playlistId = `${playlist?.dissid ?? playlist?.disstid ?? playlist?.tid ?? playlist?.id ?? ''}`
+  var playlistId = '' + (playlist?.dissid ?? playlist?.disstid ?? playlist?.tid ?? playlist?.id ?? '')
 
   return {
     id: playlistId,
     name: playlist?.dissname ?? playlist?.title ?? playlist?.name ?? '',
     cover: toHttps(playlist?.imgurl ?? playlist?.logo ?? playlist?.cover ?? ''),
     artist: {
-      id: `${playlist?.encrypt_uin ?? playlist?.creator?.encrypt_uin ?? playlist?.creator?.creator_uin ?? ''}`,
+      id: '' + (playlist?.encrypt_uin ?? playlist?.creator?.encrypt_uin ?? playlist?.creator?.creator_uin ?? ''),
       name: playlist?.creator?.name ?? playlist?.nickname ?? playlist?.nick ?? playlist?.creatorName ?? 'qqfm',
       cover: toHttps(playlist?.creator?.avatarUrl ?? playlist?.headurl ?? ''),
     },
@@ -414,23 +408,24 @@ function mapPlaylistCard(playlist) {
 }
 
 async function loadToplists() {
-  const info = await fetchJson('https://u.y.qq.com/cgi-bin/musicu.fcg?_=1577086820633&data=%7B%22comm%22%3A%7B%22g_tk%22%3A5381%2C%22uin%22%3A123456%2C%22format%22%3A%22json%22%2C%22inCharset%22%3A%22utf-8%22%2C%22outCharset%22%3A%22utf-8%22%2C%22notice%22%3A0%2C%22platform%22%3A%22h5%22%2C%22needNewCode%22%3A1%2C%22ct%22%3A23%2C%22cv%22%3A0%7D%2C%22topList%22%3A%7B%22module%22%3A%22musicToplist.ToplistInfoServer%22%2C%22method%22%3A%22GetAll%22%2C%22param%22%3A%7B%7D%7D%7D', {
+  var info = await fetchJson('https://u.y.qq.com/cgi-bin/musicu.fcg?_=1577086820633&data=%7B%22comm%22%3A%7B%22g_tk%22%3A5381%2C%22uin%22%3A123456%2C%22format%22%3A%22json%22%2C%22inCharset%22%3A%22utf-8%22%2C%22outCharset%22%3A%22utf-8%22%2C%22notice%22%3A0%2C%22platform%22%3A%22h5%22%2C%22needNewCode%22%3A1%2C%22ct%22%3A23%2C%22cv%22%3A0%7D%2C%22topList%22%3A%7B%22module%22%3A%22musicToplist.ToplistInfoServer%22%2C%22method%22%3A%22GetAll%22%2C%22param%22%3A%7B%7D%7D%7D', {
     Cookie: 'uin=',
   })
-
-  return (info?.topList?.data?.group ?? []).flatMap((group) => group?.toplist ?? [])
+  return (info?.topList?.data?.group ?? []).flatMap(function(group) { return group?.toplist ?? [] })
 }
 
-async function loadToplistSongs(id, period, page = 1) {
-  const offset = Math.max(page - 1, 0) * PAGE_LIMIT
-  let periodValue = period ?? ''
+async function loadToplistSongs(id, period, page) {
+  var pageNum = page === undefined ? 1 : page
+  var offset = Math.max(pageNum - 1, 0) * PAGE_LIMIT
+  var periodValue = period ?? ''
 
   if (!periodValue) {
-    const toplists = await loadToplists()
-    periodValue = toplists.find((each) => `${each?.topId ?? ''}` == `${id}`)?.period ?? ''
+    var toplists = await loadToplists()
+    var found = toplists.find(function(each) { return '' + (each?.topId ?? '') == '' + id })
+    periodValue = found?.period ?? ''
   }
 
-  const info = await fetchJson(buildMusicuUrl({
+  var info = await fetchJson(buildMusicuUrl({
     detail: {
       module: 'musicToplist.ToplistInfoServer',
       method: 'GetDetail',
@@ -452,35 +447,40 @@ async function loadToplistSongs(id, period, page = 1) {
   return info?.detail?.data?.songInfoList ?? []
 }
 
-async function loadPlaylistSongs(id, page = 1) {
-  const info = await fetchJson(`https://c.y.qq.com/v8/fcg-bin/fcg_v8_playlist_cp.fcg?newsong=1&id=${id}&format=json&inCharset=GB2312&outCharset=utf-8`)
-  const list = info?.data?.cdlist?.[0]?.songlist ?? []
-  const offset = Math.max(page - 1, 0) * PAGE_LIMIT
+async function loadPlaylistSongs(id, page) {
+  var pageNum = page === undefined ? 1 : page
+  var info = await fetchJson('https://c.y.qq.com/v8/fcg-bin/fcg_v8_playlist_cp.fcg?newsong=1&id=' + id + '&format=json&inCharset=GB2312&outCharset=utf-8')
+  var list = info?.data?.cdlist?.[0]?.songlist ?? []
+  var offset = Math.max(pageNum - 1, 0) * PAGE_LIMIT
 
   return list.slice(offset, offset + PAGE_LIMIT)
 }
 
-async function loadTagPlaylists(categoryId, sortId = '5', page = 1) {
-  const offset = Math.max(page - 1, 0) * PAGE_LIMIT
-  const end = offset + PAGE_LIMIT - 1
-  const info = await fetchJson(`https://c.y.qq.com/splcloud/fcgi-bin/fcg_get_diss_by_tag.fcg?picmid=1&rnd=0.1&g_tk=5381&loginUin=0&hostUin=0&format=json&inCharset=utf8&outCharset=utf-8&notice=0&platform=yqq.json&needNewCode=0&categoryId=${encodeURIComponent(categoryId)}&sortId=${encodeURIComponent(sortId)}&sin=${offset}&ein=${end}`)
+async function loadTagPlaylists(categoryId, sortId, page) {
+  var sortVal = sortId === undefined ? '5' : sortId
+  var pageNum = page === undefined ? 1 : page
+  var offset = Math.max(pageNum - 1, 0) * PAGE_LIMIT
+  var end = offset + PAGE_LIMIT - 1
+  var info = await fetchJson('https://c.y.qq.com/splcloud/fcgi-bin/fcg_get_diss_by_tag.fcg?picmid=1&rnd=0.1&g_tk=5381&loginUin=0&hostUin=0&format=json&inCharset=utf8&outCharset=utf-8&notice=0&platform=yqq.json&needNewCode=0&categoryId=' + encodeURIComponent(categoryId) + '&sortId=' + encodeURIComponent(sortVal) + '&sin=' + offset + '&ein=' + end)
 
   return info?.data?.list ?? []
 }
 
-async function loadSingerList(page = 1) {
-  if (page > 1) {
+async function loadSingerList(page) {
+  var pageNum = page === undefined ? 1 : page
+  if (pageNum > 1) {
     return []
   }
 
-  const html = await fetchHtml('https://y.qq.com/n/ryqq/singer_list')
-  const initialData = parseInitialData(html)
+  var html = await fetchHtml('https://y.qq.com/n/ryqq/singer_list')
+  var initialData = parseInitialData(html)
   return initialData?.singerListImage ?? []
 }
 
-async function loadSingerSongs(id, page = 1) {
-  const offset = Math.max(page - 1, 0) * PAGE_LIMIT
-  const info = await fetchJson(buildMusicuUrl({
+async function loadSingerSongs(id, page) {
+  var pageNum = page === undefined ? 1 : page
+  var offset = Math.max(pageNum - 1, 0) * PAGE_LIMIT
+  var info = await fetchJson(buildMusicuUrl({
     comm: {
       ct: 24,
       cv: 0,
@@ -500,9 +500,10 @@ async function loadSingerSongs(id, page = 1) {
   return info?.singer?.data?.songlist ?? []
 }
 
-async function loadSingerAlbums(id, page = 1) {
-  const offset = Math.max(page - 1, 0) * PAGE_LIMIT
-  const info = await fetchJson(buildMusicuUrl({
+async function loadSingerAlbums(id, page) {
+  var pageNum = page === undefined ? 1 : page
+  var offset = Math.max(pageNum - 1, 0) * PAGE_LIMIT
+  var info = await fetchJson(buildMusicuUrl({
     comm: {
       ct: 24,
       cv: 0,
@@ -522,9 +523,10 @@ async function loadSingerAlbums(id, page = 1) {
   return info?.singer?.data?.list ?? []
 }
 
-async function loadAlbumSongs(id, page = 1) {
-  const offset = Math.max(page - 1, 0) * PAGE_LIMIT
-  const info = await fetchJson(buildMusicuUrl({
+async function loadAlbumSongs(id, page) {
+  var pageNum = page === undefined ? 1 : page
+  var offset = Math.max(pageNum - 1, 0) * PAGE_LIMIT
+  var info = await fetchJson(buildMusicuUrl({
     comm: {
       ct: 24,
       cv: 0,
@@ -545,7 +547,7 @@ async function loadAlbumSongs(id, page = 1) {
 }
 
 async function loadSearchBody(text, page, searchType) {
-  const info = await fetchJson(buildSearchUrl(text, page, searchType))
+  var info = await fetchJson(buildSearchUrl(text, page, searchType))
   return info?.req?.data?.body ?? {}
 }
 
@@ -554,35 +556,39 @@ async function getConfig() {
 }
 
 async function getSongs(ext) {
-  const { page, gid, id, period } = argsify(ext)
-  const gidValue = `${gid ?? ''}`
-  let songs = []
+  var extObj = argsify(ext)
+  var page = extObj.page
+  var gid = extObj.gid
+  var id = extObj.id
+  var period = extObj.period
+  
+  var gidValue = '' + (gid ?? '')
+  var songs = []
 
-  // 新增：读取最近播放列表，支持分页
   if (gidValue == GID.RECENT_PLAYED) {
-    const offset = Math.max(page - 1, 0) * PAGE_LIMIT
+    var offset = Math.max(page - 1, 0) * PAGE_LIMIT
     songs = recentSongsList.slice(offset, offset + PAGE_LIMIT)
     return jsonify({ list: songs })
   }
 
   if (gidValue == GID.TOPLISTS) {
-    const list = await loadToplistSongs(id, period, page)
-    songs = list.map((each) => mapSong(each))
+    var list1 = await loadToplistSongs(id, period, page)
+    songs = list1.map(function(each) { return mapSong(each) })
   }
 
   if (gidValue == GID.SEARCH_PLAYLISTS) {
-    const list = await loadPlaylistSongs(id, page)
-    songs = list.map((each) => mapSong(each))
+    var list2 = await loadPlaylistSongs(id, page)
+    songs = list2.map(function(each) { return mapSong(each) })
   }
 
   if (gidValue == GID.ARTIST_SONGS) {
-    const list = await loadSingerSongs(id, page)
-    songs = list.map((each) => mapSong(each))
+    var list3 = await loadSingerSongs(id, page)
+    songs = list3.map(function(each) { return mapSong(each) })
   }
 
   if (gidValue == GID.ALBUM_SONGS) {
-    const list = await loadAlbumSongs(id, page)
-    songs = list.map((each) => mapSong(each))
+    var list4 = await loadAlbumSongs(id, page)
+    songs = list4.map(function(each) { return mapSong(each) })
   }
 
   return jsonify({
@@ -591,13 +597,15 @@ async function getSongs(ext) {
 }
 
 async function getArtists(ext) {
-  const { page, gid } = argsify(ext)
-  const gidValue = `${gid ?? ''}`
-  let artists = []
+  var extObj = argsify(ext)
+  var page = extObj.page
+  var gid = extObj.gid
+  var gidValue = '' + (gid ?? '')
+  var artists = []
 
   if (gidValue == GID.TOP_ARTISTS) {
-    const list = await loadSingerList(page)
-    artists = list.map((each) => mapArtistCard(each))
+    var list = await loadSingerList(page)
+    artists = list.map(function(each) { return mapArtistCard(each) })
   }
 
   return jsonify({
@@ -606,24 +614,30 @@ async function getArtists(ext) {
 }
 
 async function getPlaylists(ext) {
-  const { page, gid, from, categoryId, sortId } = argsify(ext)
-  const gidValue = `${gid ?? ''}`
-  let cards = []
+  var extObj = argsify(ext)
+  var page = extObj.page
+  var gid = extObj.gid
+  var from = extObj.from
+  var categoryId = extObj.categoryId
+  var sortId = extObj.sortId
+  
+  var gidValue = '' + (gid ?? '')
+  var cards = []
 
   if (gidValue == GID.TOPLISTS) {
-    const topLists = await loadToplists()
-    const filtered = topLists.filter((each) => each?.title && each?.title !== 'MV榜')
-    const offset = (page - 1) * PAGE_LIMIT
+    var topLists = await loadToplists()
+    var filtered = topLists.filter(function(each) { return each?.title && each?.title !== 'MV榜' })
+    var offset = (page - 1) * PAGE_LIMIT
 
-    cards = filtered.map((each) => mapToplistCard(each))
+    cards = filtered.map(function(each) { return mapToplistCard(each) })
     cards = from === 'index'
       ? cards.slice(0, PAGE_LIMIT)
       : cards.slice(offset, offset + PAGE_LIMIT)
   }
 
   if (gidValue == GID.TAG_PLAYLISTS) {
-    const list = await loadTagPlaylists(categoryId, sortId, page)
-    cards = list.map((each) => mapPlaylistCard(each))
+    var list = await loadTagPlaylists(categoryId, sortId, page)
+    cards = list.map(function(each) { return mapPlaylistCard(each) })
   }
 
   return jsonify({
@@ -632,13 +646,16 @@ async function getPlaylists(ext) {
 }
 
 async function getAlbums(ext) {
-  const { page, gid, id } = argsify(ext)
-  const gidValue = `${gid ?? ''}`
-  let cards = []
+  var extObj = argsify(ext)
+  var page = extObj.page
+  var gid = extObj.gid
+  var id = extObj.id
+  var gidValue = '' + (gid ?? '')
+  var cards = []
 
   if (gidValue == GID.ARTIST_ALBUMS) {
-    const list = await loadSingerAlbums(id, page)
-    cards = list.map((each) => mapAlbumCard(each))
+    var list = await loadSingerAlbums(id, page)
+    cards = list.map(function(each) { return mapAlbumCard(each) })
   }
 
   return jsonify({
@@ -647,89 +664,81 @@ async function getAlbums(ext) {
 }
 
 async function search(ext) {
-  const { text, page, type } = argsify(ext)
+  var extObj = argsify(ext)
+  var text = extObj.text
+  var page = extObj.page
+  var type = extObj.type
 
   if (!text || page > SEARCH_PAGE_LIMIT) {
     return jsonify({})
   }
 
   if (type == 'song') {
-    const body = await loadSearchBody(text, page, 0)
-    const songs = (body?.song?.list ?? []).map((each) => mapSong(each))
-
-    return jsonify({
-      list: songs,
-    })
+    var body1 = await loadSearchBody(text, page, 0)
+    var songs = (body1?.song?.list ?? []).map(function(each) { return mapSong(each) })
+    return jsonify({ list: songs })
   }
 
   if (type == 'playlist') {
-    const body = await loadSearchBody(text, page, 3)
-    const cards = (body?.songlist?.list ?? []).map((each) => mapPlaylistCard(each))
-
-    return jsonify({
-      list: cards,
-    })
+    var body2 = await loadSearchBody(text, page, 3)
+    var cards2 = (body2?.songlist?.list ?? []).map(function(each) { return mapPlaylistCard(each) })
+    return jsonify({ list: cards2 })
   }
 
   if (type == 'album') {
-    const body = await loadSearchBody(text, page, 2)
-    const cards = (body?.album?.list ?? []).map((each) => mapAlbumCard(each))
-
-    return jsonify({
-      list: cards,
-    })
+    var body3 = await loadSearchBody(text, page, 2)
+    var cards3 = (body3?.album?.list ?? []).map(function(each) { return mapAlbumCard(each) })
+    return jsonify({ list: cards3 })
   }
 
   if (type == 'artist') {
-    const body = await loadSearchBody(text, page, 1)
-    const artists = (body?.singer?.list ?? []).map((each) => mapArtistCard(each))
-
-    return jsonify({
-      list: artists,
-    })
+    var body4 = await loadSearchBody(text, page, 1)
+    var artists = (body4?.singer?.list ?? []).map(function(each) { return mapArtistCard(each) })
+    return jsonify({ list: artists })
   }
 
   return jsonify({})
 }
 
 async function getSongInfo(ext) {
-  const { source, songmid, singer, songName, quality, gid } = argsify(ext)
+  var extObj = argsify(ext)
+  var source = extObj.source
+  var songmid = extObj.songmid
+  var singer = extObj.singer
+  var songName = extObj.songName
+  var quality = extObj.quality
+  var albumName = extObj.albumName
 
   if (songmid == undefined || source == undefined) {
     return jsonify({ urls: [] })
   }
 
-  // 1. 如果有缓存记录，并且是从缓存列表（或者重复请求）发起，直接返回缓存 URL 达到断网即放
   if (urlCacheMap.has(songmid)) {
     return jsonify({ urls: [urlCacheMap.get(songmid)] })
   }
 
-  // 2. 如果没有缓存，则通过网络请求获取真实的音频链接
-  const result = await $lx.request('musicUrl', {
+  var result = await $lx.request('musicUrl', {
     type: quality || '320k',
     musicInfo: {
-      songmid: `${songmid}`,
+      songmid: '' + songmid,
       name: songName ?? '',
       singer: singer ?? '',
     },
   }, {
-    source: `${source}`,
+    source: '' + source,
   })
   
-  const soundurl = typeof result === 'string'
+  var soundurl = typeof result === 'string'
     ? result
     : result?.url ?? result?.data?.url ?? result?.urls?.[0]
 
-  // 3. 将成功获取到链接的歌曲存入“最近播放”，并缓存其 URL
   if (soundurl) {
-    // 缓存链接
     urlCacheMap.set(songmid, soundurl)
     
-    // 组装一个基础的 Song 对象存入最近播放列表
-    const playedSong = {
+    var playedSong = {
       id: songmid,
       name: songName ?? '',
-      cover: '', // 这里从 ext 取不到封面图和专辑，故置空，不影响播放
+      cover: '',
       duration: 0,
       artist: {
         id: '',
@@ -741,22 +750,20 @@ async function getSongInfo(ext) {
         songmid: songmid,
         singer: singer,
         songName: songName,
-        albumName: ext.albumName ?? ''
+        albumName: albumName ?? ''
       }
     }
 
-    // 排重逻辑：如果已经存在，先移除旧的，再放到列表最前面
-    recentSongsList = recentSongsList.filter(s => s.id !== songmid)
+    recentSongsList = recentSongsList.filter(function(s) { return s.id !== songmid })
     recentSongsList.unshift(playedSong)
 
-    // 限制最大歌曲数量为 200 首，超出的同时清理缓存
     if (recentSongsList.length > RECENT_MAX_LIMIT) {
-      const removedSong = recentSongsList.pop()
-      urlCacheMap.delete(removedSong.id)
+      var removedSong = recentSongsList.pop()
+      if (removedSong && removedSong.id) {
+        urlCacheMap.delete(removedSong.id)
+      }
     }
   }
 
   return jsonify({ urls: soundurl ? [soundurl] : [] })
-}
-
 }
