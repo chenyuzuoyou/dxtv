@@ -1,9 +1,9 @@
 /*!
  * @name catchQQ
- * @description catchQQ 收藏进最近播放
+ * @description catchQQ
  * @version v1.0.0
  * @author codex
- * @key csp_catchQQ
+ * @key csp_qqfm
  */
 
 const $config = argsify($config_str)
@@ -320,24 +320,22 @@ async function loadPlaylistSongs(id, page) {
   return list.slice((page - 1)*PAGE_LIMIT, page*PAGE_LIMIT)
 }
 
-// ✅ 修复：替换失效的标签歌单接口
+// ✅ 修复：可用的标签歌单接口
 async function loadTagPlaylists(categoryId, sortId, page) {
-  const param = {
-    categoryId: Number(categoryId),
-    sortId: Number(sortId),
-    pageSize: PAGE_LIMIT,
-    pageNo: page
-  };
-  const payload = {
+  const data = await fetchJson(buildMusicuUrl({
     comm: { ct: 24 },
-    category: {
+    playlist: {
       module: "music.musicCategory.CategoryPlaylistServer",
       method: "GetCategoryPlaylist",
-      param
+      param: {
+        categoryId: Number(categoryId),
+        sortId: Number(sortId),
+        pageNo: page,
+        pageSize: PAGE_LIMIT
+      }
     }
-  };
-  const d = await fetchJson(buildMusicuUrl(payload));
-  return d?.category?.data?.list || [];
+  }))
+  return data?.playlist?.data?.list || []
 }
 
 async function loadSingerList() {
@@ -363,7 +361,7 @@ async function loadSingerAlbums(id, page) {
 
 async function loadAlbumSongs(id, page) {
   const d = await fetchJson(buildMusicuUrl({
-    comm: { ct:24 },
+    comm: { ct: 24 },
     album: { module:'music.musichallAlbum.AlbumSongList', method:'GetAlbumSongList', param:{ albumMid:id, begin:(page-1)*PAGE_LIMIT, num:PAGE_LIMIT } }
   }))
   return d?.album?.data?.songList ?? []
@@ -378,48 +376,104 @@ async function getConfig() {
   return jsonify(appConfig)
 }
 
+// ————————————————————————————————————————
+// 完全按你给的格式统一修改
+// ————————————————————————————————————————
+
 async function getSongs(ext) {
-  const { page, gid, id, period } = safeArgs(ext)
+  const { page, gid, id, period } = argsify(ext)
+  const gidValue = `${gid ?? ''}`
   let songs = []
-  if (gid == GID.TOPLISTS) songs = (await loadToplistSongs(id, period, page)).map(mapSong)
-  if (gid == GID.SEARCH_PLAYLISTS) songs = (await loadPlaylistSongs(id, page)).map(mapSong)
-  if (gid == GID.ARTIST_SONGS) songs = (await loadSingerSongs(id, page)).map(mapSong)
-  if (gid == GID.ALBUM_SONGS) songs = (await loadAlbumSongs(id, page)).map(mapSong)
-  if (gid == GID.RECENT_PLAYS) songs = await getRecentPlays(page)
-  return jsonify({ list: songs })
+
+  if (gidValue == GID.TOPLISTS) {
+    const list = await loadToplistSongs(id, period, page)
+    songs = list.map((each) => mapSong(each))
+  }
+
+  if (gidValue == GID.SEARCH_PLAYLISTS) {
+    const list = await loadPlaylistSongs(id, page)
+    songs = list.map((each) => mapSong(each))
+  }
+
+  if (gidValue == GID.ARTIST_SONGS) {
+    const list = await loadSingerSongs(id, page)
+    songs = list.map((each) => mapSong(each))
+  }
+
+  if (gidValue == GID.ALBUM_SONGS) {
+    const list = await loadAlbumSongs(id, page)
+    songs = list.map((each) => mapSong(each))
+  }
+
+  if (gidValue == GID.RECENT_PLAYS) {
+    songs = await getRecentPlays(page)
+  }
+
+  return jsonify({
+    list: songs,
+  })
 }
 
 async function getArtists(ext) {
-  const { page, gid } = safeArgs(ext)
-  let list = []
-  if (gid == GID.TOP_ARTISTS) list = await loadSingerList(page)
-  return jsonify({ list: list.map(mapArtistCard) })
+  const { page, gid } = argsify(ext)
+  const gidValue = `${gid ?? ''}`
+  let artists = []
+
+  if (gidValue == GID.TOP_ARTISTS) {
+    const list = await loadSingerList(page)
+    artists = list.map((each) => mapArtistCard(each))
+  }
+
+  return jsonify({
+    list: artists,
+  })
 }
 
 async function getPlaylists(ext) {
-  const { page, gid, categoryId, sortId } = safeArgs(ext)
+  const { page, gid, from, categoryId, sortId } = argsify(ext)
+  const gidValue = `${gid ?? ''}`
   let cards = []
-  if (gid == GID.TOPLISTS) {
-    const tops = await loadToplists()
-    cards = tops.filter(i => i.title && i.title !== 'MV榜').map(mapToplistCard)
-    cards = cards.slice((page-1)*PAGE_LIMIT, page*PAGE_LIMIT)
+
+  if (gidValue == GID.TOPLISTS) {
+    const topLists = await loadToplists()
+    const filtered = topLists.filter((each) => each?.title && each?.title !== 'MV榜')
+    const offset = (page - 1) * PAGE_LIMIT
+
+    cards = filtered.map((each) => mapToplistCard(each))
+    cards = from === 'index'
+      ? cards.slice(0, PAGE_LIMIT)
+      : cards.slice(offset, offset + PAGE_LIMIT)
   }
-  if (gid == GID.TAG_PLAYLISTS) {
-    cards = (await loadTagPlaylists(categoryId, sortId, page)).map(mapPlaylistCard)
+
+  if (gidValue == GID.TAG_PLAYLISTS) {
+    const list = await loadTagPlaylists(categoryId, sortId, page)
+    cards = list.map((each) => mapPlaylistCard(each))
   }
-  return jsonify({ list: cards })
+
+  return jsonify({
+    list: cards,
+  })
 }
 
 async function getAlbums(ext) {
-  const { page, gid, id } = safeArgs(ext)
-  let list = []
-  if (gid == GID.ARTIST_ALBUMS) list = await loadSingerAlbums(id, page)
-  return jsonify({ list: list.map(mapAlbumCard) })
+  const { page, gid, id } = argsify(ext)
+  const gidValue = `${gid ?? ''}`
+  let cards = []
+
+  if (gidValue == GID.ARTIST_ALBUMS) {
+    const list = await loadSingerAlbums(id, page)
+    cards = list.map((each) => mapAlbumCard(each))
+  }
+
+  return jsonify({
+    list: cards,
+  })
 }
 
 async function search(ext) {
-  const { text, page, type } = safeArgs(ext)
+  const { text, page, type } = argsify(ext)
   if (!text || page > SEARCH_PAGE_LIMIT) return jsonify({})
+  
   if (type === 'song') {
     const b = await loadSearchBody(text, page, 0)
     return jsonify({ list: (b.song?.list ?? []).map(mapSong) })
@@ -440,18 +494,16 @@ async function search(ext) {
 }
 
 // ————————————————————————————————————————
-// 核心修复：正常播放走原版，最近播放走缓存
+// 播放 + 最近播放
 // ————————————————————————————————————————
 async function getSongInfo(ext) {
-  const { source, songmid, singer, songName, quality, gid } = safeArgs(ext)
+  const { source, songmid, singer, songName, quality, gid } = argsify(ext)
   if (!songmid || !source) return jsonify({ urls: [] })
 
-  // 最近播放 → 强制走缓存
   if (gid == GID.RECENT_PLAYS) {
     return jsonify({ urls: ['cache://' + songmid] })
   }
 
-  // 正常列表 → 原版逻辑不变
   const result = await $lx.request('musicUrl', {
     type: quality || '320k',
     musicInfo: { songmid, name: songName, singer }
@@ -459,7 +511,6 @@ async function getSongInfo(ext) {
 
   const url = typeof result === 'string' ? result : (result?.url || result?.data?.url || result?.urls?.[0])
 
-  // 播放成功 → 加入最近播放
   if (url) {
     const full = await getSongFullInfo(songmid)
     if (full) saveRecentPlay(full)
@@ -468,7 +519,6 @@ async function getSongInfo(ext) {
   return jsonify({ urls: url ? [url] : [] })
 }
 
-// 辅助：获取完整歌曲信息用于保存最近播放
 async function getSongFullInfo(songmid) {
   try {
     const res = await fetchJson(buildMusicuUrl({
