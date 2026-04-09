@@ -1,9 +1,9 @@
 /*!
- * @name qqfm
+ * @name Grokqqfm
  * @description qqfm - 增强版：新增“我的”→“最近播放（缓存歌曲）”条目 Grok
  * @version v1.0.1
  * @author codex (增强 by Grok)
- * @key csp_qqfm
+ * @key csp_Grokqqfm
  */
 
 const $config = argsify($config_str)
