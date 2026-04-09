@@ -1,7 +1,7 @@
 /*!
  * @name catchQQ
  * @description catchQQ
- * @version v1.0.0
+ * @version v1.0.1
  * @author codex
  * @key csp_catchQQ
  */
@@ -131,6 +131,7 @@ const appConfig = {
   }
 }
 
+// 读取最近播放缓存
 function getRecentPlayCache() {
   try {
     return JSON.parse($persistentStore.read(RECENT_PLAY_CONFIG.KEY) || '[]')
@@ -139,6 +140,7 @@ function getRecentPlayCache() {
   }
 }
 
+// 保存歌曲到最近播放（播放就添加，核心修复）
 function saveRecentPlay(song) {
   if (!song?.id || !song?.ext?.songmid) return
   let list = getRecentPlayCache()
@@ -150,6 +152,7 @@ function saveRecentPlay(song) {
   $persistentStore.write(JSON.stringify(list), RECENT_PLAY_CONFIG.KEY)
 }
 
+// 获取最近播放列表
 async function getRecentPlays(page = 1) {
   const all = getRecentPlayCache()
   const start = (page - 1) * PAGE_LIMIT
@@ -201,7 +204,7 @@ async function fetchHtml(url, extraHeaders = {}) {
 }
 
 function parseInitialData(html) {
-  const match = html.match(/__INITIAL_DATA__\s*=\s*({[\s\S]*?})<\/script>/)
+  const match = html.match(/__INITIAL_DATA__\s*=\s*({[\s\S]*?})<\/script>/);
   return match?.[1] ? safeArgs(match[1]) : {}
 }
 
@@ -349,7 +352,7 @@ async function loadSingerAlbums(id, page) {
 
 async function loadAlbumSongs(id, page) {
   const d = await fetchJson(buildMusicuUrl({
-    comm: { ct:24 },
+    comm: { ct: 24 },
     album: { module:'music.musichallAlbum.AlbumSongList', method:'GetAlbumSongList', param:{ albumMid:id, begin:(page-1)*PAGE_LIMIT, num:PAGE_LIMIT } }
   }))
   return d?.album?.data?.songList ?? []
@@ -426,48 +429,41 @@ async function search(ext) {
 }
 
 // ————————————————————————————————————————
-// 核心修复：正常播放走原版，最近播放走缓存
+// 核心修正：点击播放 → 立即加入最近播放
 // ————————————————————————————————————————
 async function getSongInfo(ext) {
   const { source, songmid, singer, songName, quality, gid } = safeArgs(ext)
   if (!songmid || !source) return jsonify({ urls: [] })
 
-  // 最近播放 → 强制走缓存
+  // 构造歌曲完整信息（播放时直接构造，无需请求接口）
+  const songItem = {
+    id: songmid,
+    name: songName || '',
+    artist: { name: singer || '' },
+    ext: {
+      source: source,
+      songmid: songmid,
+      singer: singer,
+      songName: songName
+    }
+  }
+  
+  // ✅ 关键修复：只要请求播放链接，就立刻加入最近播放（无需收藏、无需其他操作）
+  if (gid != GID.RECENT_PLAYS) {
+    saveRecentPlay(songItem)
+  }
+
+  // 最近播放 → 走缓存
   if (gid == GID.RECENT_PLAYS) {
     return jsonify({ urls: ['cache://' + songmid] })
   }
 
-  // 正常列表 → 原版逻辑不变
+  // 正常播放 → 原版逻辑
   const result = await $lx.request('musicUrl', {
     type: quality || '320k',
     musicInfo: { songmid, name: songName, singer }
   }, { source })
 
   const url = typeof result === 'string' ? result : (result?.url || result?.data?.url || result?.urls?.[0])
-
-  // 播放成功 → 加入最近播放
-  if (url) {
-    const full = await getSongFullInfo(songmid)
-    if (full) saveRecentPlay(full)
-  }
-
   return jsonify({ urls: url ? [url] : [] })
-}
-
-// 辅助：获取完整歌曲信息用于保存最近播放
-async function getSongFullInfo(songmid) {
-  try {
-    const res = await fetchJson(buildMusicuUrl({
-      comm: { ct: 24 },
-      song: {
-        module: 'music.pfcOnlineSvr',
-        method: 'GetSongInfo',
-        param: { songmid }
-      }
-    }))
-    const s = res?.song?.data?.trackInfo || res?.song?.data?.songInfo
-    return s ? mapSong(s) : null
-  } catch (e) {
-    return null
-  }
 }
