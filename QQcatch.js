@@ -50,11 +50,11 @@ const appConfig = {
   tabMe: {
     name: '我的',
     groups: [
-      { name: '最近播放（缓存歌曲）', type: 'song', ext: { gid: GID.RECENT_PLAYED } },
       { name: '红心', type: 'song' },
       { name: '歌单', type: 'playlist' },
       { name: '专辑', type: 'album' },
-      { name: '创作者', type: 'artist' }
+      { name: '创作者', type: 'artist' },
+       { name: '最近播放（缓存）', type: 'song', ext: { gid: GID.RECENT_PLAYED } }
     ]
   },
   tabSearch: {
