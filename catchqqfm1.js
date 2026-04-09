@@ -1,9 +1,9 @@
 /*!
- * @name qqfm
- * @description qqfm
+ * @name Grokqqfm
+ * @description qqfm  收藏进最近播放
  * @version v1.0.0
  * @author codex
- * @key csp_qqfm
+ * @key csp_Grokqqfm
  */
 
 var $config = argsify($config_str)
