@@ -860,13 +860,34 @@ async function getArtists(ext) {
   return jsonify({ list: [] });
 }
 async function search(ext) {
-  const args = argsify(ext), source = args.source || 'all';
+  const args = argsify(ext);
+  const source = args.source || 'all';
+  const searchType = args.type || 'song';   // 支持单曲/歌单/专辑/歌手
+
   if (source === 'all') {
-    const promises = [WY.search(args).catch(() => ({ list: [] })), QQ.search(args).catch(() => ({ list: [] })), KG.search(args).catch(() => ({ list: [] })), KW.search(args).catch(() => ({ list: [] })), MG.search(args).catch(() => ({ list: [] }))];
-    if (args.type === 'album' || args.type === 'song' || args.type === 'artist') promises.push(XM.search(args).catch(() => ({ list: [] })));
-    return jsonify({ list: mixArrays(...(await Promise.all(promises)).map(r => r.list || [])) });
+    // 全部平台聚合搜索（原有逻辑）
+    const promises = [
+      WY.search({ ...args, type: searchType }).catch(() => ({ list: [] })),
+      QQ.search({ ...args, type: searchType }).catch(() => ({ list: [] })),
+      KG.search({ ...args, type: searchType }).catch(() => ({ list: [] })),
+      KW.search({ ...args, type: searchType }).catch(() => ({ list: [] })),
+      MG.search({ ...args, type: searchType }).catch(() => ({ list: [] })),
+    ];
+    if (searchType === 'album' || searchType === 'song' || searchType === 'artist') {
+      promises.push(XM.search({ ...args, type: searchType === 'song' ? 'track' : searchType }).catch(() => ({ list: [] })));
+    }
+    const results = await Promise.all(promises);
+    return jsonify({ list: mixArrays(...results.map(r => r.list || [])) });
   }
-  if (source === 'wy') return jsonify(await WY.search(args)); if (source === 'tx') return jsonify(await QQ.search(args)); if (source === 'kg') return jsonify(await KG.search(args)); if (source === 'kw') return jsonify(await KW.search(args)); if (source === 'mg') return jsonify(await MG.search(args)); if (source === 'xm') return jsonify(await XM.search(args));
+
+  // 指定平台搜索（第二行按钮点击后走这里）
+  if (source === 'wy') return jsonify(await WY.search({ ...args, type: searchType }));
+  if (source === 'tx') return jsonify(await QQ.search({ ...args, type: searchType }));
+  if (source === 'kg') return jsonify(await KG.search({ ...args, type: searchType }));
+  if (source === 'kw') return jsonify(await KW.search({ ...args, type: searchType }));
+  if (source === 'mg') return jsonify(await MG.search({ ...args, type: searchType }));
+  if (source === 'xm') return jsonify(await XM.search({ ...args, type: searchType === 'song' ? 'track' : searchType }));
+
   return jsonify({ list: [] });
 }
 
