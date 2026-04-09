@@ -1,9 +1,9 @@
 /*!
  * @name catchQQ
  * @description catchQQ
- * @version v1.0.1
+ * @version v1.0.2
  * @author codex
- * @key csp_catchQQ
+ * @key csp_qqfm
  */
 
 const $config = argsify($config_str)
@@ -131,60 +131,40 @@ const appConfig = {
   }
 }
 
-// 读取最近播放缓存
+// 最近播放缓存工具
 function getRecentPlayCache() {
-  try {
-    return JSON.parse($persistentStore.read(RECENT_PLAY_CONFIG.KEY) || '[]')
-  } catch (e) {
-    return []
-  }
+  try { return JSON.parse($persistentStore.read(RECENT_PLAY_CONFIG.KEY) || '[]') } catch (e) { return [] }
 }
 
-// 保存歌曲到最近播放（播放就添加，核心修复）
 function saveRecentPlay(song) {
   if (!song?.id || !song?.ext?.songmid) return
   let list = getRecentPlayCache()
   list = list.filter(item => item.id !== song.id)
   list.unshift(song)
-  if (list.length > RECENT_PLAY_CONFIG.MAX_LIMIT) {
-    list = list.slice(0, RECENT_PLAY_CONFIG.MAX_LIMIT)
-  }
+  if (list.length > RECENT_PLAY_CONFIG.MAX_LIMIT) list = list.slice(0, RECENT_PLAY_CONFIG.MAX_LIMIT)
   $persistentStore.write(JSON.stringify(list), RECENT_PLAY_CONFIG.KEY)
 }
 
-// 获取最近播放列表
 async function getRecentPlays(page = 1) {
   const all = getRecentPlayCache()
-  const start = (page - 1) * PAGE_LIMIT
-  return all.slice(start, start + PAGE_LIMIT)
+  return all.slice((page - 1) * PAGE_LIMIT, page * PAGE_LIMIT)
 }
 
 function safeArgs(data) {
   return typeof data === 'string' ? argsify(data) : (data ?? {})
 }
 
-function toHttps(url) {
-  return url ? url.replace(/^http:\/\//, 'https://') : ''
-}
+function toHttps(url) { return url ? url.replace(/^http:\/\//, 'https://') : '' }
 
 function withQqHeaders(extra = {}) {
-  return {
-    ...headers,
-    Referer: 'https://y.qq.com/',
-    Origin: 'https://y.qq.com',
-    Cookie: 'uin=0;',
-    ...extra,
-  }
+  return { ...headers, Referer: 'https://y.qq.com/', Origin: 'https://y.qq.com', Cookie: 'uin=0;', ...extra }
 }
 
 function buildSearchUrl(text, page, searchType = 0, limit = PAGE_LIMIT) {
   const payload = {
     comm: { ct: '19', cv: '1859', uin: '0' },
-    req: {
-      method: 'DoSearchForQQMusicDesktop',
-      module: 'music.search.SearchCgiService',
-      param: { grp: 1, num_per_page: limit, page_num: page, query: text, search_type: searchType }
-    }
+    req: { method: 'DoSearchForQQMusicDesktop', module: 'music.search.SearchCgiService',
+      param: { grp: 1, num_per_page: limit, page_num: page, query: text, search_type: searchType } }
   }
   return `https://u.y.qq.com/cgi-bin/musicu.fcg?format=json&data=${encodeURIComponent(JSON.stringify(payload))}`
 }
@@ -204,29 +184,15 @@ async function fetchHtml(url, extraHeaders = {}) {
 }
 
 function parseInitialData(html) {
-  const match = html.match(/__INITIAL_DATA__\s*=\s*({[\s\S]*?})<\/script>/);
+  const match = html.match(/__INITIAL_DATA__\s*=\s*({[\s\S]*?})<\/script>/)
   return match?.[1] ? safeArgs(match[1]) : {}
 }
 
-function singerListOf(song) {
-  return song?.singer ?? song?.singer_list ?? []
-}
-
-function singerNameOf(song) {
-  return singerListOf(song).map(a => a?.name ?? a?.singer_name ?? '').filter(Boolean).join('/')
-}
-
-function albumMidOf(song) {
-  return song?.album?.mid ?? song?.albumMid ?? song?.album_mid ?? song?.albummid ?? ''
-}
-
-function albumNameOf(song) {
-  return song?.album?.name ?? song?.albumName ?? song?.album_name ?? ''
-}
-
-function songMidOf(song) {
-  return song?.mid ?? song?.songmid ?? song?.song_mid ?? ''
-}
+function singerListOf(song) { return song?.singer ?? song?.singer_list ?? [] }
+function singerNameOf(song) { return singerListOf(song).map(a => a?.name ?? a?.singer_name ?? '').filter(Boolean).join('/') }
+function albumMidOf(song) { return song?.album?.mid ?? song?.albumMid ?? song?.album_mid ?? song?.albummid ?? '' }
+function albumNameOf(song) { return song?.album?.name ?? song?.albumName ?? song?.album_name ?? '' }
+function songMidOf(song) { return song?.mid ?? song?.songmid ?? song?.song_mid ?? '' }
 
 function mapSong(rawSong) {
   const song = rawSong?.songInfo ?? rawSong ?? {}
@@ -267,8 +233,7 @@ function mapToplistCard(item) {
 function mapArtistCard(artist) {
   const id = `${artist?.singerMID ?? artist?.mid ?? ''}`
   return {
-    id,
-    name: artist?.singerName ?? artist?.name ?? '',
+    id, name: artist?.singerName ?? artist?.name ?? '',
     cover: toHttps(artist?.singerPic ?? (id ? `https://y.qq.com/music/photo_new/T001R500x500M000${id}.jpg` : '')),
     groups: [
       { name: '热门歌曲', type: 'song', ext: { gid: GID.ARTIST_SONGS, id } },
@@ -284,8 +249,7 @@ function mapAlbumCard(album) {
   const sName = singers.map(a => a?.name ?? '').join('/')
   const sMid = `${singers[0]?.mid ?? ''}`
   return {
-    id: mid,
-    name: album?.albumName ?? '',
+    id: mid, name: album?.albumName ?? '',
     cover: toHttps(album?.albumPic ?? `https://y.gtimg.cn/music/photo_new/T002R800x800M000${mid}.jpg`),
     artist: { id: sMid, name: sName, cover: sMid ? `https://y.qq.com/music/photo_new/T001R500x500M000${sMid}.jpg` : '' },
     ext: { gid: GID.ALBUM_SONGS, id: mid }
@@ -295,8 +259,7 @@ function mapAlbumCard(album) {
 function mapPlaylistCard(pl) {
   const id = `${pl?.dissid ?? pl?.disstid ?? pl?.id ?? ''}`
   return {
-    id,
-    name: pl?.dissname ?? pl?.title ?? '',
+    id, name: pl?.dissname ?? pl?.title ?? '',
     cover: toHttps(pl?.imgurl ?? pl?.logo ?? ''),
     artist: { id: `${pl?.creator?.uin ?? ''}`, name: pl?.creator?.name ?? 'qqfm', cover: '' },
     ext: { gid: GID.SEARCH_PLAYLISTS, id }
@@ -363,9 +326,7 @@ async function loadSearchBody(text, page, st) {
   return d?.req?.data?.body ?? {}
 }
 
-async function getConfig() {
-  return jsonify(appConfig)
-}
+async function getConfig() { return jsonify(appConfig) }
 
 async function getSongs(ext) {
   const { page, gid, id, period } = safeArgs(ext)
@@ -380,8 +341,7 @@ async function getSongs(ext) {
 
 async function getArtists(ext) {
   const { page, gid } = safeArgs(ext)
-  let list = []
-  if (gid == GID.TOP_ARTISTS) list = await loadSingerList(page)
+  let list = gid == GID.TOP_ARTISTS ? await loadSingerList(page) : []
   return jsonify({ list: list.map(mapArtistCard) })
 }
 
@@ -401,69 +361,54 @@ async function getPlaylists(ext) {
 
 async function getAlbums(ext) {
   const { page, gid, id } = safeArgs(ext)
-  let list = []
-  if (gid == GID.ARTIST_ALBUMS) list = await loadSingerAlbums(id, page)
+  let list = gid == GID.ARTIST_ALBUMS ? await loadSingerAlbums(id, page) : []
   return jsonify({ list: list.map(mapAlbumCard) })
 }
 
 async function search(ext) {
   const { text, page, type } = safeArgs(ext)
   if (!text || page > SEARCH_PAGE_LIMIT) return jsonify({})
-  if (type === 'song') {
-    const b = await loadSearchBody(text, page, 0)
-    return jsonify({ list: (b.song?.list ?? []).map(mapSong) })
-  }
-  if (type === 'playlist') {
-    const b = await loadSearchBody(text, page, 3)
-    return jsonify({ list: (b.songlist?.list ?? []).map(mapPlaylistCard) })
-  }
-  if (type === 'album') {
-    const b = await loadSearchBody(text, page, 2)
-    return jsonify({ list: (b.album?.list ?? []).map(mapAlbumCard) })
-  }
-  if (type === 'artist') {
-    const b = await loadSearchBody(text, page, 1)
-    return jsonify({ list: (b.singer?.list ?? []).map(mapArtistCard) })
-  }
+  if (type === 'song') return jsonify({ list: (await loadSearchBody(text, page, 0)).song?.list?.map(mapSong) || [] })
+  if (type === 'playlist') return jsonify({ list: (await loadSearchBody(text, page, 3)).songlist?.list?.map(mapPlaylistCard) || [] })
+  if (type === 'album') return jsonify({ list: (await loadSearchBody(text, page, 2)).album?.list?.map(mapAlbumCard) || [] })
+  if (type === 'artist') return jsonify({ list: (await loadSearchBody(text, page, 1)).singer?.list?.map(mapArtistCard) || [] })
   return jsonify({})
 }
 
 // ————————————————————————————————————————
-// 核心修正：点击播放 → 立即加入最近播放
+// 终极修复：播放正常 + 自动记录最近播放 + 最近播放走缓存
 // ————————————————————————————————————————
 async function getSongInfo(ext) {
-  const { source, songmid, singer, songName, quality, gid } = safeArgs(ext)
+  const args = safeArgs(ext)
+  const { source, songmid, singer, songName, quality, gid } = args
+
   if (!songmid || !source) return jsonify({ urls: [] })
 
-  // 构造歌曲完整信息（播放时直接构造，无需请求接口）
-  const songItem = {
-    id: songmid,
-    name: songName || '',
-    artist: { name: singer || '' },
-    ext: {
-      source: source,
-      songmid: songmid,
-      singer: singer,
-      songName: songName
-    }
-  }
-  
-  // ✅ 关键修复：只要请求播放链接，就立刻加入最近播放（无需收藏、无需其他操作）
-  if (gid != GID.RECENT_PLAYS) {
-    saveRecentPlay(songItem)
-  }
-
-  // 最近播放 → 走缓存
+  // 1. 最近播放 → 强制本地缓存（飞机无网可用）
   if (gid == GID.RECENT_PLAYS) {
-    return jsonify({ urls: ['cache://' + songmid] })
+    return jsonify({ urls: [`cache://${songmid}`] })
   }
 
-  // 正常播放 → 原版逻辑
+  // 2. 正常播放 → 原版逻辑（100%可播放）
   const result = await $lx.request('musicUrl', {
     type: quality || '320k',
     musicInfo: { songmid, name: songName, singer }
   }, { source })
 
-  const url = typeof result === 'string' ? result : (result?.url || result?.data?.url || result?.urls?.[0])
+  let url = ''
+  if (typeof result === 'string') url = result
+  else url = result?.url || result?.data?.url || (result?.urls && result?.urls[0]) || ''
+
+  // 3. 只要播放成功 → 立刻加入最近播放（无需收藏）
+  if (url && songmid) {
+    const song = {
+      id: songmid,
+      name: songName || '',
+      artist: { name: singer || '' },
+      ext: { source, songmid, singer, songName }
+    }
+    saveRecentPlay(song)
+  }
+
   return jsonify({ urls: url ? [url] : [] })
 }
