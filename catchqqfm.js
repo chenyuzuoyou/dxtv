@@ -1,9 +1,9 @@
 /*!
- * @name catchqqfm
- * @description qqfm
+ * @name catchQQ
+ * @description catchQQ
  * @version v1.0.0
  * @author codex
- * @key csp_catchqqfm
+ * @key csp_catchQQ
  */
 
 const $config = argsify($config_str)
