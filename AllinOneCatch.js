@@ -1,7 +1,7 @@
 /*!
  * @name AllinOneCatch
  * @description 全网聚合音乐 - 增强版：红心改为“红心（缓存）” + 自动最近播放（离线缓存）
- * @version v1.0
+ * @version v1.1
  * @author kobe (增强 by Grok)
  * @key csp_AllinOneCatch
  */
@@ -1009,50 +1009,7 @@ async function search(ext) {
 async function getSongInfo(ext) {
   const args = argsify(ext);
 
-  // 自动记录逻辑（任何来源、任何播放方式包括自动下一首都会触发）
-  let songmid = args.songmid ?? args.hash ?? args.rid ?? args.copyrightId ?? args.id ?? '';
-  if (songmid) {
-    let songName = args.songName ?? args.name ?? '';
-    let singer = args.singer ?? '';
-    let cover = args.cover ?? '';
 
-    // 信息缺失时从已有记录中补充（解决自动下一首字段不全的问题）
-    if (!songName || !singer) {
-      const existing = recentPlayed.find(s => s.id === songmid);
-      if (existing) {
-        songName = songName || existing.name;
-        singer = singer || existing.artist?.name || '';
-        cover = cover || existing.cover || '';
-      }
-    }
-
-    const songObj = {
-      id: `${songmid}`,
-      name: songName || '未知歌曲',
-      cover: cover,
-      duration: 0,
-      artist: {
-        id: '',
-        name: singer || '未知歌手',
-        cover: ''
-      },
-      ext: {
-        source: args.source,
-        songmid: `${songmid}`,
-        hash: args.hash ?? '',
-        rid: args.rid ?? '',
-        copyrightId: args.copyrightId ?? '',
-        singer: singer,
-        songName: songName,
-        ...args.ext   // 保留原始 ext 中的其他字段
-      }
-    };
-
-    // 去重 + 置顶（最新播放的永远在最前面）
-    recentPlayed = recentPlayed.filter(s => s.id !== songObj.id);
-    recentPlayed.unshift(songObj);
-    if (recentPlayed.length > MAX_RECENT) recentPlayed = recentPlayed.slice(0, MAX_RECENT);
-  }
 
   // 原有播放逻辑完全不变（播放器缓存机制保留）
   if (args.source === 'xm') return jsonify(await XM.getSongInfo(args));
