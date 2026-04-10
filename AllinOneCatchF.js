@@ -1,7 +1,7 @@
 /*!
  * @name FixAllinOneCatch
  * @description 全网聚合音乐 - 增强版：红心改为“红心（缓存）” + 自动最近播放（离线缓存）
- * @version v1.0.61
+ * @version v1.0.62
  * @author kobe (增强 by Grok)
  * @key csp_FixAllinOneCatch
  */
@@ -830,63 +830,81 @@ const MG = (function () {
       }
       return { list: [] };
     },
+    
     search: async ({ text, page = 1, type = 'song' }) => {
       const kw = encodeURIComponent(text);
       
-      // 【修复】：封装防止单个接口报错导致整个搜索崩溃的方法
-      const safeFetch = async (url) => {
-          try { return await fetchJson(url); } catch (e) { return null; }
+      // 【终极防线】：构建接口备用池。将 3 个不同域名的官方搜索接口做成轮询，总有一个能用
+      const doSearch = async (switchObj) => {
+         const switchStr = encodeURIComponent(JSON.stringify(switchObj));
+         const urls = [
+            `https://pd.music.migu.cn/mts/app/search/v1/searchAll?searchSwitch=${switchStr}&text=${kw}&pageNo=${page}&pageSize=${PAGE_LIMIT}`,
+            `https://app.c.nf.migu.cn/MIGUM2.0/v1.0/content/search_all.do?searchSwitch=${switchStr}&text=${kw}&pageNo=${page}&pageSize=${PAGE_LIMIT}`,
+            `https://jadeite.migu.cn/music_search/v2/search/searchAll?searchSwitch=${switchStr}&text=${kw}&pageNo=${page}&pageSize=${PAGE_LIMIT}`
+         ];
+         
+         for (const url of urls) {
+             try {
+                 const res = await fetchJson(url);
+                 // 验证是否真正获取到了核心数据，拿到了就立刻停止尝试并返回
+                 if (res?.data?.songResultData || res?.songResultData || res?.data?.songListResultData || res?.songListResultData || res?.data?.albumResultData || res?.albumResultData || res?.data?.singerResultData || res?.singerResultData) {
+                     return res;
+                 }
+             } catch(e) {
+                 // 当前接口被拦截或超时，忽略报错，无缝尝试下一个
+             }
+         }
+         return null;
       };
 
-      if (type === 'song') {
-        // 【修复】：优先使用新版接口 (pd.music.migu.cn)，数据更全更稳定
-        const res2 = await safeFetch(`https://pd.music.migu.cn/mts/app/search/v1/searchAll?searchSwitch=${encodeURIComponent('{"song":1}')}&text=${kw}&pageNo=${page}&pageSize=${PAGE_LIMIT}`);
-        const list2 = res2?.data?.songResultData?.result ?? [];
-        if (list2.length > 0) {
-            return { list: list2.map(e => {
-              const songId = `${e?.id ?? e?.songId ?? e?.copyrightId ?? ''}`;
-              const singers = e?.singers ?? [];
-              return {
-                id: songId, name: cleanText(e?.name ?? e?.songName ?? ''), cover: toHttps(e?.imgItems?.[0]?.img ?? ''), duration: 0,
-                artist: { id: `${singers[0]?.id ?? ''}`, name: cleanText(singers.map(s=>s.name).join('/')), cover: '' },
-                ext: { source: 'mg', id: songId, songmid: songId, copyrightId: `${e?.copyrightId ?? e?.songId ?? ''}`, singer: cleanText(singers.map(s=>s.name).join('/')), songName: cleanText(e?.name ?? e?.songName ?? '') }
-              };
-            })};
-        }
-
-        // 后备接口：万一新接口没搜到，再用旧版 H5 接口兜底
-        const res1 = await safeFetch(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=2&keyword=${kw}&pgc=${page}`);
-        if (res1?.musics && res1.musics.length > 0) {
-            return { list: res1.musics.map(e => {
-                const songId = `${e?.songId ?? e?.copyrightId ?? e?.id ?? ''}`;
-                return {
-                  id: songId, name: cleanText(e?.songName ?? e?.title ?? ''), cover: toHttps(e?.cover ?? e?.albumCover ?? ''), duration: 0,
-                  artist: { id: `${e?.singerId ?? ''}`, name: cleanText(e?.singerName ?? ''), cover: '' },
-                  ext: { source: 'mg', id: songId, songmid: songId, copyrightId: `${e?.copyrightId ?? e?.songId ?? ''}`, singer: cleanText(e?.singerName ?? ''), songName: cleanText(e?.songName ?? e?.title ?? '') }
-                };
-             }) };
-        }
-        return { list: [] };
-      }
-      
-      // 其他类型（歌单、专辑、歌手）也统一使用安全请求，防止崩溃
-      if (type === 'playlist') {
-        const res = await safeFetch(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=6&keyword=${kw}&pgc=${page}`);
-        return { list: (res?.songLists ?? []).map(e => ({ id: `${e?.playListId ?? e?.id ?? ''}`, name: cleanText(e?.playListName ?? e?.name ?? ''), cover: toHttps(e?.img ?? e?.pic ?? ''), artist: { id: 'mg', name: 'mgfm', cover: '' }, ext: { source: 'mg', gid: '1', id: `${e?.playListId ?? e?.id ?? ''}`, type: 'playlist' } })) };
-      }
-      
-      if (type === 'album') {
-        const res = await safeFetch(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=4&keyword=${kw}&pgc=${page}`);
-        return { list: (res?.albums ?? []).map(e => ({ id: `${e?.albumId ?? e?.id ?? ''}`, name: cleanText(e?.albumName ?? e?.title ?? ''), cover: toHttps(e?.albumPic ?? e?.img ?? ''), artist: { id: `${e?.singerId ?? ''}`, name: cleanText(e?.singerName ?? ''), cover: '' }, ext: { source: 'mg', gid: '6', id: `${e?.albumId ?? e?.id ?? ''}`, type: 'album' } })) };
-      }
-      
-      if (type === 'artist') {
-        const res = await safeFetch(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=1&keyword=${kw}&pgc=${page}`);
-        return { list: (res?.singers ?? []).map(e => mapArtistCard({ id: `${e?.singerId ?? e?.id ?? ''}`, name: e?.singerName ?? e?.title ?? '', img: e?.singerPic ?? e?.img ?? '' })) };
-      }
-      
-      return { list: [] };
-    }
+      try {
+          if (type === 'song') {
+            const res = await doSearch({ song: 1 });
+            const list = res?.data?.songResultData?.result || res?.songResultData?.result || [];
+            if (list.length > 0) {
+                return { list: list.map(e => {
+                  const songId = `${e?.id ?? e?.songId ?? e?.copyrightId ?? ''}`;
+                  const singers = e?.singers ?? e?.singer ?? [];
+                  return {
+                    id: songId, name: cleanText(e?.name ?? e?.songName ?? ''), cover: toHttps(e?.imgItems?.[0]?.img ?? e?.cover ?? ''), duration: 0,
+                    artist: { id: `${singers[0]?.id ?? ''}`, name: cleanText(singers.map(s=>s.name).join('/')), cover: '' },
+                    ext: { source: 'mg', id: songId, songmid: songId, copyrightId: `${e?.copyrightId ?? e?.songId ?? ''}`, singer: cleanText(singers.map(s=>s.name).join('/')), songName: cleanText(e?.name ?? e?.songName ?? '') }
+                  };
+                })};
+            }
+            
+            // 最老的 H5 接口做最后一次兜底
+            const resOld = await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=2&keyword=${kw}&pgc=${page}`);
+            if (resOld?.musics && resOld.musics.length > 0) {
+                return { list: resOld.musics.map(e => {
+                    const songId = `${e?.songId ?? e?.copyrightId ?? e?.id ?? ''}`;
+                    return {
+                      id: songId, name: cleanText(e?.songName ?? e?.title ?? ''), cover: toHttps(e?.cover ?? e?.albumCover ?? ''), duration: 0,
+                      artist: { id: `${e?.singerId ?? ''}`, name: cleanText(e?.singerName ?? ''), cover: '' },
+                      ext: { source: 'mg', id: songId, songmid: songId, copyrightId: `${e?.copyrightId ?? e?.songId ?? ''}`, singer: cleanText(e?.singerName ?? ''), songName: cleanText(e?.songName ?? e?.title ?? '') }
+                    };
+                 }) };
+            }
+            return { list: [] };
+          }
+          
+          if (type === 'playlist') {
+            const res = await doSearch({ songlist: 1 });
+            const list = res?.data?.songListResultData?.result || res?.songListResultData?.result || [];
+            if (list.length > 0) {
+                return { list: list.map(e => ({ id: `${e?.id ?? ''}`, name: cleanText(e?.name ?? ''), cover: toHttps(e?.img ?? ''), artist: { id: 'mg', name: 'mgfm', cover: '' }, ext: { source: 'mg', gid: '1', id: `${e?.id ?? ''}`, type: 'playlist' } })) };
+            }
+            const resOld = await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=6&keyword=${kw}&pgc=${page}`);
+            return { list: (resOld?.songLists ?? []).map(e => ({ id: `${e?.playListId ?? e?.id ?? ''}`, name: cleanText(e?.playListName ?? e?.name ?? ''), cover: toHttps(e?.img ?? e?.pic ?? ''), artist: { id: 'mg', name: 'mgfm', cover: '' }, ext: { source: 'mg', gid: '1', id: `${e?.playListId ?? e?.id ?? ''}`, type: 'playlist' } })) };
+          }
+          
+          if (type === 'album') {
+            const res = await doSearch({ album: 1 });
+            const list = res?.data?.albumResultData?.result || res?.albumResultData?.result || [];
+            if (list.length > 0) {
+                return { list: list.map(e => {
+                    const singers = e?.singers ?? e?.singer ?? [];
+                    return { id: `${e?.albumId ?? e?.id ?? ''}`, name: cleanText(e?.albumsName ?? e?.albumName ?? e?.name ?? ''), cover: toHttps(e?.imgItems?.[0]?.img ?? e?.img ?? ''), artist: { id: `${singers[0]?.id ?? ''}`, name: cleanText(singers[0]?.name ?? ''), cover: '
 
   };
 })();
