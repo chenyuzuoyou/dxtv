@@ -1,7 +1,7 @@
 /*!
  * @name AllinOneTab
  * @description 全网聚合音乐 - 增强版：红心改为“红心（缓存）” + 自动最近播放（离线缓存）
- * @version v1.0.56
+ * @version v1.0.50
  * @author kobe (增强 by Grok)
  * @key csp_AllinOneTab
  */
@@ -47,9 +47,9 @@ function withMgHeaders(extra = {}) { return { ...headers, Referer: 'https://musi
 // ========================== 核心接口配置 ==========================
 const appConfig = {
   ver: 1, name: '全网聚合音乐', message: '', desc: '深度整合全网资源详细分类',
-      tabLibrary: {
+    tabLibrary: {
     name: '探索',
-    // 关键：必须定义 options，App 才会渲染顶部的平台切换胶囊
+    // 增加全局选项
     options: [
       { name: '全部', ext: { source: 'all' } },
       { name: '网易', ext: { source: 'wy' } },
@@ -60,10 +60,16 @@ const appConfig = {
       { name: '喜马', ext: { source: 'xm' } }
     ],
     groups: [
-      // 这个 group 仅在 source 为 'all' 且非切换状态下作为占位展示
-      { name: '★ 全网热榜聚合', type: 'playlist', ui: 1, showMore: true, ext: { source: 'all' } }
+      { 
+        name: '选择平台', 
+        type: 'playlist', 
+        ui: 3, // 尝试使用 ui: 3 强制激活横向滑动标签或菜单
+        showMore: false, 
+        ext: { is_tab: true } 
+      }
     ]
   },
+
 
 
   tabMe: {
@@ -927,12 +933,19 @@ async function getConfig() { return jsonify(appConfig); }
 
 async function getPlaylists(ext) {
   const args = argsify(ext);
+  // 核心逻辑：获取当前的来源，默认为 'all'
   const source = args.source || 'all';
   const page = args.page || 1;
 
-  // --- 逻辑 1：全部聚合展示 ---
-  if (source === 'all') {
-    try {
+  // 如果请求来自我们定义的 "选择平台" group，返回一个空列表或默认混合列表
+  // 这样可以强制 App 依赖顶部的 options 渲染
+  if (args.is_tab) {
+    return jsonify({ list: [] });
+  }
+
+  // --- 处理分平台显示 ---
+  try {
+    if (source === 'all') {
       const results = await Promise.all([
         WY.getPlaylists({ gid: '5', page }).catch(() => ({ list: [] })),
         QQ.getPlaylists({ gid: '1', page }).catch(() => ({ list: [] })),
@@ -941,30 +954,24 @@ async function getPlaylists(ext) {
         MG.getPlaylists({ gid: '1', page }).catch(() => ({ list: [] }))
       ]);
       return jsonify({ list: mixArrays(...results.map(r => r.list || [])) });
-    } catch (e) {
-      return jsonify({ list: [] });
     }
-  }
 
-  // --- 逻辑 2：单平台切换展示 ---
-  // 当用户点击顶部胶囊时，source 会变成对应的平台代码
-  let result = { list: [] };
-  try {
+    // 单平台内容分发
+    let res = { list: [] };
     switch (source) {
-      case 'wy': result = await WY.getPlaylists({ gid: '2', page }); break; // 网易推荐歌单
-      case 'tx': result = await QQ.getPlaylists({ gid: '1', page }); break; // QQ排行榜
-      case 'kg': result = await KG.getPlaylists({ gid: '1', page }); break; // 酷狗排行榜
-      case 'kw': result = await KW.getPlaylists({ gid: '1', page }); break; // 酷我推荐
-      case 'mg': result = await MG.getPlaylists({ gid: '1', page }); break; // 咪咕排行榜
-      case 'xm': result = await XM.getPlaylists({ gid: '1', page }); break; // 喜马专辑
+      case 'wy': res = await WY.getPlaylists({ gid: '2', page }); break;
+      case 'tx': res = await QQ.getPlaylists({ gid: '1', page }); break;
+      case 'kg': res = await KG.getPlaylists({ gid: '1', page }); break;
+      case 'kw': res = await KW.getPlaylists({ gid: '2', page }); break;
+      case 'mg': res = await MG.getPlaylists({ gid: '1', page }); break;
+      case 'xm': res = await XM.getPlaylists({ gid: '1', page }); break;
     }
+    return jsonify(res);
+
   } catch (e) {
-    console.log(`${source} 加载失败:`, e);
+    return jsonify({ list: [] });
   }
-
-  return jsonify(result);
 }
-
 
 
 async function getAlbums(ext) {
