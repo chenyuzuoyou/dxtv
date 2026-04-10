@@ -747,8 +747,20 @@ const MG = (function () {
     getAlbums: async (ext) => {
       const { id, page = 1, gid = '' } = ext;
       if (gid == '5') {
-        const blocks = (await fetchJson(`https://app.c.nf.migu.cn/pc/bmw/singer/album/v1.0?pageNo=${page}&singerId=${encodeURIComponent(id)}`))?.data?.contents ?? [];
-        return { list: blocks.flatMap(b => b?.contents ?? []).map(e => ({ id: `${e?.resourceId ?? e?.linkId ?? e?.id ?? ''}`, name: e?.title ?? e?.name ?? '', cover: toHttps(e?.img ?? e?.picUrl ?? ''), artist: { id: id, name: '', cover: '' }, ext: { source: 'mg', gid: '6', id: `${e?.resourceId ?? e?.linkId ?? e?.id ?? ''}`, type: 'album' } })) };
+        const res = await fetchJson(`https://app.c.nf.migu.cn/pc/bmw/singer/album/v1.0?pageNo=${page}&singerId=${encodeURIComponent(id)}`);
+        // 去除外层嵌套，直接获取列表数据，增加容错兼容
+        const list = res?.data?.contents ?? res?.data?.albumList ?? [];
+        return { list: list.map(e => {
+            // 补全咪咕专辑专用的字段名 (albumId, albumName, albumPic)
+            const albumId = `${e?.albumId ?? e?.resourceId ?? e?.linkId ?? e?.id ?? ''}`;
+            return {
+                id: albumId,
+                name: e?.albumName ?? e?.title ?? e?.name ?? '',
+                cover: toHttps(e?.albumPic ?? e?.picUrl ?? e?.img ?? ''),
+                artist: { id: id, name: '', cover: '' },
+                ext: { source: 'mg', gid: '6', id: albumId, type: 'album' }
+            };
+        }) };
       }
       return { list: [] };
     },
