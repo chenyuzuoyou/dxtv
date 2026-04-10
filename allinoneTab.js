@@ -101,18 +101,7 @@ const appConfig = {
     ]
   },
     
-  // 新增：平台 Tab
-  tabPlatforms: {
-    name: '平台',
-    groups: [
-      { name: '网易', ext: { source: 'wy' } },
-      { name: 'QQ', ext: { source: 'tx' } },
-      { name: '酷狗', ext: { source: 'kg' } },
-      { name: '酷我', ext: { source: 'kw' } },
-      { name: '咪咕', ext: { source: 'mg' } },
-      { name: '喜马', ext: { source: 'xm' } }
-    ],
-  },
+  
 
   tabMe: {
     name: '我的',
