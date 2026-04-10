@@ -849,15 +849,15 @@ const MG = (function () {
             const res = await doSearch({ album: 1 });
             const list = res?.data?.albumResultData?.result || res?.albumResultData?.result || [];
             if (list.length > 0) {
-                return { list: list.map(e => {
-                    const singers = e?.singers ?? e?.singer ?? [];
-                    const albId = `${e?.id ?? e?.albumId ?? e?.resId ?? ''}`; // 增强 ID 获取
-                    return { id: albId, name: cleanText(e?.albumsName ?? e?.albumName ?? e?.name ?? ''), cover: toHttps(e?.imgItems?.[0]?.img ?? e?.img ?? ''), artist: { id: `${singers[0]?.id ?? ''}`, name: cleanText(singers[0]?.name ?? ''), cover: '' }, ext: { source: 'mg', gid: '6', id: albId, type: 'album' } };
-                })};
+              return {
+                list: list.map(e => {
+                  const singers = e?.singers ?? e?.singer ?? [];
+                  const albId = `${e?.id ?? e?.albumId ?? e?.resId ?? ''}`;
+                  return { id: albId, name: cleanText(e?.albumsName ?? e?.albumName ?? e?.name ?? ''), cover: toHttps(e?.imgItems?.[0]?.img ?? e?.img ?? ''), artist: { id: `${singers[0]?.id ?? ''}`, name: cleanText(singers[0]?.name ?? ''), cover: '' }, ext: { source: 'mg', gid: '6', id: albId, type: 'album' } };
+                })
+              };
             }
-            // ... resOld 部分同理补全 ID 逻辑
-          }
-
+            // 修正：resOld 必须留在 album 判断块内
             const resOld = await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=4&keyword=${kw}&pgc=${page}`);
             return { list: (resOld?.albums ?? []).map(e => ({ id: `${e?.albumId ?? e?.id ?? ''}`, name: cleanText(e?.albumName ?? e?.title ?? ''), cover: toHttps(e?.albumPic ?? e?.img ?? ''), artist: { id: `${e?.singerId ?? ''}`, name: cleanText(e?.singerName ?? ''), cover: '' }, ext: { source: 'mg', gid: '6', id: `${e?.albumId ?? e?.id ?? ''}`, type: 'album' } })) };
           }
