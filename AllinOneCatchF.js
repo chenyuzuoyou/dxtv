@@ -784,9 +784,9 @@ const MG = (function () {
       const doSearch = async (switchObj) => {
          const switchStr = encodeURIComponent(JSON.stringify(switchObj));
          const urls = [
-            `https://pd.music.migu.cn/mts/app/search/v1/searchAll?searchSwitch=${switchStr}&text=${kw}&pageNo=${page}&pageSize=${PAGE_LIMIT}`,
-            `https://app.c.nf.migu.cn/MIGUM2.0/v1.0/content/search_all.do?searchSwitch=${switchStr}&text=${kw}&pageNo=${page}&pageSize=${PAGE_LIMIT}`,
-            `https://jadeite.migu.cn/music_search/v2/search/searchAll?searchSwitch=${switchStr}&text=${kw}&pageNo=${page}&pageSize=${PAGE_LIMIT}`
+            `https://pd.music.migu.cn/mts/app/search/v1/searchAll?searchSwitch=${switchStr}&text=${mg}&pageNo=${page}&pageSize=${PAGE_LIMIT}`,
+            `https://app.c.nf.migu.cn/MIGUM2.0/v1.0/content/search_all.do?searchSwitch=${switchStr}&text=${mg}&pageNo=${page}&pageSize=${PAGE_LIMIT}`,
+            `https://jadeite.migu.cn/music_search/v2/search/searchAll?searchSwitch=${switchStr}&text=${mg}&pageNo=${page}&pageSize=${PAGE_LIMIT}`
          ];
          
          for (const url of urls) {
@@ -820,7 +820,7 @@ const MG = (function () {
             }
             
             // 最老的 H5 接口做最后一次兜底
-            const resOld = await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=2&keyword=${kw}&pgc=${page}`);
+            const resOld = await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=2&keyword=${mg}&pgc=${page}`);
             if (resOld?.musics && resOld.musics.length > 0) {
                 return { list: resOld.musics.map(e => {
                     const songId = `${e?.songId ?? e?.copyrightId ?? e?.id ?? ''}`;
@@ -841,7 +841,7 @@ const MG = (function () {
                 // 修复核心：确保 id 字段能取到有效的值
                 return { list: list.map(e => ({ id: `${e?.id ?? e?.resId ?? e?.playlistId ?? ''}`, name: cleanText(e?.name ?? ''), cover: toHttps(e?.img ?? ''), artist: { id: 'mg', name: 'mgfm', cover: '' }, ext: { source: 'mg', gid: '6', id: `${e?.id ?? e?.resId ?? e?.playlistId ?? ''}`, type: 'playlist' } })) };
             }
-            const resOld = await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=6&keyword=${kw}&pgc=${page}`);
+            const resOld = await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=6&keyword=${mg}&pgc=${page}`);
             return { list: (resOld?.songLists ?? []).map(e => ({ id: `${e?.playListId ?? e?.id ?? ''}`, name: cleanText(e?.playListName ?? e?.name ?? ''), cover: toHttps(e?.img ?? e?.pic ?? ''), artist: { id: 'mg', name: 'mgfm', cover: '' }, ext: { source: 'mg', gid: '6', id: `${e?.playListId ?? e?.id ?? ''}`, type: 'playlist' } })) };
           }
           
@@ -858,7 +858,7 @@ const MG = (function () {
               };
             }
             // 修正：resOld 必须留在 album 判断块内
-            const resOld = await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=4&keyword=${kw}&pgc=${page}`);
+            const resOld = await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=4&keyword=${mg}&pgc=${page}`);
             return { list: (resOld?.albums ?? []).map(e => ({ id: `${e?.albumId ?? e?.id ?? ''}`, name: cleanText(e?.albumName ?? e?.title ?? ''), cover: toHttps(e?.albumPic ?? e?.img ?? ''), artist: { id: `${e?.singerId ?? ''}`, name: cleanText(e?.singerName ?? ''), cover: '' }, ext: { source: 'mg', gid: '6', id: `${e?.albumId ?? e?.id ?? ''}`, type: 'album' } })) };
           }
           
@@ -888,7 +888,7 @@ const MG = (function () {
                 })};
             }
             // 补全 resOld 的歌手匹配
-            const resOld = await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=1&keyword=${kw}&pgc=${page}`);
+            const resOld = await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=1&keyword=${mg}&pgc=${page}`);
             return { list: (resOld?.singers ?? []).map(e => ({ 
                 id: `${e?.singerId ?? e?.id ?? ''}`, 
                 name: cleanText(e?.singerName ?? e?.title ?? ''), 
@@ -936,14 +936,14 @@ const XM = (function () {
 
   return {
     getPlaylists: async (ext) => {
-      const { page = 1, gid = '', kw = '' } = ext;
+      const { page = 1, gid = '', xm = '' } = ext;
       if (gid == '1') {
-        for (const url of [`https://www.ximalaya.com/revision/search?core=album&kw=&page=${page}&rows=${PAGE_LIMIT}&spellchecker=true&condition=relation&device=web`, `https://mobile.ximalaya.com/mobile/discovery/v3/recommend/album?pageId=${page}&pageSize=${PAGE_LIMIT}`]) {
+        for (const url of [`https://www.ximalaya.com/revision/search?core=album&xm=&page=${page}&rows=${PAGE_LIMIT}&spellchecker=true&condition=relation&device=web`, `https://mobile.ximalaya.com/mobile/discovery/v3/recommend/album?pageId=${page}&pageSize=${PAGE_LIMIT}`]) {
           try { const list = firstArray((await fetchJson(url))?.data?.result?.response?.docs, (await fetchJson(url))?.data?.list); if (list.length > 0) return { list: list.filter(e => !isPaidItem(e)).map(e => mapAlbum(e)) }; } catch (e) {}
         }
       } else if (gid == '2') {
-        const encodedKw = encodeURIComponent(kw);
-        for (const url of [`https://www.ximalaya.com/revision/search?core=album&kw=${encodedKw}&page=${page}&rows=${PAGE_LIMIT}&spellchecker=true&condition=relation&device=web`, `https://mobile.ximalaya.com/mobile/search/result?query=${encodedKw}&page=${page}`]) {
+        const encodedXm = encodeURIComponent(xm);
+        for (const url of [`https://www.ximalaya.com/revision/search?core=album&xm=${encodedXm}&page=${page}&rows=${PAGE_LIMIT}&spellchecker=true&condition=relation&device=web`, `https://mobile.ximalaya.com/mobile/search/result?query=${encodedXm}&page=${page}`]) {
           try { const data = await fetchJson(url); const list = firstArray(data?.data?.result?.response?.docs, data?.data?.album?.docs, data?.data?.albums, data?.data?.list, data?.data?.docs); if (list.length > 0) return { list: list.filter(e => !isPaidItem(e)).map(e => mapAlbum(e)) }; } catch (e) {}
         }
       }
@@ -952,7 +952,7 @@ const XM = (function () {
     getSongs: async (ext) => {
       const { id, page = 1, gid = '', text = '' } = ext;
       if (gid == '3') {
-        if (text) return { list: firstArray((await fetchJson(`https://www.ximalaya.com/revision/search?core=track&kw=${encodeURIComponent(text)}&page=${page}&rows=${PAGE_LIMIT}&spellchecker=true&condition=relation&device=web`))?.data?.result?.response?.docs).filter(e => !isPaidItem(e)).map(e => mapTrack(e)) };
+        if (text) return { list: firstArray((await fetchJson(`https://www.ximalaya.com/revision/search?core=track&xm=${encodeURIComponent(text)}&page=${page}&rows=${PAGE_LIMIT}&spellchecker=true&condition=relation&device=web`))?.data?.result?.response?.docs).filter(e => !isPaidItem(e)).map(e => mapTrack(e)) };
         for (const url of [`https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${id}&pageNum=${page}&sort=0&pageSize=${PAGE_LIMIT}`, `https://mobile.ximalaya.com/mobile/v1/album/track/?albumId=${id}&pageSize=${PAGE_LIMIT}&pageId=${page}`]) {
           try { const data = await fetchJson(url, { Referer: `https://www.ximalaya.com/album/${id}` }); const list = firstArray(data?.data?.tracks, data?.data?.list, data?.data?.trackList); if (list.length > 0) return { list: list.filter(e => !isPaidItem(e)).map(e => mapTrack(e)) }; } catch (e) {}
         }
@@ -960,9 +960,9 @@ const XM = (function () {
       return { list: [] };
     },
     search: async ({ text, page = 1, type = 'song' }) => {
-      const kw = encodeURIComponent(text);
-      if (type === 'album') return { list: firstArray((await fetchJson(`https://www.ximalaya.com/revision/search?core=album&kw=${kw}&page=${page}&rows=${PAGE_LIMIT}&spellchecker=true&condition=relation&device=web`))?.data?.result?.response?.docs).filter(e => !isPaidItem(e)).map(e => mapAlbum(e)) };
-      if (type === 'song' || type === 'track') return { list: firstArray((await fetchJson(`https://www.ximalaya.com/revision/search?core=track&kw=${kw}&page=${page}&rows=${PAGE_LIMIT}&spellchecker=true&condition=relation&device=web`))?.data?.result?.response?.docs).filter(e => !isPaidItem(e)).map(e => mapTrack(e)) };
+      const xm = encodeURIComponent(text);
+      if (type === 'album') return { list: firstArray((await fetchJson(`https://www.ximalaya.com/revision/search?core=album&xm=${xm}&page=${page}&rows=${PAGE_LIMIT}&spellchecker=true&condition=relation&device=web`))?.data?.result?.response?.docs).filter(e => !isPaidItem(e)).map(e => mapAlbum(e)) };
+      if (type === 'song' || type === 'track') return { list: firstArray((await fetchJson(`https://www.ximalaya.com/revision/search?core=track&xm=${xm}&page=${page}&rows=${PAGE_LIMIT}&spellchecker=true&condition=relation&device=web`))?.data?.result?.response?.docs).filter(e => !isPaidItem(e)).map(e => mapTrack(e)) };
       return { list: [] };
     },
     getSongInfo: async ({ trackId, quality }) => {
