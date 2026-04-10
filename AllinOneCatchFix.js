@@ -1,9 +1,9 @@
 /*!
- * @name AllinOneCatchFix
+ * @name FixAllinOneCatch
  * @description 全网聚合音乐 - 增强版：红心改为“红心（缓存）” + 自动最近播放（离线缓存）
  * @version v1.0.4
  * @author kobe (增强 by Grok)
- * @key csp_AllinOneCatchFix
+ * @key csp_FixAllinOneCatch
  */
 
 
