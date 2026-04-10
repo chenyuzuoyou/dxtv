@@ -174,7 +174,7 @@ const WY = (function () {
     const artistId = `${artist?.id ?? ''}`;
     return {
       id: artistId, name: artist?.name ?? '', cover: toHttps(artist?.picUrl ?? artist?.img1v1Url ?? ''),
-      groups: [{ name: '热门歌曲', type: 'song', ext: { source: 'wy', gid: 'artist_songs', id: artistId } }, { name: '专辑', type: 'album', ext: { source: 'wy', gid: 'album_songs', id: artistId } }], ext: { source: 'wy', gid: 'artist', id: artistId }
+      groups: [{ name: '热门歌曲', type: 'song', ext: { source: 'wy', gid: 'artist_songs', id: artistId } }, { name: '专辑', type: 'album', ext: { source: 'wy', gid: 'album', id: artistId } }], ext: { source: 'wy', gid: 'artist', id: artistId }
     };
   }
   async function loadWyPlaylistTracks(id, page = 1) {
@@ -234,10 +234,7 @@ const WY = (function () {
         songs = ((await fetchJson(`https://music.163.com/api/v1/album/${id}`))?.songs ?? []).map(each => mapSong(each));
       } else if (gidValue == '7' || gidValue == 'artist_songs') {
         songs = ((await fetchJson(`https://music.163.com/api/artist/top/song?id=${id}`))?.songs ?? []).map(each => mapSong(each));
-      } else if (gidValue == 'album_songs') {
-		const res = await fetchJson(`https://music.163.com/api/album/${id}`);
-		songs = (res?.album?.songs ?? []).map(s => mapSong(s, { album: res.album }));
-	  }
+      } 
 		
       return { list: songs };
     },
