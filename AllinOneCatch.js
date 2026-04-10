@@ -403,46 +403,15 @@ const QQ = (function () {
 // ========================== 酷狗音乐模块 ==========================
 const KG = (function () {
   async function fetchJson(url) { return safeArgs((await $fetch.get(url, { headers: withKgHeaders() })).data); }
-  function mapSong(song) {
-  const hash = `${song?.hash ?? song?.audio_id ?? song?.songmid ?? ''}`;
-  // 修复作者字段
-  const singer = song?.singername ?? song?.author_name ?? song?.artist_name
-    ?? (song?.authors?.[0]?.author_name) ?? '';
-  // 修复歌名字段
-  const songName = song?.songname ?? song?.title ?? song?.name
-    ?? (song?.filename?.split('-')?.slice(1)?.join('-')?.trim()) ?? '';
-  // 修复封面字段（关键）
-  const cover = song?.album_sizable_cover ?? song?.cover ?? song?.imgurl
-    ?? song?.album?.cover ?? `https://imge.kugou.com/stdmusic/400/${hash}.jpg`;
-
-  return {
-    id: `${hash || song?.album_audio_id || ''}`,
-    name: songName,
-    cover: toHttps(cover),
-    duration: parseInt(song?.duration ?? song?.timelen ?? 0),
-    artist: {
-      id: `${song?.singerid ?? song?.author_id ?? (song?.authors?.[0]?.author_id) ?? ''}`,
-      name: singer,
-      cover: ''
-    },
-    ext: {
-      source: 'kg',
-      hash,
-      singer,
-      songName,
-      album_id: `${song?.album_id ?? ''}`
-    }
-  };
-}
-	//function mapSong(song) {
-    //const hash = `${song?.hash ?? song?.audio_id ?? song?.songmid ?? ''}`;
-    //const singer = song?.singername ?? song?.author_name ?? song?.artist_name ?? '';
-    //const songName = song?.songname ?? song?.filename?.split('-')?.slice(1)?.join('-')?.trim() ?? song?.name ?? '';
-    //return {
-     // id: `${hash || song?.album_audio_id || ''}`, name: songName, cover: toHttps(song?.album_sizable_cover || song?.imgurl || song?.cover), duration: parseInt(song?.duration ?? song?.timelen ?? 0),
-     // artist: { id: `${song?.singerid ?? song?.author_id ?? ''}`, name: singer, cover: '' }, ext: { source: 'kg', hash, singer, songName, album_id: `${song?.album_id ?? ''}` }
-   // };
- // }
+	function mapSong(song) {
+    const hash = `${song?.hash ?? song?.audio_id ?? song?.songmid ?? ''}`;
+    const singer = song?.singername ?? song?.author_name ?? song?.artist_name ?? '';
+    const songName = song?.songname ?? song?.filename?.split('-')?.slice(1)?.join('-')?.trim() ?? song?.name ?? '';
+    return {
+      id: `${hash || song?.album_audio_id || ''}`, name: songName, cover: toHttps(song?.album_sizable_cover || song?.imgurl || song?.cover), duration: parseInt(song?.duration ?? song?.timelen ?? 0),
+      artist: { id: `${song?.singerid ?? song?.author_id ?? ''}`, name: singer, cover: '' }, ext: { source: 'kg', hash, singer, songName, album_id: `${song?.album_id ?? ''}` }
+    };
+  }
   function mapToplistCard(item) {
     return {
       id: `${item?.rankid ?? ''}`, name: item?.rankname ?? '', cover: toHttps(item?.imgurl ?? item?.banner7url ?? item?.bannerurl ?? ''),
