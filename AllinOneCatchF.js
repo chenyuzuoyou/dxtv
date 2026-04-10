@@ -731,34 +731,29 @@ const MG = (function () {
       }
       return { list: [] };
     },
-    getSongs: async (ext) => {
-      const { page = 1, gid = '', text = '' } = ext;
-      // 核心修复：确保能从 ext.id 或 ext.albumId 提取到 ID
-      const albumId = `${ext.id ?? ext.albumId ?? ''}`; 
-    
+        getSongs: async (ext) => {
+      const { id, page = 1, gid = '', text = '' } = ext;
+      // 修复：兼容多种 ID 字段名
+      const realId = id ?? ext.albumId ?? ext.trackId ?? '';
+
       if (gid == '3' || gid == 'album') {
-        // 如果是搜索内部的二次搜索
-        if (text) {
-          const searchRes = await fetchJson(`https://www.ximalaya.com/revision/search?core=track&kw=${encodeURIComponent(text)}&page=${page}&rows=${PAGE_LIMIT}&spellchecker=true&condition=relation&device=web`);
-          return { list: firstArray(searchRes?.data?.result?.response?.docs).filter(e => !isPaidItem(e)).map(e => mapTrack(e)) };
-        }
-    
-        // 详情加载逻辑：增加 Referer 校验和双接口备选
-        if (!albumId) return { list: [] };
+        if (text) return { list: firstArray((await fetchJson(`https://www.ximalaya.com/revision/search?core=track&kw=${encodeURIComponent(text)}&page=${page}&rows=${PAGE_LIMIT}&spellchecker=true&condition=relation&device=web`))?.data?.result?.response?.docs).filter(e => !isPaidItem(e)).map(e => mapTrack(e)) };
         
+        // 修复：Referer 是必须的
         for (const url of [
-          `https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${albumId}&pageNum=${page}&sort=0&pageSize=${PAGE_LIMIT}`,
-          `https://mobile.ximalaya.com/mobile/v1/album/track/?albumId=${albumId}&pageSize=${PAGE_LIMIT}&pageId=${page}`
+          `https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${realId}&pageNum=${page}&sort=0&pageSize=${PAGE_LIMIT}`,
+          `https://mobile.ximalaya.com/mobile/v1/album/track/?albumId=${realId}&pageSize=${PAGE_LIMIT}&pageId=${page}`
         ]) {
-          try {
-            const data = await fetchJson(url, { Referer: `https://www.ximalaya.com/album/${albumId}` });
-            const list = firstArray(data?.data?.tracks, data?.data?.list, data?.data?.trackList);
-            if (list.length > 0) return { list: list.filter(e => !isPaidItem(e)).map(e => mapTrack(e)) };
+          try { 
+            const data = await fetchJson(url, { Referer: `https://www.ximalaya.com/album/${realId}` }); 
+            const list = firstArray(data?.data?.tracks, data?.data?.list, data?.data?.trackList); 
+            if (list.length > 0) return { list: list.filter(e => !isPaidItem(e)).map(e => mapTrack(e)) }; 
           } catch (e) {}
         }
       }
       return { list: [] };
     },
+
 
     getAlbums: async (ext) => {
       const { id, page = 1, gid = '' } = ext;
