@@ -1,7 +1,7 @@
 /*!
  * @name FixAllinOneCatch
  * @description 全网聚合音乐 - 增强版：红心改为“红心（缓存）” + 自动最近播放（离线缓存）
- * @version v1.0.60
+ * @version v1.0.61
  * @author kobe (增强 by Grok)
  * @key csp_FixAllinOneCatch
  */
@@ -707,244 +707,107 @@ const MG = (function () {
     };
   }
 
-  function mapToplistCard(item) {
-    const rankId = `${item?.rankId ?? item?.id ?? actionIdOf(item?.actionUrl) ?? ''}`;
-    return {
-      id: rankId, name: cleanText(item?.rankName ?? item?.title ?? item?.txt ?? ''), cover: toHttps(item?.imageUrl ?? item?.img ?? item?.picUrl ?? ''),
-      artist: { id: 'mg', name: cleanText(item?.subTitle ?? item?.updateTime ?? 'mgfm'), cover: '' }, ext: { source: 'mg', gid: '1', id: rankId, type: 'playlist' }
-    };
-  }
-  
-  function mapArtistCard(item) {
-    const artistId = `${item?.id ?? ''}`;
-    const artistCover = toHttps(item?.img ?? item?.cover ?? item?.singerPic ?? '');
-    return {
-      id: artistId, name: cleanText(item?.name ?? item?.singerName ?? item?.title ?? ''), cover: artistCover,
-      groups: [{ name: '热门歌曲', type: 'song', ext: { source: 'mg', gid: '4', id: artistId } }, { name: '专辑', type: 'album', ext: { source: 'mg', gid: '5', id: artistId } }],
-      ext: { source: 'mg', gid: '2', id: artistId }
-    };
-  }
-
   return {
     getPlaylists: async (ext) => {
       const { page = 1, gid = '', from = '' } = ext;
       if (gid == '1') {
         let cards = [];
         ((await fetchJson('https://app.c.nf.migu.cn/pc/bmw/rank/rank-index/v1.0'))?.data?.contents ?? []).forEach(block => {
-          (block?.contents ?? []).forEach(each => { if (each?.rankId || each?.actionUrl) cards.push(mapToplistCard({ ...each, subTitle: each?.subTitle ?? block?.title })); });
+          (block?.contents ?? []).forEach(each => { 
+            const rankId = `${each?.rankId ?? actionIdOf(each?.actionUrl)}`;
+            if (rankId) {
+                cards.push({ 
+                    id: rankId, 
+                    name: cleanText(each?.rankName ?? each?.title ?? ''), 
+                    cover: toHttps(each?.imageUrl ?? each?.img ?? ''), 
+                    artist: { id: 'mg', name: cleanText(block?.title ?? 'mg音乐') }, // 已修正 kwfm -> mg音乐
+                    ext: { source: 'mg', gid: '1', id: rankId, type: 'playlist' } 
+                });
+            }
+          });
         });
         const offset = (page - 1) * PAGE_LIMIT;
         return { list: from === 'index' ? cards.slice(0, PAGE_LIMIT) : cards.slice(offset, offset + PAGE_LIMIT) };
       }
       return { list: [] };
     },
-    
     getSongs: async (ext) => {
       const { id, page = 1, gid = '' } = ext;
+      let rawSongs = [];
+      // 这里的逻辑统一使用 resourceinfo 接口，因为它能处理 10 位数字的长 ID
+      const infoUrl = `https://app.c.nf.migu.cn/MIGUM2.0/v1.0/content/resourceinfo.do?needSimple=00&resourceId=${encodeURIComponent(id)}&resourceType=${gid == '6' ? '2003' : '2021'}`;
+      
       if (gid == '1') {
-        return { list: ((await fetchJson(`https://app.c.nf.migu.cn/pc/bmw/rank/rank-info/v1.0?rankId=${encodeURIComponent(id)}`))?.data?.contents ?? []).map(e => mapSong(e)) };
+        rawSongs = (await fetchJson(`https://app.c.nf.migu.cn/pc/bmw/rank/rank-info/v1.0?rankId=${encodeURIComponent(id)}`))?.data?.contents ?? [];
       } else if (gid == '4') {
         const blocks = (await fetchJson(`https://app.c.nf.migu.cn/pc/bmw/singer/song/v1.0?pageNo=${page}&singerId=${encodeURIComponent(id)}&type=1`))?.data?.contents ?? [];
-        return { list: ((blocks.find(each => each?.view == 'ZJ-Singer-Song-Scroll'))?.contents ?? []).map(e => mapSong(e)) };
-      } else if (gid == '6') {
-        // 【终极修复：专辑歌曲】3大接口轮询，无视新老专辑ID差异
-        let rawSongs = [];
-        const urls = [
-            `https://app.c.nf.migu.cn/pc/bmw/album/info/v1.0?albumId=${encodeURIComponent(id)}`,
-            `https://m.music.migu.cn/migu/remoting/cms_album_song_list_tag?albumId=${encodeURIComponent(id)}&pageSize=100`,
-            `https://app.c.nf.migu.cn/MIGUM2.0/v1.0/content/resourceinfo.do?needSimple=00&resourceId=${encodeURIComponent(id)}&resourceType=2003`
-        ];
-        for (const url of urls) {
-            try {
-                const res = await fetchJson(url);
-                if (res?.data?.contents) {
-                    res.data.contents.forEach(b => {
-                        if (b?.contents && Array.isArray(b.contents)) rawSongs.push(...b.contents);
-                        else if (b?.songId || b?.copyrightId) rawSongs.push(b);
-                    });
-                } else if (res?.result?.results) rawSongs.push(...res.result.results);
-                else if (res?.songs) rawSongs.push(...res.songs);
-                else if (res?.resource?.songs) rawSongs.push(...res.resource.songs);
-                
-                if (rawSongs.length > 0) break; // 拿到数据立刻跳出
-            } catch(e) {}
-        }
-        return { list: rawSongs.map(e => mapSong(e)) };
-      } else if (gid == '8') {
-        // 【全新增加：歌单歌曲】原版根本没写这个逻辑，现通过3大接口轮询获取普通歌单
-        let rawSongs = [];
-        const urls = [
-            `https://app.c.nf.migu.cn/pc/bmw/playlist/info/v1.0?playlistId=${encodeURIComponent(id)}`,
-            `https://m.music.migu.cn/migu/remoting/query_playlist_by_id_tag?playListId=${encodeURIComponent(id)}&reqNum=100`,
-            `https://app.c.nf.migu.cn/MIGUM2.0/v1.0/content/resourceinfo.do?needSimple=00&resourceId=${encodeURIComponent(id)}&resourceType=2021`
-        ];
-        for (const url of urls) {
-            try {
-                const res = await fetchJson(url);
-                if (res?.data?.contents) {
-                    res.data.contents.forEach(b => {
-                        if (b?.contents && Array.isArray(b.contents)) rawSongs.push(...b.contents);
-                        else if (b?.songId || b?.copyrightId) rawSongs.push(b);
-                    });
-                } else if (res?.rsp?.playList?.[0]?.content) rawSongs.push(...res.rsp.playList[0].content);
-                else if (res?.playlist) rawSongs.push(...res.playlist);
-                else if (res?.resource?.songs) rawSongs.push(...res.resource.songs);
-                
-                if (rawSongs.length > 0) break; // 拿到数据立刻跳出
-            } catch(e) {}
-        }
-        return { list: rawSongs.map(e => mapSong(e)) };
+        rawSongs = (blocks.find(each => each?.view == 'ZJ-Singer-Song-Scroll'))?.contents ?? [];
+      } else if (gid == '6' || gid == '8') {
+        const res = await fetchJson(infoUrl);
+        rawSongs = res?.resource?.songs ?? [];
       }
-      return { list: [] };
+      return { list: rawSongs.map(e => mapSong(e)) };
     },
-
     getAlbums: async (ext) => {
       const { id, page = 1, gid = '' } = ext;
       if (gid == '5') {
         const res = await fetchJson(`https://app.c.nf.migu.cn/pc/bmw/singer/album/v1.0?pageNo=${page}&singerId=${encodeURIComponent(id)}`);
-        let rawList = [];
         const contents = res?.data?.contents ?? [];
-        
-        // 【终极修复】：无视排版结构，把所有可能是专辑的子区块强行揪出来
-        contents.forEach(b => {
-            if (b?.contents && Array.isArray(b.contents)) {
-                rawList.push(...b.contents);
-            } else if (b?.albumId || b?.resourceId || b?.linkId) {
-                rawList.push(b);
-            }
-        });
-
+        const rawList = contents[0]?.contents ? contents.flatMap(b => b.contents ?? []) : contents;
         const mapData = new Map();
         rawList.forEach(e => {
-            const albumId = `${e?.albumId ?? e?.resourceId ?? e?.linkId ?? e?.id ?? ''}`;
-            const albumName = e?.albumName ?? e?.title ?? e?.name ?? e?.txt ?? '';
-            // 过滤：必须有名字和 ID，且利用 Map 去重，解决“重复专辑”问题
-            if (albumId && albumName && !mapData.has(albumId)) {
-                mapData.set(albumId, {
-                    id: albumId,
-                    name: cleanText(albumName),
-                    cover: toHttps(e?.albumPic ?? e?.img ?? e?.picUrl ?? e?.pic ?? ''),
-                    artist: { id: id, name: '', cover: '' },
-                    ext: { source: 'mg', gid: '6', id: albumId, type: 'album' }
-                });
-            }
+            const albId = `${e?.albumId ?? e?.resourceId ?? e?.id ?? ''}`;
+            if (albId && !mapData.has(albId)) mapData.set(albId, { id: albId, name: cleanText(e?.albumName ?? e?.title ?? e?.txt ?? ''), cover: toHttps(e?.albumPic ?? e?.img ?? e?.picUrl ?? ''), artist: { id: id, name: '' }, ext: { source: 'mg', gid: '6', id: albId, type: 'album' } });
         });
-        
         return { list: Array.from(mapData.values()) };
       }
       return { list: [] };
     },
-
-
     getArtists: async (ext) => {
       const { page = 1, gid = '' } = ext;
       if (gid == '2' && page == 1) {
         const artistMap = new Map();
-        for (const rankId of ['27553319', '27186466', '83176390', '76557745']) {
-          for (const song of ((await fetchJson(`https://app.c.nf.migu.cn/pc/bmw/rank/rank-info/v1.0?rankId=${rankId}`))?.data?.contents ?? [])) {
-            const songData = parseSongData(song);
-            const firstSinger = songData?.singerList?.[0];
-            if (firstSinger?.id && firstSinger?.name && !artistMap.has(`${firstSinger.id}`)) {
-              artistMap.set(`${firstSinger.id}`, mapArtistCard({ id: firstSinger.id, name: firstSinger.name, img: firstSinger.img }));
-            }
+        for (const rId of ['27553319', '27186466']) {
+          for (const s of ((await fetchJson(`https://app.c.nf.migu.cn/pc/bmw/rank/rank-info/v1.0?rankId=${rId}`))?.data?.contents ?? [])) {
+            const fs = parseSongData(normalizeMiguSong(s))?.singerList?.[0];
+            if (fs?.id && !artistMap.has(`${fs.id}`)) artistMap.set(`${fs.id}`, { id: fs.id, name: fs.name, cover: toHttps(fs.img), groups: [{ name: '歌曲', type: 'song', ext: { source: 'mg', gid: '4', id: fs.id } }, { name: '专辑', type: 'album', ext: { source: 'mg', gid: '5', id: fs.id } }], ext: { source: 'mg', gid: '2', id: fs.id } });
           }
         }
         return { list: Array.from(artistMap.values()).slice(0, PAGE_LIMIT) };
       }
       return { list: [] };
     },
-    
     search: async ({ text, page = 1, type = 'song' }) => {
       const kw = encodeURIComponent(text);
-      const doSearch = async (switchObj) => {
-         const switchStr = encodeURIComponent(JSON.stringify(switchObj));
-         const urls = [
-            `https://pd.music.migu.cn/mts/app/search/v1/searchAll?searchSwitch=${switchStr}&text=${kw}&pageNo=${page}&pageSize=${PAGE_LIMIT}`,
-            `https://app.c.nf.migu.cn/MIGUM2.0/v1.0/content/search_all.do?searchSwitch=${switchStr}&text=${kw}&pageNo=${page}&pageSize=${PAGE_LIMIT}`,
-            `https://jadeite.migu.cn/music_search/v2/search/searchAll?searchSwitch=${switchStr}&text=${kw}&pageNo=${page}&pageSize=${PAGE_LIMIT}`
-         ];
-         for (const url of urls) {
-             try {
-                 const res = await fetchJson(url);
-                 if (res?.data?.songResultData || res?.songResultData || res?.data?.songListResultData || res?.songListResultData || res?.data?.albumResultData || res?.albumResultData || res?.data?.singerResultData || res?.singerResultData) {
-                     return res;
-                 }
-             } catch(e) {}
-         }
-         return null;
-      };
-
-      try {
-          if (type === 'song') {
-            const res = await doSearch({ song: 1 });
-            const list = res?.data?.songResultData?.result || res?.songResultData?.result || [];
-            if (list.length > 0) {
-                return { list: list.map(e => {
-                  const songId = `${e?.id ?? e?.songId ?? e?.copyrightId ?? ''}`;
-                  const singers = e?.singers ?? e?.singer ?? [];
-                  return {
-                    id: songId, name: cleanText(e?.name ?? e?.songName ?? ''), cover: toHttps(e?.imgItems?.[0]?.img ?? e?.cover ?? ''), duration: 0,
-                    artist: { id: `${singers[0]?.id ?? ''}`, name: cleanText(singers.map(s=>s.name).join('/')), cover: '' },
-                    ext: { source: 'mg', id: songId, songmid: songId, copyrightId: `${e?.copyrightId ?? e?.songId ?? ''}`, singer: cleanText(singers.map(s=>s.name).join('/')), songName: cleanText(e?.name ?? e?.songName ?? '') }
-                  };
-                })};
-            }
-            const resOld = await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=2&keyword=${kw}&pgc=${page}`);
-            if (resOld?.musics && resOld.musics.length > 0) {
-                return { list: resOld.musics.map(e => {
-                    const songId = `${e?.songId ?? e?.copyrightId ?? e?.id ?? ''}`;
-                    return {
-                      id: songId, name: cleanText(e?.songName ?? e?.title ?? ''), cover: toHttps(e?.cover ?? e?.albumCover ?? ''), duration: 0,
-                      artist: { id: `${e?.singerId ?? ''}`, name: cleanText(e?.singerName ?? ''), cover: '' },
-                      ext: { source: 'mg', id: songId, songmid: songId, copyrightId: `${e?.copyrightId ?? e?.songId ?? ''}`, singer: cleanText(e?.singerName ?? ''), songName: cleanText(e?.songName ?? e?.title ?? '') }
-                    };
-                 }) };
-            }
-            return { list: [] };
-          }
-          
-          if (type === 'playlist') {
-            const res = await doSearch({ songlist: 1 });
-            const list = res?.data?.songListResultData?.result || res?.songListResultData?.result || [];
-            if (list.length > 0) {
-                // 【关键修复】：gid 从 '1' 改为了 '8'
-                return { list: list.map(e => ({ id: `${e?.id ?? ''}`, name: cleanText(e?.name ?? ''), cover: toHttps(e?.img ?? ''), artist: { id: 'mg', name: 'mgfm', cover: '' }, ext: { source: 'mg', gid: '8', id: `${e?.id ?? ''}`, type: 'playlist' } })) };
-            }
-            const resOld = await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=6&keyword=${kw}&pgc=${page}`);
-            // 【关键修复】：gid 从 '1' 改为了 '8'
-            return { list: (resOld?.songLists ?? []).map(e => ({ id: `${e?.playListId ?? e?.id ?? ''}`, name: cleanText(e?.playListName ?? e?.name ?? ''), cover: toHttps(e?.img ?? e?.pic ?? ''), artist: { id: 'mg', name: 'mgfm', cover: '' }, ext: { source: 'mg', gid: '8', id: `${e?.playListId ?? e?.id ?? ''}`, type: 'playlist' } })) };
-          }
-          
-          if (type === 'album') {
-            const res = await doSearch({ album: 1 });
-            const list = res?.data?.albumResultData?.result || res?.albumResultData?.result || [];
-            if (list.length > 0) {
-                return { list: list.map(e => {
-                    const singers = e?.singers ?? e?.singer ?? [];
-                    return { id: `${e?.albumId ?? e?.id ?? ''}`, name: cleanText(e?.albumsName ?? e?.albumName ?? e?.name ?? ''), cover: toHttps(e?.imgItems?.[0]?.img ?? e?.img ?? ''), artist: { id: `${singers[0]?.id ?? ''}`, name: cleanText(singers[0]?.name ?? ''), cover: '' }, ext: { source: 'mg', gid: '6', id: `${e?.albumId ?? e?.id ?? ''}`, type: 'album' } };
-                })};
-            }
-            const resOld = await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=4&keyword=${kw}&pgc=${page}`);
-            return { list: (resOld?.albums ?? []).map(e => ({ id: `${e?.albumId ?? e?.id ?? ''}`, name: cleanText(e?.albumName ?? e?.title ?? ''), cover: toHttps(e?.albumPic ?? e?.img ?? ''), artist: { id: `${e?.singerId ?? ''}`, name: cleanText(e?.singerName ?? ''), cover: '' }, ext: { source: 'mg', gid: '6', id: `${e?.albumId ?? e?.id ?? ''}`, type: 'album' } })) };
-          }
-          
-          if (type === 'artist') {
-            const res = await doSearch({ singer: 1 });
-            const list = res?.data?.singerResultData?.result || res?.singerResultData?.result || [];
-            if (list.length > 0) {
-                return { list: list.map(e => mapArtistCard({ id: `${e?.id ?? ''}`, name: e?.name ?? '', img: e?.imgItems?.[0]?.img ?? e?.img ?? '' })) };
-            }
-            const resOld = await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=1&keyword=${kw}&pgc=${page}`);
-            return { list: (resOld?.singers ?? []).map(e => mapArtistCard({ id: `${e?.singerId ?? e?.id ?? ''}`, name: e?.singerName ?? e?.title ?? '', img: e?.singerPic ?? e?.img ?? '' })) };
-          }
-      } catch(e) {
-          console.log("咪咕搜索彻底报错", e);
+      const swMap = { song: '{"song":1}', playlist: '{"songlist":1}', album: '{"album":1}', artist: '{"singer":1}' };
+      const res = await fetchJson(`https://pd.music.migu.cn/mts/app/search/v1/searchAll?searchSwitch=${encodeURIComponent(swMap[type])}&text=${kw}&pageNo=${page}&pageSize=${PAGE_LIMIT}`);
+      
+      if (type === 'song') {
+        return { list: (res?.data?.songResultData?.result ?? []).map(e => mapSong(e)) };
+      } else if (type === 'playlist') {
+        return { list: (res?.data?.songListResultData?.result ?? []).map(e => ({
+            id: `${e?.id ?? ''}`, 
+            name: cleanText(e?.name ?? ''), 
+            cover: toHttps(e?.imgItems?.[0]?.img ?? e?.img ?? ''), // 修正图片提取
+            artist: { name: cleanText(e?.userName ?? '咪咕歌单') }, 
+            ext: { source: 'mg', gid: '8', id: `${e?.id ?? ''}`, type: 'playlist' }
+        })) };
+      } else if (type === 'album') {
+        return { list: (res?.data?.albumResultData?.result ?? []).map(e => ({
+            id: `${e?.id ?? ''}`, 
+            name: cleanText(e?.name ?? ''), 
+            cover: toHttps(e?.imgItems?.[0]?.img ?? e?.img ?? ''), // 修正图片提取
+            artist: { name: cleanText(e?.singers?.[0]?.name ?? e?.singer ?? '未知歌手') }, // 修正歌手名
+            ext: { source: 'mg', gid: '6', id: `${e?.id ?? ''}`, type: 'album' }
+        })) };
+      } else if (type === 'artist') {
+        return { list: (res?.data?.singerResultData?.result ?? []).map(e => ({ id: `${e?.id ?? ''}`, name: cleanText(e?.name ?? ''), cover: toHttps(e?.imgItems?.[0]?.img ?? e?.img ?? ''), groups: [{ name: '歌曲', type: 'song', ext: { source: 'mg', gid: '4', id: e?.id } }, { name: '专辑', type: 'album', ext: { source: 'mg', gid: '5', id: e?.id } }], ext: { source: 'mg', gid: '2', id: e?.id } })) };
       }
       return { list: [] };
     }
-
   };
 })();
+
 
 // ========================== 喜马拉雅模块 ==========================
 const XM = (function () {
