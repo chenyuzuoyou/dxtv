@@ -114,8 +114,6 @@ const appConfig = {
     ],
   },
 
-  tabMe: { ... }, // 后面的 Tab 依次排列
-
   tabMe: {
     name: '我的',
     groups: [
