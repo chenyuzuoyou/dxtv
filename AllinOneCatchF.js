@@ -738,6 +738,7 @@ const MG = (function () {
       }
       return { list: [] };
     },
+    
     getSongs: async (ext) => {
       const { id, page = 1, gid = '' } = ext;
       if (gid == '1') {
@@ -746,35 +747,57 @@ const MG = (function () {
         const blocks = (await fetchJson(`https://app.c.nf.migu.cn/pc/bmw/singer/song/v1.0?pageNo=${page}&singerId=${encodeURIComponent(id)}&type=1`))?.data?.contents ?? [];
         return { list: ((blocks.find(each => each?.view == 'ZJ-Singer-Song-Scroll'))?.contents ?? []).map(e => mapSong(e)) };
       } else if (gid == '6') {
-        // 【终极修复】：获取专辑下歌曲。双接口降级策略，确保绝对能抓到歌曲
+        // 【终极修复：专辑歌曲】3大接口轮询，无视新老专辑ID差异
         let rawSongs = [];
-        try {
-            // 策略 A：优先使用 H5 接口（数据最稳定）
-            const h5Res = await fetchJson(`https://m.music.migu.cn/migu/remoting/cms_album_song_list_tag?albumId=${encodeURIComponent(id)}&pageSize=${PAGE_LIMIT}`);
-            if (h5Res?.result?.results && h5Res.result.results.length > 0) {
-                rawSongs = h5Res.result.results;
-            } else if (h5Res?.songs && h5Res.songs.length > 0) {
-                rawSongs = h5Res.songs;
-            } else {
-                // 策略 B：降级使用 PC 详情接口，并深度提取 contents
-                const pcRes = await fetchJson(`https://app.c.nf.migu.cn/pc/bmw/album/info/v1.0?albumId=${encodeURIComponent(id)}`);
-                const contents = pcRes?.data?.contents ?? [];
-                contents.forEach(b => {
-                    if (b?.contents && Array.isArray(b.contents)) {
-                        rawSongs.push(...b.contents);
-                    } else if (b?.songId || b?.copyrightId) {
-                        rawSongs.push(b);
-                    }
-                });
-            }
-        } catch (e) {
-            console.log("获取咪咕专辑歌曲失败", e);
+        const urls = [
+            `https://app.c.nf.migu.cn/pc/bmw/album/info/v1.0?albumId=${encodeURIComponent(id)}`,
+            `https://m.music.migu.cn/migu/remoting/cms_album_song_list_tag?albumId=${encodeURIComponent(id)}&pageSize=100`,
+            `https://app.c.nf.migu.cn/MIGUM2.0/v1.0/content/resourceinfo.do?needSimple=00&resourceId=${encodeURIComponent(id)}&resourceType=2003`
+        ];
+        for (const url of urls) {
+            try {
+                const res = await fetchJson(url);
+                if (res?.data?.contents) {
+                    res.data.contents.forEach(b => {
+                        if (b?.contents && Array.isArray(b.contents)) rawSongs.push(...b.contents);
+                        else if (b?.songId || b?.copyrightId) rawSongs.push(b);
+                    });
+                } else if (res?.result?.results) rawSongs.push(...res.result.results);
+                else if (res?.songs) rawSongs.push(...res.songs);
+                else if (res?.resource?.songs) rawSongs.push(...res.resource.songs);
+                
+                if (rawSongs.length > 0) break; // 拿到数据立刻跳出
+            } catch(e) {}
+        }
+        return { list: rawSongs.map(e => mapSong(e)) };
+      } else if (gid == '8') {
+        // 【全新增加：歌单歌曲】原版根本没写这个逻辑，现通过3大接口轮询获取普通歌单
+        let rawSongs = [];
+        const urls = [
+            `https://app.c.nf.migu.cn/pc/bmw/playlist/info/v1.0?playlistId=${encodeURIComponent(id)}`,
+            `https://m.music.migu.cn/migu/remoting/query_playlist_by_id_tag?playListId=${encodeURIComponent(id)}&reqNum=100`,
+            `https://app.c.nf.migu.cn/MIGUM2.0/v1.0/content/resourceinfo.do?needSimple=00&resourceId=${encodeURIComponent(id)}&resourceType=2021`
+        ];
+        for (const url of urls) {
+            try {
+                const res = await fetchJson(url);
+                if (res?.data?.contents) {
+                    res.data.contents.forEach(b => {
+                        if (b?.contents && Array.isArray(b.contents)) rawSongs.push(...b.contents);
+                        else if (b?.songId || b?.copyrightId) rawSongs.push(b);
+                    });
+                } else if (res?.rsp?.playList?.[0]?.content) rawSongs.push(...res.rsp.playList[0].content);
+                else if (res?.playlist) rawSongs.push(...res.playlist);
+                else if (res?.resource?.songs) rawSongs.push(...res.resource.songs);
+                
+                if (rawSongs.length > 0) break; // 拿到数据立刻跳出
+            } catch(e) {}
         }
         return { list: rawSongs.map(e => mapSong(e)) };
       }
       return { list: [] };
     },
-    
+
     getAlbums: async (ext) => {
       const { id, page = 1, gid = '' } = ext;
       if (gid == '5') {
@@ -831,10 +854,8 @@ const MG = (function () {
       return { list: [] };
     },
     
-        search: async ({ text, page = 1, type = 'song' }) => {
+    search: async ({ text, page = 1, type = 'song' }) => {
       const kw = encodeURIComponent(text);
-      
-      // 【终极防线】：构建接口备用池。将 3 个不同域名的官方搜索接口做成轮询，总有一个能用
       const doSearch = async (switchObj) => {
          const switchStr = encodeURIComponent(JSON.stringify(switchObj));
          const urls = [
@@ -842,17 +863,13 @@ const MG = (function () {
             `https://app.c.nf.migu.cn/MIGUM2.0/v1.0/content/search_all.do?searchSwitch=${switchStr}&text=${kw}&pageNo=${page}&pageSize=${PAGE_LIMIT}`,
             `https://jadeite.migu.cn/music_search/v2/search/searchAll?searchSwitch=${switchStr}&text=${kw}&pageNo=${page}&pageSize=${PAGE_LIMIT}`
          ];
-         
          for (const url of urls) {
              try {
                  const res = await fetchJson(url);
-                 // 验证是否真正获取到了核心数据，拿到了就立刻停止尝试并返回
                  if (res?.data?.songResultData || res?.songResultData || res?.data?.songListResultData || res?.songListResultData || res?.data?.albumResultData || res?.albumResultData || res?.data?.singerResultData || res?.singerResultData) {
                      return res;
                  }
-             } catch(e) {
-                 // 当前接口被拦截或超时，忽略报错，无缝尝试下一个
-             }
+             } catch(e) {}
          }
          return null;
       };
@@ -872,8 +889,6 @@ const MG = (function () {
                   };
                 })};
             }
-            
-            // 最老的 H5 接口做最后一次兜底
             const resOld = await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=2&keyword=${kw}&pgc=${page}`);
             if (resOld?.musics && resOld.musics.length > 0) {
                 return { list: resOld.musics.map(e => {
@@ -892,10 +907,12 @@ const MG = (function () {
             const res = await doSearch({ songlist: 1 });
             const list = res?.data?.songListResultData?.result || res?.songListResultData?.result || [];
             if (list.length > 0) {
-                return { list: list.map(e => ({ id: `${e?.id ?? ''}`, name: cleanText(e?.name ?? ''), cover: toHttps(e?.img ?? ''), artist: { id: 'mg', name: 'mgfm', cover: '' }, ext: { source: 'mg', gid: '1', id: `${e?.id ?? ''}`, type: 'playlist' } })) };
+                // 【关键修复】：gid 从 '1' 改为了 '8'
+                return { list: list.map(e => ({ id: `${e?.id ?? ''}`, name: cleanText(e?.name ?? ''), cover: toHttps(e?.img ?? ''), artist: { id: 'mg', name: 'mgfm', cover: '' }, ext: { source: 'mg', gid: '8', id: `${e?.id ?? ''}`, type: 'playlist' } })) };
             }
             const resOld = await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=6&keyword=${kw}&pgc=${page}`);
-            return { list: (resOld?.songLists ?? []).map(e => ({ id: `${e?.playListId ?? e?.id ?? ''}`, name: cleanText(e?.playListName ?? e?.name ?? ''), cover: toHttps(e?.img ?? e?.pic ?? ''), artist: { id: 'mg', name: 'mgfm', cover: '' }, ext: { source: 'mg', gid: '1', id: `${e?.playListId ?? e?.id ?? ''}`, type: 'playlist' } })) };
+            // 【关键修复】：gid 从 '1' 改为了 '8'
+            return { list: (resOld?.songLists ?? []).map(e => ({ id: `${e?.playListId ?? e?.id ?? ''}`, name: cleanText(e?.playListName ?? e?.name ?? ''), cover: toHttps(e?.img ?? e?.pic ?? ''), artist: { id: 'mg', name: 'mgfm', cover: '' }, ext: { source: 'mg', gid: '8', id: `${e?.playListId ?? e?.id ?? ''}`, type: 'playlist' } })) };
           }
           
           if (type === 'album') {
@@ -925,6 +942,7 @@ const MG = (function () {
       }
       return { list: [] };
     }
+
   };
 })();
 
