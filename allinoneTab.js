@@ -920,55 +920,57 @@ const XM = (function () {
 async function getConfig() { return jsonify(appConfig); }
 
 async function getPlaylists(ext) {
-  const args = argsify(ext);
+  const args = typeof ext === 'string' ? argsify(ext) : (ext || {});
   const source = args.source || 'all';
   const page = args.page || 1;
 
-  // --- 逻辑 A：生成首页第一排的 6 个平台入口卡片 ---
-  if (args.is_entrance) {
-    return jsonify({
-      list: [
-        { id: 'ent_wy', name: '网易云音乐', cover: 'https://p1.music.126.net/6y-UleORpiNzjz_f2PAn9A==/109951164301217161.jpg', artist: { name: '点击进入' }, ext: { source: 'wy', is_platform: true } },
-        { id: 'ent_tx', name: 'QQ音乐', cover: 'https://y.gtimg.cn/music/common/upload/t_ubase_feedback/1235631.png', artist: { name: '点击进入' }, ext: { source: 'tx', is_platform: true } },
-        { id: 'ent_kg', name: '酷狗音乐', cover: 'https://static.kgimg.com/common/images/logo.png', artist: { name: '点击进入' }, ext: { source: 'kg', is_platform: true } },
-        { id: 'ent_kw', name: '酷我音乐', cover: 'https://img4.kuwo.cn/star/user_s2/54/22/1534431522_0.jpg', artist: { name: '点击进入' }, ext: { source: 'kw', is_platform: true } },
-        { id: 'ent_mg', name: '咪咕音乐', cover: 'https://cdnres.migu.cn/musicv2/rebuild/default/img/default_album.png', artist: { name: '点击进入' }, ext: { source: 'mg', is_platform: true } },
-        { id: 'ent_xm', name: '喜马拉雅', cover: 'https://imagev2.xmcdn.com/group80/M02/6F/40/wKgPEV6_yv6S9_p6AAAd9_k_Z00656.png', artist: { name: '点击进入' }, ext: { source: 'xm', is_platform: true } }
-      ]
-    });
+  // --- 逻辑 A：渲染首页最上方的 6 个平台卡片 ---
+  if (args.is_entrance === true) {
+    const entranceList = [
+      { id: 'e_wy', name: '网易云音乐', cover: 'https://p1.music.126.net/6y-UleORpiNzjz_f2PAn9A==/109951164301217161.jpg', artist: { name: '点击进入专区' }, ext: { source: 'wy', is_platform: true } },
+      { id: 'e_tx', name: 'QQ音乐', cover: 'https://y.gtimg.cn/music/common/upload/t_ubase_feedback/1235631.png', artist: { name: '点击进入专区' }, ext: { source: 'tx', is_platform: true } },
+      { id: 'e_kg', name: '酷狗音乐', cover: 'https://static.kgimg.com/common/images/logo.png', artist: { name: '点击进入专区' }, ext: { source: 'kg', is_platform: true } },
+      { id: 'e_kw', name: '酷我音乐', cover: 'https://img4.kuwo.cn/star/user_s2/54/22/1534431522_0.jpg', artist: { name: '点击进入专区' }, ext: { source: 'kw', is_platform: true } },
+      { id: 'e_mg', name: '咪咕音乐', cover: 'https://cdnres.migu.cn/musicv2/rebuild/default/img/default_album.png', artist: { name: '点击进入专区' }, ext: { source: 'mg', is_platform: true } },
+      { id: 'e_xm', name: '喜马拉雅', cover: 'https://imagev2.xmcdn.com/group80/M02/6F/40/wKgPEV6_yv6S9_p6AAAd9_k_Z00656.png', artist: { name: '点击进入专区' }, ext: { source: 'xm', is_platform: true } }
+    ];
+    return jsonify({ list: entranceList });
   }
 
-  // --- 逻辑 B：处理点击“平台专区”卡片后的跳转逻辑 ---
-  if (args.is_platform) {
-    let res = { list: [] };
+  // --- 逻辑 B：处理点击平台卡片后的“二级页面” ---
+  if (args.is_platform === true) {
     try {
-      switch (source) {
-        case 'wy': res = await WY.getPlaylists({ gid: '2', page }); break; 
-        case 'tx': res = await QQ.getPlaylists({ gid: '1', page }); break; 
-        case 'kg': res = await KG.getPlaylists({ gid: '1', page }); break; 
-        case 'kw': res = await KW.getPlaylists({ gid: '2', page }); break; 
-        case 'mg': res = await MG.getPlaylists({ gid: '1', page }); break; 
-        case 'xm': res = await XM.getPlaylists({ gid: '1', page }); break; 
-      }
-    } catch (e) { console.log("专区加载失败", e); }
-    return jsonify(res);
+      if (source === 'wy') return jsonify(await WY.getPlaylists({ gid: '2', page }));
+      if (source === 'tx') return jsonify(await QQ.getPlaylists({ gid: '1', page }));
+      if (source === 'kg') return jsonify(await KG.getPlaylists({ gid: '1', page }));
+      if (source === 'kw') return jsonify(await KW.getPlaylists({ gid: '2', page }));
+      if (source === 'mg') return jsonify(await MG.getPlaylists({ gid: '1', page }));
+      if (source === 'xm') return jsonify(await XM.getPlaylists({ gid: '1', page }));
+    } catch (e) {
+      return jsonify({ list: [] });
+    }
   }
 
-  // --- 逻辑 C：原有的全网聚合逻辑 ---
+  // --- 逻辑 C：默认的全聚合首页 ---
   if (source === 'all') {
-    const results = await Promise.all([
-      WY.getPlaylists({ gid: '5', page }).catch(() => ({ list: [] })),
-      QQ.getPlaylists({ gid: '1', page }).catch(() => ({ list: [] })),
-      KG.getPlaylists({ gid: '1', page }).catch(() => ({ list: [] })),
-      KW.getPlaylists({ gid: '1', page }).catch(() => ({ list: [] })),
-      MG.getPlaylists({ gid: '1', page }).catch(() => ({ list: [] }))
-    ]);
-    return jsonify({ list: mixArrays(...results.map(r => r.list || [])) });
+    try {
+      const results = await Promise.all([
+        WY.getPlaylists({ gid: '5', page }).catch(() => ({ list: [] })),
+        QQ.getPlaylists({ gid: '1', page }).catch(() => ({ list: [] })),
+        KG.getPlaylists({ gid: '1', page }).catch(() => ({ list: [] })),
+        KW.getPlaylists({ gid: '1', page }).catch(() => ({ list: [] })),
+        MG.getPlaylists({ gid: '1', page }).catch(() => ({ list: [] }))
+      ]);
+      return jsonify({ list: mixArrays(...results.map(r => r.list || [])) });
+    } catch (e) {
+      return jsonify({ list: [] });
+    }
   }
 
-  // 其他模块原有逻辑...
+  // 兜底返回空
   return jsonify({ list: [] });
 }
+
 
 
   // 3. 兜底处理原有其他逻辑（如网易、QQ 自己的分类加载）
