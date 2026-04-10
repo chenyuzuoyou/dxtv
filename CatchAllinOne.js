@@ -401,15 +401,15 @@ const KG = (function () {
   async function fetchJson(url) { return safeArgs((await $fetch.get(url, { headers: withKgHeaders() })).data); }
   
   // 【关键修复】深度解析歌手和封面的 mapSong
+  // 【修复版】深度解析歌手和封面的 mapSong
   function mapSong(song) {
     const hash = `${song?.hash ?? song?.audio_id ?? song?.songmid ?? ''}`;
     const authors = song?.authors ?? [];
     
-    // 1. 提取歌手名：覆盖多种结构以防丢失
+    // 1. 提取歌手名
     let singer = song?.singername ?? song?.author_name ?? song?.artist_name ?? authors[0]?.author_name ?? authors[0]?.singername ?? '';
     let songName = song?.songname ?? song?.name ?? '';
     
-    // 从 filename 兜底提取（Kugou 的 filename 通常是 "歌手 - 歌曲"）
     if (song?.filename) {
       if (!singer || !songName) {
         const parts = song.filename.split(' - ');
@@ -428,13 +428,31 @@ const KG = (function () {
       }
     }
 
-    // 2. 提取封面：全面排查包含封面的各种潜在字段
-    let rawCover = song?.album_sizable_cover ?? song?.imgurl ?? song?.cover ?? song?.pic ?? song?.image ?? song?.album_info?.sizable_cover ?? authors[0]?.sizable_avatar ?? authors[0]?.avatar ?? '';
+    // 2. 提取封面：穷举酷狗所有可能下发图片的字段
+    let rawCover = song?.album_sizable_cover 
+      ?? song?.imgurl 
+      ?? song?.cover 
+      ?? song?.pic 
+      ?? song?.img 
+      ?? song?.image 
+      ?? song?.singerimg
+      ?? song?.album_img
+      ?? song?.sizable_cover
+      ?? song?.album_info?.sizable_cover 
+      ?? song?.album_info?.cover
+      ?? authors[0]?.sizable_avatar 
+      ?? authors[0]?.avatar 
+      ?? '';
     
+    // 强制处理酷狗特有的 {size} 占位符（防止全局 toHttps 漏处理）
+    if (rawCover && typeof rawCover === 'string') {
+        rawCover = rawCover.replace(/\{size\}/g, '400');
+    }
+
     // 3. 构建歌手相关信息与备用头像策略
     const singerId = `${song?.singerid ?? song?.author_id ?? authors[0]?.author_id ?? ''}`;
-    if (!rawCover && singerId) {
-        // 当列表接口未下发歌曲封面时，使用酷狗标准的歌手大头照作为后备
+    // 如果穷举后依然无封面（如搜索接口常态），且有合法歌手ID，则兜底使用歌手头像
+    if (!rawCover && singerId && singerId !== '0') {
         rawCover = `https://imge.kugou.com/stdmusic/400/${singerId}.jpg`;
     }
 
