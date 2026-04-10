@@ -228,7 +228,7 @@ const WY = (function () {
       if (gidValue == '1') {
         const info = await fetchJson('https://music.163.com/api/personalized/newsong');
         songs = (info?.result ?? info?.data?.result ?? []).map(each => mapSong(each?.song ?? each, { cover: each?.picUrl ?? '' }));
-      } else if (['2', '3', '4', '5', '9'].includes(gidValue)) {
+      } else if (['2', '3', '4', '5', '9', 'search'].includes(gidValue)) {
         songs = (await loadWyPlaylistTracks(id, page)).map(each => mapSong(each));
       } else if (gidValue == '6') {
         songs = ((await fetchJson(`https://music.163.com/api/v1/album/${id}`))?.songs ?? []).map(each => mapSong(each));
