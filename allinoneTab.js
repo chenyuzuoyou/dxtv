@@ -103,16 +103,23 @@ const appConfig = {
     
   
 
-  tabMe: {
+    tabMe: {
     name: '我的',
     groups: [
-      // 已融合：原“红心”改为“红心（缓存）”，并增加 ext.cache 标识
       { name: '红心（缓存）', type: 'song', ext: { cache: true } },
       { name: '歌单', type: 'playlist' },
       { name: '专辑', type: 'album' },
-      { name: '创作者', type: 'artist' }
+      { name: '创作者', type: 'artist' },
+      // 新增平台入口标签
+      { name: '网易云专区', type: 'playlist', ui: 1, showMore: true, ext: { source: 'wy', gid: '2', is_platform: true } },
+      { name: 'QQ音乐专区', type: 'playlist', ui: 1, showMore: true, ext: { source: 'tx', gid: '1', is_platform: true } },
+      { name: '酷狗专区', type: 'playlist', ui: 1, showMore: true, ext: { source: 'kg', gid: '1', is_platform: true } },
+      { name: '酷我专区', type: 'playlist', ui: 1, showMore: true, ext: { source: 'kw', gid: '2', is_platform: true } },
+      { name: '咪咕专区', type: 'playlist', ui: 1, showMore: true, ext: { source: 'mg', gid: '1', is_platform: true } },
+      { name: '喜马拉雅专区', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', gid: '1', is_platform: true } }
     ]
   },
+
   tabSearch: {
     name: '搜索',
     groups: [
@@ -141,18 +148,6 @@ const appConfig = {
       { name: '喜马单曲', type: 'song', ext: { type: 'song', source: 'xm' } },
   	  { name: '喜马专辑', type: 'album', ext: { type: 'album', source: 'xm' } }
   	//  { name: '喜马歌手', type: 'artist', ext: { type: 'artist', source: 'xm' } } 
-    ]
-  },
-  // 新增：平台 Tab
-  tabPlatforms: {
-    name: '平台',
-    groups: [
-      { name: '网易', ext: { source: 'wy' } },
-      { name: 'QQ', ext: { source: 'tx' } },
-      { name: '酷狗', ext: { source: 'kg' } },
-      { name: '酷我', ext: { source: 'kw' } },
-      { name: '咪咕', ext: { source: 'mg' } },
-      { name: '喜马', ext: { source: 'xm' } }
     ]
   }
 };
@@ -975,14 +970,51 @@ const XM = (function () {
 async function getConfig() { return jsonify(appConfig); }
 
 async function getPlaylists(ext) {
-  const args = argsify(ext), source = args.source || 'all';
+  const args = argsify(ext);
+  const source = args.source || 'all';
+  const page = args.page || 1;
+
+  // 1. 处理原本首页（全聚合）的逻辑
   if (source === 'all') {
-    const results = await Promise.all([WY.getPlaylists({ gid: '5', page: args.page }).catch(() => ({ list: [] })), QQ.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] })), KG.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] })), KW.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] })), MG.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] }))]);
-    return jsonify({ list: mixArrays(results[0].list, results[1].list, results[2].list, results[3].list, results[4].list) });
+    const results = await Promise.all([
+      WY.getPlaylists({ gid: '5', page }).catch(() => ({ list: [] })),
+      QQ.getPlaylists({ gid: '1', page }).catch(() => ({ list: [] })),
+      KG.getPlaylists({ gid: '1', page }).catch(() => ({ list: [] })),
+      KW.getPlaylists({ gid: '1', page }).catch(() => ({ list: [] })),
+      MG.getPlaylists({ gid: '1', page }).catch(() => ({ list: [] }))
+    ]);
+    return jsonify({ list: mixArrays(...results.map(r => r.list || [])) });
   }
-  if (source === 'wy') return jsonify(await WY.getPlaylists(args)); if (source === 'tx') return jsonify(await QQ.getPlaylists(args)); if (source === 'kg') return jsonify(await KG.getPlaylists(args)); if (source === 'kw') return jsonify(await KW.getPlaylists(args)); if (source === 'mg') return jsonify(await MG.getPlaylists(args)); if (source === 'xm') return jsonify(await XM.getPlaylists(args));
+
+  // 2. 处理点击“我的”页面中平台标签的逻辑
+  if (args.is_platform) {
+    let res = { list: [] };
+    try {
+      switch (source) {
+        case 'wy': res = await WY.getPlaylists({ gid: '2', page }); break; // 网易推荐
+        case 'tx': res = await QQ.getPlaylists({ gid: '1', page }); break; // QQ排行榜
+        case 'kg': res = await KG.getPlaylists({ gid: '1', page }); break; // 酷狗排行榜
+        case 'kw': res = await KW.getPlaylists({ gid: '2', page }); break; // 酷我推荐
+        case 'mg': res = await MG.getPlaylists({ gid: '1', page }); break; // 咪咕排行榜
+        case 'xm': res = await XM.getPlaylists({ gid: '1', page }); break; // 喜马专辑
+      }
+    } catch (e) {
+      console.log("加载平台详情失败", e);
+    }
+    return jsonify(res);
+  }
+
+  // 3. 兜底处理原有其他逻辑（如网易、QQ 自己的分类加载）
+  if (source === 'wy') return jsonify(await WY.getPlaylists(args));
+  if (source === 'tx') return jsonify(await QQ.getPlaylists(args));
+  if (source === 'kg') return jsonify(await KG.getPlaylists(args));
+  if (source === 'kw') return jsonify(await KW.getPlaylists(args));
+  if (source === 'mg') return jsonify(await MG.getPlaylists(args));
+  if (source === 'xm') return jsonify(await XM.getPlaylists(args));
+
   return jsonify({ list: [] });
 }
+
 
 
 
