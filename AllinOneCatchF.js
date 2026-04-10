@@ -1,7 +1,7 @@
 /*!
  * @name FixAllinOneCatch
  * @description 全网聚合音乐 - 增强版：红心改为“红心（缓存）” + 自动最近播放（离线缓存）
- * @version v1.0.623
+ * @version v1.0.624
  * @author kobe (增强 by Grok)
  * @key csp_FixAllinOneCatch
  */
@@ -951,31 +951,55 @@ const XM = (function () {
     },
     getSongs: async (ext) => {
       const { id, page = 1, gid = '', text = '' } = ext;
-      if (gid == '3') {
+      // 确保 ID 存在且为字符串
+      const albumId = `${id ?? ext.albumId ?? ''}`; 
+      
+      if (gid == '3' || gid == 'album') { // 增加对 album 类型的兼容
         if (text) return { list: firstArray((await fetchJson(`https://www.ximalaya.com/revision/search?core=track&kw=${encodeURIComponent(text)}&page=${page}&rows=${PAGE_LIMIT}&spellchecker=true&condition=relation&device=web`))?.data?.result?.response?.docs).filter(e => !isPaidItem(e)).map(e => mapTrack(e)) };
-        for (const url of [`https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${id}&pageNum=${page}&sort=0&pageSize=${PAGE_LIMIT}`, `https://mobile.ximalaya.com/mobile/v1/album/track/?albumId=${id}&pageSize=${PAGE_LIMIT}&pageId=${page}`]) {
-          try { const data = await fetchJson(url, { Referer: `https://www.ximalaya.com/album/${id}` }); const list = firstArray(data?.data?.tracks, data?.data?.list, data?.data?.trackList); if (list.length > 0) return { list: list.filter(e => !isPaidItem(e)).map(e => mapTrack(e)) }; } catch (e) {}
+        
+        // 轮询多个接口，确保 Referer 正确
+        for (const url of [`https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${albumId}&pageNum=${page}&sort=0&pageSize=${PAGE_LIMIT}`, `https://mobile.ximalaya.com/mobile/v1/album/track/?albumId=${albumId}&pageSize=${PAGE_LIMIT}&pageId=${page}`]) {
+          try { 
+            const data = await fetchJson(url, { Referer: `https://www.ximalaya.com/album/${albumId}` }); 
+            const list = firstArray(data?.data?.tracks, data?.data?.list, data?.data?.trackList); 
+            if (list.length > 0) return { list: list.filter(e => !isPaidItem(e)).map(e => mapTrack(e)) }; 
+          } catch (e) {}
         }
       }
       return { list: [] };
     },
+
     search: async ({ text, page = 1, type = 'song' }) => {
       const kw = encodeURIComponent(text);
-      if (type === 'album') return { list: firstArray((await fetchJson(`https://www.ximalaya.com/revision/search?core=album&kw=${kw}&page=${page}&rows=${PAGE_LIMIT}&spellchecker=true&condition=relation&device=web`))?.data?.result?.response?.docs).filter(e => !isPaidItem(e)).map(e => mapAlbum(e)) };
-      if (type === 'song' || type === 'track') return { list: firstArray((await fetchJson(`https://www.ximalaya.com/revision/search?core=track&kw=${kw}&page=${page}&rows=${PAGE_LIMIT}&spellchecker=true&condition=relation&device=web`))?.data?.result?.response?.docs).filter(e => !isPaidItem(e)).map(e => mapTrack(e)) };
-      return { list: [] };
-    },
-    getSongInfo: async ({ trackId, quality }) => {
-      if (!trackId) return { urls: [] };
-      for (const url of [`https://m.ximalaya.com/tracks/${trackId}.json`, `https://www.ximalaya.com/revision/play/v1/audio?id=${trackId}&ptype=1`, `https://www.ximalaya.com/mobile-playpage/track/v3/baseInfo/${Date.now()}?device=www2&trackId=${trackId}&trackQualityLevel=2`]) {
-        try {
-          const info = await fetchJson(url, { Referer: `https://www.ximalaya.com/sound/${trackId}` });
-          if (info?.is_paid || info?.data?.isPaid) return { urls: [] };
-          const playUrl = (quality == '32k' ? (info?.play_path_32 || info?.data?.play_path_32 || info?.src) : (info?.play_path_64 || info?.data?.play_path_64 || info?.src || info?.play_path_32 || info?.data?.play_path_32)) || info?.data?.src || info?.data?.playUrl64 || info?.playUrl64 || info?.audioUrl || info?.audio_url;
-          if (playUrl) return { urls: [playUrl] };
-        } catch (e) {}
+      
+      // 1. 专辑搜索逻辑 (保持并优化)
+      if (type === 'album') {
+        const data = await fetchJson(`https://www.ximalaya.com/revision/search?core=album&kw=${kw}&page=${page}&rows=${PAGE_LIMIT}&spellchecker=true&condition=relation&device=web`);
+        return { list: firstArray(data?.data?.result?.response?.docs).filter(e => !isPaidItem(e)).map(e => mapAlbum(e)) };
       }
-      return { urls: [] };
+      
+      // 2. 声音/单曲搜索逻辑
+      if (type === 'song' || type === 'track') {
+        const data = await fetchJson(`https://www.ximalaya.com/revision/search?core=track&kw=${kw}&page=${page}&rows=${PAGE_LIMIT}&spellchecker=true&condition=relation&device=web`);
+        return { list: firstArray(data?.data?.result?.response?.docs).filter(e => !isPaidItem(e)).map(e => mapTrack(e)) };
+      }
+    
+      // 3. 新增：歌手（主播）搜索逻辑
+      if (type === 'artist' || type === 'user') {
+        const data = await fetchJson(`https://www.ximalaya.com/revision/search?core=user&kw=${kw}&page=${page}&rows=${PAGE_LIMIT}&spellchecker=true&condition=relation&device=web`);
+        const users = firstArray(data?.data?.result?.response?.docs);
+        return { 
+          list: users.map(u => ({
+            id: `${u.id ?? u.uid ?? ''}`,
+            name: u.nickname ?? u.name ?? '',
+            cover: toHttps(u.mainPic ?? u.logo ?? u.picUrl ?? ''),
+            // 点击歌手后跳转到其专辑列表
+            groups: [{ name: '专辑', type: 'album', ext: { source: 'xm', gid: '2', kw: u.nickname } }],
+            ext: { source: 'xm', gid: 'artist', id: `${u.id ?? u.uid ?? ''}` }
+          }))
+        };
+      }
+      return { list: [] };
     }
   };
 })();
