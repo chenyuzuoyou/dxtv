@@ -234,7 +234,11 @@ const WY = (function () {
         songs = ((await fetchJson(`https://music.163.com/api/v1/album/${id}`))?.songs ?? []).map(each => mapSong(each));
       } else if (gidValue == '7' || gidValue == 'artist_songs') {
         songs = ((await fetchJson(`https://music.163.com/api/artist/top/song?id=${id}`))?.songs ?? []).map(each => mapSong(each));
-      }
+      } else if (gidValue == 'album_songs') {
+		const res = await fetchJson(`https://music.163.com/api/album/${id}`);
+		songs = (res?.album?.songs ?? []).map(s => mapSong(s, { album: res.album }));
+	  }
+		
       return { list: songs };
     },
     getAlbums: async (ext) => {
