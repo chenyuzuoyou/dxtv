@@ -174,7 +174,7 @@ const WY = (function () {
     const artistId = `${artist?.id ?? ''}`;
     return {
       id: artistId, name: artist?.name ?? '', cover: toHttps(artist?.picUrl ?? artist?.img1v1Url ?? ''),
-      groups: [{ name: '热门歌曲', type: 'song', ext: { source: 'wy', gid: 'artist_songs', id: artistId } }, { name: '专辑', type: 'album', ext: { source: 'wy', gid: 'artist_albums', id: artistId } }], ext: { source: 'wy', gid: 'artist', id: artistId }
+      groups: [{ name: '热门歌曲', type: 'song', ext: { source: 'wy', gid: 'artist_songs', id: artistId } }, { name: '专辑', type: 'album', ext: { source: 'wy', gid: 'album_songs', id: artistId } }], ext: { source: 'wy', gid: 'artist', id: artistId }
     };
   }
   async function loadWyPlaylistTracks(id, page = 1) {
