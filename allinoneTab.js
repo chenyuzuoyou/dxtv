@@ -1,7 +1,7 @@
 /*!
  * @name AllinOneTab
  * @description 全网聚合音乐 - 增强版：红心改为“红心（缓存）” + 自动最近播放（离线缓存）
- * @version v1.0.50@3
+ * @version v1.0.50@4
  * @author kobe (增强 by Grok)
  * @key csp_AllinOneTab
  */
@@ -47,59 +47,16 @@ function withMgHeaders(extra = {}) { return { ...headers, Referer: 'https://musi
 // ========================== 核心接口配置 ==========================
 const appConfig = {
   ver: 1, name: '全网聚合音乐', message: '', desc: '深度整合全网资源详细分类',
-    tabLibrary: {
+      tabLibrary: {
     name: '探索',
     groups: [
-      { name: '★ 全部聚合', type: 'playlist', ui: 1, showMore: true, ext: { source: 'all', gid: 'all_top' } },
-      
-      { name: '网易-推荐新歌', type: 'song', ui: 0, showMore: false, ext: { source: 'wy', gid: '1' } },
-      { name: '网易-推荐歌单', type: 'playlist', ui: 1, showMore: true, ext: { source: 'wy', gid: '2' } },
-      { name: '网易-华语热门', type: 'playlist', ui: 1, showMore: true, ext: { source: 'wy', gid: '3' } },
-      { name: '网易-流行歌单', type: 'playlist', ui: 1, showMore: true, ext: { source: 'wy', gid: '4' } },
-      { name: '网易-官方榜单', type: 'playlist', ui: 1, showMore: true, ext: { source: 'wy', gid: '5' } },
-      { name: '网易-新碟上架', type: 'album', ui: 0, showMore: false, ext: { source: 'wy', gid: '6' } },
-      { name: '网易-热门歌手', type: 'artist', ui: 0, showMore: true, ext: { source: 'wy', gid: '7' } },
-
-      { name: 'QQ-飙升榜', type: 'song', ui: 0, showMore: false, ext: { source: 'tx', gid: '1', id: '62' } },
-      { name: 'QQ-热歌榜', type: 'song', ui: 0, showMore: false, ext: { source: 'tx', gid: '1', id: '26' } },
-      { name: 'QQ-新歌榜', type: 'song', ui: 0, showMore: false, ext: { source: 'tx', gid: '1', id: '27' } },
-      { name: 'QQ-排行榜', type: 'playlist', ui: 1, showMore: true, ext: { source: 'tx', gid: '1' } },
-      { name: 'QQ-流行歌单', type: 'playlist', ui: 1, showMore: true, ext: { source: 'tx', gid: '7', categoryId: '6', sortId: '5' } },
-      { name: 'QQ-国语精选', type: 'playlist', ui: 1, showMore: true, ext: { source: 'tx', gid: '7', categoryId: '165', sortId: '5' } },
-      { name: 'QQ-轻音乐', type: 'playlist', ui: 1, showMore: true, ext: { source: 'tx', gid: '7', categoryId: '15', sortId: '5' } },
-      { name: 'QQ-影视原声', type: 'playlist', ui: 1, showMore: true, ext: { source: 'tx', gid: '7', categoryId: '133', sortId: '5' } },
-      { name: 'QQ-治愈歌单', type: 'playlist', ui: 1, showMore: true, ext: { source: 'tx', gid: '7', categoryId: '116', sortId: '5' } },
-      { name: 'QQ-热门歌手', type: 'artist', ui: 0, showMore: true, ext: { source: 'tx', gid: '2' } },
-
-      { name: '酷狗-飙升榜', type: 'song', ui: 0, showMore: false, ext: { source: 'kg', gid: '1', id: '6666' } },
-      { name: '酷狗-热歌榜', type: 'song', ui: 0, showMore: false, ext: { source: 'kg', gid: '1', id: '8888' } },
-      { name: '酷狗-新歌榜', type: 'song', ui: 0, showMore: false, ext: { source: 'kg', gid: '1', id: '23784' } },
-      { name: '酷狗-排行榜', type: 'playlist', ui: 1, showMore: true, ext: { source: 'kg', gid: '1' } },
-      { name: '酷狗-推荐歌单', type: 'playlist', ui: 1, showMore: true, ext: { source: 'kg', gid: '7' } },
-      { name: '酷狗-热门歌手', type: 'artist', ui: 0, showMore: true, ext: { source: 'kg', gid: '2' } },
-
-      { name: '酷我-排行榜', type: 'playlist', ui: 1, showMore: true, ext: { source: 'kw', gid: '1' } },
-      { name: '酷我-推荐歌单', type: 'playlist', ui: 1, showMore: true, ext: { source: 'kw', gid: '2' } },
-      { name: '酷我-热门歌单', type: 'playlist', ui: 1, showMore: true, ext: { source: 'kw', gid: '7' } },
-      { name: '酷我-经典歌单', type: 'playlist', ui: 1, showMore: true, ext: { source: 'kw', gid: '8' } },
-      { name: '酷我-热门歌手', type: 'artist', ui: 0, showMore: true, ext: { source: 'kw', gid: '9' } },
-
-      { name: '咪咕-新歌榜', type: 'song', ui: 0, showMore: false, ext: { source: 'mg', gid: '1', id: '27553319' } },
-      { name: '咪咕-热歌榜', type: 'song', ui: 0, showMore: false, ext: { source: 'mg', gid: '1', id: '27186466' } },
-      { name: '咪咕-国风热歌', type: 'song', ui: 0, showMore: false, ext: { source: 'mg', gid: '1', id: '83176390' } },
-      { name: '咪咕-会员臻爱', type: 'song', ui: 0, showMore: false, ext: { source: 'mg', gid: '1', id: '76557745' } },
-      { name: '咪咕-排行榜', type: 'playlist', ui: 1, showMore: true, ext: { source: 'mg', gid: '1' } },
-      { name: '咪咕-热门歌手', type: 'artist', ui: 0, showMore: true, ext: { source: 'mg', gid: '2' } },
-
-      { name: '喜马-播客', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', gid: '2', kw: '播客' } },
-      { name: '喜马-历史', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', gid: '2', kw: '历史' } },
-      { name: '喜马-图书', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', gid: '2', kw: '图书' } },
-      { name: '喜马-热门专辑', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', gid: '2', kw: '热门' } },
-      { name: '喜马-小说', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', gid: '2', kw: '小说' } },
-      { name: '喜马-相声', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', gid: '2', kw: '相声' } },
-      { name: '喜马-音乐', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', gid: '2', kw: '音乐' } }
+      // 第一组：固定显示平台入口卡片
+      { name: '★ 平台专区', type: 'playlist', ui: 1, showMore: false, ext: { is_entrance: true } },
+      // 第二组：默认的全网聚合内容
+      { name: '★ 全网热榜聚合', type: 'playlist', ui: 1, showMore: true, ext: { source: 'all' } }
     ]
   },
+
     
   
 
@@ -109,15 +66,8 @@ const appConfig = {
       { name: '红心（缓存）', type: 'song', ext: { cache: true } },
       { name: '歌单', type: 'playlist' },
       { name: '专辑', type: 'album' },
-      { name: '创作者', type: 'artist' },
-      // 新增平台入口标签
-      { name: '网易云专区', type: 'playlist', ui: 1, showMore: true, ext: { source: 'wy', gid: '2', is_platform: true } },
-      { name: 'QQ音乐专区', type: 'playlist', ui: 1, showMore: true, ext: { source: 'tx', gid: '1', is_platform: true } },
-      { name: '酷狗专区', type: 'playlist', ui: 1, showMore: true, ext: { source: 'kg', gid: '1', is_platform: true } },
-      { name: '酷我专区', type: 'playlist', ui: 1, showMore: true, ext: { source: 'kw', gid: '2', is_platform: true } },
-      { name: '咪咕专区', type: 'playlist', ui: 1, showMore: true, ext: { source: 'mg', gid: '1', is_platform: true } },
-      { name: '喜马拉雅专区', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', gid: '1', is_platform: true } }
-    ]
+      { name: '创作者', type: 'artist' }
+      ]
   },
 
   tabSearch: {
@@ -974,7 +924,37 @@ async function getPlaylists(ext) {
   const source = args.source || 'all';
   const page = args.page || 1;
 
-  // 1. 处理原本首页（全聚合）的逻辑
+  // --- 逻辑 A：生成首页第一排的 6 个平台入口卡片 ---
+  if (args.is_entrance) {
+    return jsonify({
+      list: [
+        { id: 'ent_wy', name: '网易云音乐', cover: 'https://p1.music.126.net/6y-UleORpiNzjz_f2PAn9A==/109951164301217161.jpg', artist: { name: '点击进入' }, ext: { source: 'wy', is_platform: true } },
+        { id: 'ent_tx', name: 'QQ音乐', cover: 'https://y.gtimg.cn/music/common/upload/t_ubase_feedback/1235631.png', artist: { name: '点击进入' }, ext: { source: 'tx', is_platform: true } },
+        { id: 'ent_kg', name: '酷狗音乐', cover: 'https://static.kgimg.com/common/images/logo.png', artist: { name: '点击进入' }, ext: { source: 'kg', is_platform: true } },
+        { id: 'ent_kw', name: '酷我音乐', cover: 'https://img4.kuwo.cn/star/user_s2/54/22/1534431522_0.jpg', artist: { name: '点击进入' }, ext: { source: 'kw', is_platform: true } },
+        { id: 'ent_mg', name: '咪咕音乐', cover: 'https://cdnres.migu.cn/musicv2/rebuild/default/img/default_album.png', artist: { name: '点击进入' }, ext: { source: 'mg', is_platform: true } },
+        { id: 'ent_xm', name: '喜马拉雅', cover: 'https://imagev2.xmcdn.com/group80/M02/6F/40/wKgPEV6_yv6S9_p6AAAd9_k_Z00656.png', artist: { name: '点击进入' }, ext: { source: 'xm', is_platform: true } }
+      ]
+    });
+  }
+
+  // --- 逻辑 B：处理点击“平台专区”卡片后的跳转逻辑 ---
+  if (args.is_platform) {
+    let res = { list: [] };
+    try {
+      switch (source) {
+        case 'wy': res = await WY.getPlaylists({ gid: '2', page }); break; 
+        case 'tx': res = await QQ.getPlaylists({ gid: '1', page }); break; 
+        case 'kg': res = await KG.getPlaylists({ gid: '1', page }); break; 
+        case 'kw': res = await KW.getPlaylists({ gid: '2', page }); break; 
+        case 'mg': res = await MG.getPlaylists({ gid: '1', page }); break; 
+        case 'xm': res = await XM.getPlaylists({ gid: '1', page }); break; 
+      }
+    } catch (e) { console.log("专区加载失败", e); }
+    return jsonify(res);
+  }
+
+  // --- 逻辑 C：原有的全网聚合逻辑 ---
   if (source === 'all') {
     const results = await Promise.all([
       WY.getPlaylists({ gid: '5', page }).catch(() => ({ list: [] })),
@@ -986,23 +966,10 @@ async function getPlaylists(ext) {
     return jsonify({ list: mixArrays(...results.map(r => r.list || [])) });
   }
 
-  // 2. 处理点击“我的”页面中平台标签的逻辑
-  if (args.is_platform) {
-    let res = { list: [] };
-    try {
-      switch (source) {
-        case 'wy': res = await WY.getPlaylists({ gid: '2', page }); break; // 网易推荐
-        case 'tx': res = await QQ.getPlaylists({ gid: '1', page }); break; // QQ排行榜
-        case 'kg': res = await KG.getPlaylists({ gid: '1', page }); break; // 酷狗排行榜
-        case 'kw': res = await KW.getPlaylists({ gid: '2', page }); break; // 酷我推荐
-        case 'mg': res = await MG.getPlaylists({ gid: '1', page }); break; // 咪咕排行榜
-        case 'xm': res = await XM.getPlaylists({ gid: '1', page }); break; // 喜马专辑
-      }
-    } catch (e) {
-      console.log("加载平台详情失败", e);
-    }
-    return jsonify(res);
-  }
+  // 其他模块原有逻辑...
+  return jsonify({ list: [] });
+}
+
 
   // 3. 兜底处理原有其他逻辑（如网易、QQ 自己的分类加载）
   if (source === 'wy') return jsonify(await WY.getPlaylists(args));
