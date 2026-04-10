@@ -731,25 +731,13 @@ const MG = (function () {
       }
       return { list: [] };
     },
-        getSongs: async (ext) => {
-      const { id, page = 1, gid = '', text = '' } = ext;
-      // 修复：兼容多种 ID 字段名
-      const realId = id ?? ext.albumId ?? ext.trackId ?? '';
-
-      if (gid == '3' || gid == 'album') {
-        if (text) return { list: firstArray((await fetchJson(`https://www.ximalaya.com/revision/search?core=track&kw=${encodeURIComponent(text)}&page=${page}&rows=${PAGE_LIMIT}&spellchecker=true&condition=relation&device=web`))?.data?.result?.response?.docs).filter(e => !isPaidItem(e)).map(e => mapTrack(e)) };
-        
-        // 修复：Referer 是必须的
-        for (const url of [
-          `https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${realId}&pageNum=${page}&sort=0&pageSize=${PAGE_LIMIT}`,
-          `https://mobile.ximalaya.com/mobile/v1/album/track/?albumId=${realId}&pageSize=${PAGE_LIMIT}&pageId=${page}`
-        ]) {
-          try { 
-            const data = await fetchJson(url, { Referer: `https://www.ximalaya.com/album/${realId}` }); 
-            const list = firstArray(data?.data?.tracks, data?.data?.list, data?.data?.trackList); 
-            if (list.length > 0) return { list: list.filter(e => !isPaidItem(e)).map(e => mapTrack(e)) }; 
-          } catch (e) {}
-        }
+    getSongs: async (ext) => {
+      const { id, page = 1, gid = '' } = ext;
+      if (gid == '1') {
+        return { list: ((await fetchJson(`https://app.c.nf.migu.cn/pc/bmw/rank/rank-info/v1.0?rankId=${encodeURIComponent(id)}`))?.data?.contents ?? []).map(e => mapSong(e)) };
+      } else if (gid == '4') {
+        const blocks = (await fetchJson(`https://app.c.nf.migu.cn/pc/bmw/singer/song/v1.0?pageNo=${page}&singerId=${encodeURIComponent(id)}&type=1`))?.data?.contents ?? [];
+        return { list: ((blocks.find(each => each?.view == 'ZJ-Singer-Song-Scroll'))?.contents ?? []).map(e => mapSong(e)) };
       }
       return { list: [] };
     },
@@ -966,8 +954,6 @@ const XM = (function () {
       }
       return { list: [] };
     },
-
-    
 
     search: async ({ text, page = 1, type = 'song' }) => {
       const kw = encodeURIComponent(text);
