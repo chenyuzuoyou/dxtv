@@ -746,7 +746,10 @@ const MG = (function () {
     },
     getAlbums: async (ext) => {
       const { id, page = 1, gid = '' } = ext;
-      if (gid == '5') return { list: ((await fetchJson(`https://app.c.nf.migu.cn/pc/bmw/singer/album/v1.0?pageNo=${page}&singerId=${encodeURIComponent(id)}`))?.data?.contents ?? []).map(e => ({ id: `${e?.resourceId ?? e?.linkId ?? e?.id ?? ''}`, name: e?.title ?? e?.name ?? '', cover: toHttps(e?.img ?? e?.picUrl ?? ''), artist: { id: id, name: '', cover: '' }, ext: { source: 'mg', gid: '6', id: `${e?.resourceId ?? ''}`, type: 'album' } })) };
+      if (gid == '5') {
+        const blocks = (await fetchJson(`https://app.c.nf.migu.cn/pc/bmw/singer/album/v1.0?pageNo=${page}&singerId=${encodeURIComponent(id)}`))?.data?.contents ?? [];
+        return { list: blocks.flatMap(b => b?.contents ?? []).map(e => ({ id: `${e?.resourceId ?? e?.linkId ?? e?.id ?? ''}`, name: e?.title ?? e?.name ?? '', cover: toHttps(e?.img ?? e?.picUrl ?? ''), artist: { id: id, name: '', cover: '' }, ext: { source: 'mg', gid: '6', id: `${e?.resourceId ?? e?.linkId ?? e?.id ?? ''}`, type: 'album' } })) };
+      }
       return { list: [] };
     },
     getArtists: async (ext) => {
