@@ -100,6 +100,25 @@ const appConfig = {
       { name: '喜马-音乐', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', gid: '2', kw: '音乐' } }
     ]
   },
+    
+  // 新增：平台 Tab
+  tabPlatforms: {
+    name: '平台',
+    options: [
+      { name: '网易', ext: { source: 'wy' } },
+      { name: 'QQ', ext: { source: 'tx' } },
+      { name: '酷狗', ext: { source: 'kg' } },
+      { name: '酷我', ext: { source: 'kw' } },
+      { name: '咪咕', ext: { source: 'mg' } },
+      { name: '喜马', ext: { source: 'xm' } }
+    ],
+    groups: [
+      { name: '精选内容', type: 'playlist', ui: 1, showMore: true, ext: { is_platform_tab: true } }
+    ]
+  },
+
+  tabMe: { ... }, // 后面的 Tab 依次排列
+
   tabMe: {
     name: '我的',
     groups: [
@@ -960,14 +979,40 @@ const XM = (function () {
 async function getConfig() { return jsonify(appConfig); }
 
 async function getPlaylists(ext) {
-  const args = argsify(ext), source = args.source || 'all';
+  const args = argsify(ext);
+  const source = args.source || 'all';
+  const page = args.page || 1;
+
+  // 如果是原本的“探索”页请求（source 为 all）
   if (source === 'all') {
-    const results = await Promise.all([WY.getPlaylists({ gid: '5', page: args.page }).catch(() => ({ list: [] })), QQ.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] })), KG.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] })), KW.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] })), MG.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] }))]);
-    return jsonify({ list: mixArrays(results[0].list, results[1].list, results[2].list, results[3].list, results[4].list) });
+    const results = await Promise.all([
+      WY.getPlaylists({ gid: '5', page }).catch(() => ({ list: [] })),
+      QQ.getPlaylists({ gid: '1', page }).catch(() => ({ list: [] })),
+      KG.getPlaylists({ gid: '1', page }).catch(() => ({ list: [] })),
+      KW.getPlaylists({ gid: '1', page }).catch(() => ({ list: [] })),
+      MG.getPlaylists({ gid: '1', page }).catch(() => ({ list: [] }))
+    ]);
+    return jsonify({ list: mixArrays(...results.map(r => r.list || [])) });
   }
-  if (source === 'wy') return jsonify(await WY.getPlaylists(args)); if (source === 'tx') return jsonify(await QQ.getPlaylists(args)); if (source === 'kg') return jsonify(await KG.getPlaylists(args)); if (source === 'kw') return jsonify(await KW.getPlaylists(args)); if (source === 'mg') return jsonify(await MG.getPlaylists(args)); if (source === 'xm') return jsonify(await XM.getPlaylists(args));
-  return jsonify({ list: [] });
+
+  // 如果是从新增的“平台” Tab 发来的请求
+  let result = { list: [] };
+  try {
+    switch (source) {
+      case 'wy': result = await WY.getPlaylists({ gid: '2', page }); break; // 网易推荐
+      case 'tx': result = await QQ.getPlaylists({ gid: '1', page }); break; // QQ排行榜
+      case 'kg': result = await KG.getPlaylists({ gid: '1', page }); break; // 酷狗排行榜
+      case 'kw': result = await KW.getPlaylists({ gid: '2', page }); break; // 酷我推荐
+      case 'mg': result = await MG.getPlaylists({ gid: '1', page }); break; // 咪咕排行榜
+      case 'xm': result = await XM.getPlaylists({ gid: '1', page }); break; // 喜马专辑
+    }
+  } catch (e) {
+    console.log("平台页加载失败: " + source);
+  }
+
+  return jsonify(result);
 }
+
 
 
 async function getAlbums(ext) {
