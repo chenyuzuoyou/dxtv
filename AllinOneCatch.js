@@ -143,7 +143,6 @@ const appConfig = {
 // ========================== 以下所有模块（WY、QQ、KG、KW、MG、XM）完全保持原样，一字未改 ==========================
 // （为节省篇幅此处省略完全相同的代码，仅展示关键修改位置。你只需把下面完整代码替换原文件即可）
 // ========================== 网易云音乐模块 ==========================
-// ========================== 网易云音乐模块 ==========================
 const WY = (function () {
   async function fetchJson(url, extraHeaders = {}) {
     try { const { data } = await $fetch.get(url, { headers: withWyHeaders(extraHeaders) }); return typeof data === 'string' ? argsify(data) : (data ?? {}); } catch (e) { return {}; }
