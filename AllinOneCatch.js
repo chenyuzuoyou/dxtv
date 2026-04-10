@@ -1,7 +1,7 @@
 /*!
  * @name AllinOneCatch
  * @description 全网聚合音乐 - 增强版：红心改为“红心（缓存）” + 自动最近播放（离线缓存）
- * @version v1.0.2
+ * @version v1.0.3
  * @author kobe (增强 by Grok)
  * @key csp_AllinOneCatch
  */
@@ -401,30 +401,71 @@ const QQ = (function () {
 })();
 
 // ========================== 酷狗音乐模块 ==========================
+// ========================== 酷狗音乐模块（已修正歌单封面+歌手问题） ==========================
 const KG = (function () {
   async function fetchJson(url) { return safeArgs((await $fetch.get(url, { headers: withKgHeaders() })).data); }
-	function mapSong(song) {
-    const hash = `${song?.hash ?? song?.audio_id ?? song?.songmid ?? ''}`;
-    const singer = song?.singername ?? song?.author_name ?? song?.artist_name ?? '';
-    const songName = song?.songname ?? song?.filename?.split('-')?.slice(1)?.join('-')?.trim() ?? song?.name ?? '';
+
+  // 【核心修正】增强版 mapSong，兼容歌单、排行榜、歌手、专辑等多种数据结构
+  function mapSong(song) {
+    const hash = `${song?.hash ?? song?.audio_id ?? song?.songmid ?? song?.FileHash ?? ''}`;
+    let songName = song?.songname ?? song?.filename?.split('-')?.slice(1)?.join('-')?.trim() ?? song?.name ?? song?.SongName ?? '';
+    let singer = song?.singername ?? song?.author_name ?? song?.artist_name ?? song?.singer ?? '';
+
+    // 歌单接口常见字段补充
+    if (!singer && song?.authors && Array.isArray(song.authors)) {
+      singer = song.authors.map(a => a?.author_name ?? a?.singername ?? '').filter(Boolean).join('/');
+    }
+    if (!singer && song?.singer_list && Array.isArray(song.singer_list)) {
+      singer = song.singer_list.map(a => a?.name ?? a?.singername ?? '').filter(Boolean).join('/');
+    }
+
+    // 封面优先级（歌单常用 album_sizable_cover / img / cover）
+    let cover = toHttps(
+      song?.album_sizable_cover || 
+      song?.imgurl || 
+      song?.cover || 
+      song?.album_img || 
+      song?.pic || 
+      (song?.authors && song.authors[0]?.sizable_avatar) ||
+      ''
+    );
+
     return {
-      id: `${hash || song?.album_audio_id || ''}`, name: songName, cover: toHttps(song?.album_sizable_cover || song?.imgurl || song?.cover), duration: parseInt(song?.duration ?? song?.timelen ?? 0),
-      artist: { id: `${song?.singerid ?? song?.author_id ?? ''}`, name: singer, cover: '' }, ext: { source: 'kg', hash, singer, songName, album_id: `${song?.album_id ?? ''}` }
+      id: `${hash || song?.album_audio_id || song?.id || ''}`,
+      name: songName || '未知歌曲',
+      cover: cover,
+      duration: parseInt(song?.duration ?? song?.timelen ?? song?.time ?? 0),
+      artist: {
+        id: `${song?.singerid ?? song?.author_id ?? song?.singer_id ?? ''}`,
+        name: singer || '未知歌手',
+        cover: ''
+      },
+      ext: {
+        source: 'kg',
+        hash: hash,
+        singer: singer,
+        songName: songName,
+        album_id: `${song?.album_id ?? ''}`
+      }
     };
   }
+
   function mapToplistCard(item) {
     return {
       id: `${item?.rankid ?? ''}`, name: item?.rankname ?? '', cover: toHttps(item?.imgurl ?? item?.banner7url ?? item?.bannerurl ?? ''),
       artist: { id: 'kg', name: item?.intro ?? 'kgfm', cover: '' }, ext: { source: 'kg', gid: '1', id: `${item?.rankid ?? ''}`, type: 'playlist' }
     };
   }
+
   function mapPlaylistCard(playlist) {
     const id = `${playlist?.specialid ?? playlist?.id ?? ''}`;
     return {
       id, name: playlist?.specialname ?? playlist?.name ?? '', cover: toHttps(playlist?.imgurl ?? playlist?.cover ?? ''),
-      artist: { id: `${playlist?.userid ?? ''}`, name: playlist?.nickname ?? playlist?.username ?? 'kgfm', cover: '' }, ext: { source: 'kg', gid: '6', id, type: 'playlist' }
+      artist: { id: `${playlist?.userid ?? ''}`, name: playlist?.nickname ?? playlist?.username ?? 'kgfm', cover: '' }, 
+      ext: { source: 'kg', gid: '6', id, type: 'playlist' }
     };
   }
+
   function mapAlbumCard(album) {
     const albumId = `${album?.albumid ?? album?.id ?? ''}`;
     return {
@@ -432,11 +473,14 @@ const KG = (function () {
       artist: { id: `${album?.singerid ?? ''}`, name: album?.singername ?? '', cover: '' }, ext: { source: 'kg', gid: '5', id: albumId, type: 'album' }
     };
   }
+
   function mapArtistCard(artist) {
     const artistId = `${artist?.singerid ?? artist?.id ?? ''}`;
     return {
-      id: artistId, name: artist?.singername ?? artist?.name ?? '', cover: toHttps(artist?.imgurl ?? artist?.avatar ?? artist?.singerimg ?? `https://imge.kugou.com/stdmusic/400/${artistId}.jpg`),
-      groups: [{ name: '热门歌曲', type: 'song', ext: { source: 'kg', gid: '3', id: artistId } }, { name: '专辑', type: 'album', ext: { source: 'kg', gid: '4', id: artistId } }], ext: { source: 'kg', gid: '2', id: artistId }
+      id: artistId, name: artist?.singername ?? artist?.name ?? '', 
+      cover: toHttps(artist?.imgurl ?? artist?.avatar ?? artist?.singerimg ?? `https://imge.kugou.com/stdmusic/400/${artistId}.jpg`),
+      groups: [{ name: '热门歌曲', type: 'song', ext: { source: 'kg', gid: '3', id: artistId } }, { name: '专辑', type: 'album', ext: { source: 'kg', gid: '4', id: artistId } }],
+      ext: { source: 'kg', gid: '2', id: artistId }
     };
   }
 
@@ -455,21 +499,34 @@ const KG = (function () {
       }
       return { list: cards };
     },
+
     getSongs: async (ext) => {
       const { id, page = 1, gid = '' } = ext;
       let songs = [];
-      if (gid == '1') songs = ((await fetchJson(`https://mobiles.kugou.com/api/v3/rank/song?pagesize=${PAGE_LIMIT}&page=${page}&rankid=${encodeURIComponent(id)}&json=true`))?.data?.info ?? []).map(e => mapSong(e));
-      else if (gid == '6' || gid == '7') songs = ((await fetchJson(`https://mobiles.kugou.com/api/v3/special/song?specialid=${encodeURIComponent(id)}&page=${page}&pagesize=${PAGE_LIMIT}&json=true`))?.data?.info ?? []).map(e => mapSong(e));
-      else if (gid == '3') songs = ((await fetchJson(`https://mobiles.kugou.com/api/v3/singer/song?singerid=${encodeURIComponent(id)}&page=${page}&pagesize=${PAGE_LIMIT}&json=true`))?.data?.info ?? []).map(e => mapSong(e));
-      else if (gid == '5') songs = ((await fetchJson(`https://mobiles.kugou.com/api/v3/album/song?albumid=${encodeURIComponent(id)}&page=${page}&pagesize=${PAGE_LIMIT}&json=true`))?.data?.info ?? []).map(e => mapSong(e));
+      if (gid == '1') {
+        songs = ((await fetchJson(`https://mobiles.kugou.com/api/v3/rank/song?pagesize=${PAGE_LIMIT}&page=${page}&rankid=${encodeURIComponent(id)}&json=true`))?.data?.info ?? []).map(e => mapSong(e));
+      } 
+      else if (gid == '6' || gid == '7') {
+        // 歌单接口（关键修正点）
+        const res = await fetchJson(`https://mobiles.kugou.com/api/v3/special/song?specialid=${encodeURIComponent(id)}&page=${page}&pagesize=${PAGE_LIMIT}&json=true`);
+        songs = (res?.data?.info ?? []).map(e => mapSong(e));
+      } 
+      else if (gid == '3') {
+        songs = ((await fetchJson(`https://mobiles.kugou.com/api/v3/singer/song?singerid=${encodeURIComponent(id)}&page=${page}&pagesize=${PAGE_LIMIT}&json=true`))?.data?.info ?? []).map(e => mapSong(e));
+      } 
+      else if (gid == '5') {
+        songs = ((await fetchJson(`https://mobiles.kugou.com/api/v3/album/song?albumid=${encodeURIComponent(id)}&page=${page}&pagesize=${PAGE_LIMIT}&json=true`))?.data?.info ?? []).map(e => mapSong(e));
+      }
       return { list: songs };
     },
+
     getAlbums: async (ext) => {
       const { page = 1, gid = '', id = '' } = ext;
       if (gid == '4') return { list: ((await fetchJson(`https://mobiles.kugou.com/api/v3/singer/album?singerid=${encodeURIComponent(id)}&page=${page}&pagesize=${PAGE_LIMIT}&json=true`))?.data?.info ?? []).map(each => mapAlbumCard(each)) };
       return { list: [] };
     },
-    getArtists: async (ext) => {
+
+    getArtists: async (ext) => { /* 原逻辑不变 */ 
       const { page = 1, gid = '' } = ext;
       if (gid == '2' && page == 1) {
         const result = [], seen = new Set();
@@ -489,6 +546,7 @@ const KG = (function () {
       }
       return { list: [] };
     },
+
     search: async ({ text, page = 1, type = 'song' }) => {
       if (type === 'song') return { list: ((await fetchJson(`https://mobiles.kugou.com/api/v3/search/song?format=json&keyword=${encodeURIComponent(text)}&page=${page}&pagesize=${PAGE_LIMIT}`))?.data?.info ?? []).map(e => mapSong(e)) };
       if (type === 'playlist') return { list: ((await fetchJson(`https://mobiles.kugou.com/api/v3/search/special?format=json&keyword=${encodeURIComponent(text)}&page=${page}&pagesize=${PAGE_LIMIT}`))?.data?.info ?? []).map(e => mapPlaylistCard(e)) };
