@@ -1,7 +1,7 @@
 /*!
  * @name AllinOneCatch
  * @description 全网聚合音乐 - 增强版：红心改为“红心（缓存）” + 自动最近播放（离线缓存）
- * @version v1.0.3
+ * @version v1.0.4
  * @author kobe (增强 by Grok)
  * @key csp_AllinOneCatch
  */
@@ -404,15 +404,55 @@ const QQ = (function () {
 // ========================== 酷狗音乐模块 ==========================
 const KG = (function () {
   async function fetchJson(url) { return safeArgs((await $fetch.get(url, { headers: withKgHeaders() })).data); }
+  
+  // 【关键修复】深度解析歌手和封面的 mapSong
   function mapSong(song) {
     const hash = `${song?.hash ?? song?.audio_id ?? song?.songmid ?? ''}`;
-    const singer = song?.singername ?? song?.author_name ?? song?.artist_name ?? '';
-    const songName = song?.songname ?? song?.filename?.split('-')?.slice(1)?.join('-')?.trim() ?? song?.name ?? '';
+    const authors = song?.authors ?? [];
+    
+    // 1. 提取歌手名：覆盖多种结构以防丢失
+    let singer = song?.singername ?? song?.author_name ?? song?.artist_name ?? authors[0]?.author_name ?? authors[0]?.singername ?? '';
+    let songName = song?.songname ?? song?.name ?? '';
+    
+    // 从 filename 兜底提取（Kugou 的 filename 通常是 "歌手 - 歌曲"）
+    if (song?.filename) {
+      if (!singer || !songName) {
+        const parts = song.filename.split(' - ');
+        if (parts.length >= 2) {
+          if (!singer) singer = parts[0].trim();
+          if (!songName) songName = parts.slice(1).join(' - ').trim();
+        } else {
+          const parts2 = song.filename.split('-');
+          if (parts2.length >= 2) {
+            if (!singer) singer = parts2[0].trim();
+            if (!songName) songName = parts2.slice(1).join('-').trim();
+          } else if (!songName) {
+            songName = song.filename.trim();
+          }
+        }
+      }
+    }
+
+    // 2. 提取封面：全面排查包含封面的各种潜在字段
+    let rawCover = song?.album_sizable_cover ?? song?.imgurl ?? song?.cover ?? song?.pic ?? song?.image ?? song?.album_info?.sizable_cover ?? authors[0]?.sizable_avatar ?? authors[0]?.avatar ?? '';
+    
+    // 3. 构建歌手相关信息与备用头像策略
+    const singerId = `${song?.singerid ?? song?.author_id ?? authors[0]?.author_id ?? ''}`;
+    if (!rawCover && singerId) {
+        // 当列表接口未下发歌曲封面时，使用酷狗标准的歌手大头照作为后备
+        rawCover = `https://imge.kugou.com/stdmusic/400/${singerId}.jpg`;
+    }
+
     return {
-      id: `${hash || song?.album_audio_id || ''}`, name: songName, cover: toHttps(song?.album_sizable_cover || song?.imgurl || song?.cover), duration: parseInt(song?.duration ?? song?.timelen ?? 0),
-      artist: { id: `${song?.singerid ?? song?.author_id ?? ''}`, name: singer, cover: '' }, ext: { source: 'kg', hash, singer, songName, album_id: `${song?.album_id ?? ''}` }
+      id: `${hash || song?.album_audio_id || ''}`, 
+      name: songName, 
+      cover: toHttps(rawCover), 
+      duration: parseInt(song?.duration ?? song?.timelen ?? 0),
+      artist: { id: singerId, name: singer, cover: '' }, 
+      ext: { source: 'kg', hash, singer, songName, album_id: `${song?.album_id ?? ''}` }
     };
   }
+  
   function mapToplistCard(item) {
     return {
       id: `${item?.rankid ?? ''}`, name: item?.rankname ?? '', cover: toHttps(item?.imgurl ?? item?.banner7url ?? item?.bannerurl ?? ''),
