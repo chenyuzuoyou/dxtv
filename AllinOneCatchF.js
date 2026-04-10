@@ -1,7 +1,7 @@
 /*!
  * @name FixAllinOneCatch
  * @description 全网聚合音乐 - 增强版：红心改为“红心（缓存）” + 自动最近播放（离线缓存）
- * @version v1.0.625
+ * @version v1.0.627
  * @author kobe (增强 by Grok)
  * @key csp_FixAllinOneCatch
  */
@@ -1018,18 +1018,36 @@ async function getAlbums(ext) {
 }
 
 // 【关键修改1】getSongs：增加对“红心（缓存）”的处理（其他完全不变）
-async function getSongs(ext) {
+async function getSongInfo(ext) {
   const args = argsify(ext);
+  const source = args.source;
+  if (!source) return jsonify({ urls: [] });
 
-  // 新增：红心（缓存）列表返回最近播放记录（支持分页）
-  if (args.cache === true) {
-    const page = args.page || 1;
-    const offset = Math.max(page - 1, 0) * PAGE_LIMIT;
-    return jsonify({ list: recentPlayed.slice(offset, offset + PAGE_LIMIT) });
+  const songId = `${args.songmid ?? args.rid ?? args.copyrightId ?? args.hash ?? ''}`;
+
+  // 1. 尝试从本地内存（recentPlayed）查找，补全可能缺失的信息以加快解析
+  const cached = recentPlayed.find(s => s.id === songId);
+  
+  const musicInfo = { 
+    songmid: songId, 
+    name: args.songName || (cached ? cached.name : ''),
+    singer: args.singer || (cached ? cached.artist.name : '')
+  };
+  if (args.hash) musicInfo.hash = `${args.hash}`;
+  if (args.rid) musicInfo.rid = `${args.rid}`;
+  if (args.copyrightId) musicInfo.copyrightId = `${args.copyrightId}`;
+
+  // 喜马拉雅独立逻辑
+  if (source === 'xm') return jsonify(await XM.getSongInfo(args));
+
+  try {
+    // 提速：默认改用 128k，减少服务器握手和音频预加载时间
+    const result = await $lx.request('musicUrl', { type: args.quality || '128k', musicInfo }, { source });
+    const url = typeof result === 'string' ? result : result?.url || result?.data?.url;
+    return jsonify({ urls: url ? [url] : [] });
+  } catch (e) { 
+    return jsonify({ urls: [] }); 
   }
-
-  if (args.source === 'wy') return jsonify(await WY.getSongs(args)); if (args.source === 'tx') return jsonify(await QQ.getSongs(args)); if (args.source === 'kg') return jsonify(await KG.getSongs(args)); if (args.source === 'kw') return jsonify(await KW.getSongs(args)); if (args.source === 'mg') return jsonify(await MG.getSongs(args)); if (args.source === 'xm') return jsonify(await XM.getSongs(args));
-  return jsonify({ list: [] });
 }
 
 async function getArtists(ext) {
