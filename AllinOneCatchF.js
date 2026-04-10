@@ -1,7 +1,7 @@
 /*!
  * @name FixAllinOneCatch
  * @description 全网聚合音乐 - 增强版：红心改为“红心（缓存）” + 自动最近播放（离线缓存）
- * @version v1.0.62
+ * @version v1.0.620
  * @author kobe (增强 by Grok)
  * @key csp_FixAllinOneCatch
  */
@@ -858,11 +858,18 @@ const MG = (function () {
           }
           
           if (type === 'artist') {
-            const res = await doSearch({ singer: 1 });
-            const list = res?.data?.singerResultData?.result || res?.singerResultData?.result || [];
-            if (list.length > 0) {
-                return { list: list.map(e => mapArtistCard({ id: `${e?.id ?? ''}`, name: e?.name ?? '', img: e?.imgItems?.[0]?.img ?? e?.img ?? '' })) };
-            }
+             const res = await doSearch({ singer: 1 });
+              // 兼容不同版本的返回字段
+             const list = res?.data?.singerResultData?.result || res?.singerResultData?.result || res?.data?.singerListResultData?.result || [];
+             if (list.length > 0) {
+               return { list: list.map(e => mapArtistCard({ 
+                id: `${e?.id ?? e?.singerId ?? ''}`, 
+                name: e?.name ?? e?.singerName ?? '', 
+                picUrl: e?.imgItems?.[0]?.img ?? e?.img ?? '' 
+                })) };
+          }
+  // ... 后面保持不变
+
             const resOld = await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=1&keyword=${kw}&pgc=${page}`);
             return { list: (resOld?.singers ?? []).map(e => mapArtistCard({ id: `${e?.singerId ?? e?.id ?? ''}`, name: e?.singerName ?? e?.title ?? '', img: e?.singerPic ?? e?.img ?? '' })) };
           }
