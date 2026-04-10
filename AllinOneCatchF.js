@@ -167,7 +167,7 @@ const WY = (function () {
     const artist = album?.artist ?? album?.artists?.[0] ?? {};
     return {
       id: `${album?.id ?? ''}`, name: album?.name ?? '', cover: toHttps(album?.picUrl ?? album?.blurPicUrl ?? ''),
-      artist: { id: `${artist?.id ?? ''}`, name: artist?.name ?? '', cover: toHttps(artist?.picUrl ?? artist?.img1v1Url ?? '') }, ext: { source: 'wy', gid: 'album', id: `${album?.id ?? ''}`, type: 'album' }
+      artist: { id: `${artist?.id ?? ''}`, name: artist?.name ?? '', cover: toHttps(artist?.picUrl ?? artist?.img1v1Url ?? '') }, ext: { source: 'wy', gid: '6', id: `${album?.id ?? ''}`, type: 'album' }
     };
   }
   function mapArtistCard(artist) {
