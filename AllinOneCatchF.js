@@ -832,11 +832,32 @@ const MG = (function () {
     },
     search: async ({ text, page = 1, type = 'song' }) => {
       const kw = encodeURIComponent(text);
-      try {
-        if (type === 'song') {
-          const res1 = await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=2&keyword=${kw}&pgc=${page}`);
-          if (res1?.musics && res1.musics.length > 0) {
-             return { list: res1.musics.map(e => {
+      
+      // 【修复】：封装防止单个接口报错导致整个搜索崩溃的方法
+      const safeFetch = async (url) => {
+          try { return await fetchJson(url); } catch (e) { return null; }
+      };
+
+      if (type === 'song') {
+        // 【修复】：优先使用新版接口 (pd.music.migu.cn)，数据更全更稳定
+        const res2 = await safeFetch(`https://pd.music.migu.cn/mts/app/search/v1/searchAll?searchSwitch=${encodeURIComponent('{"song":1}')}&text=${kw}&pageNo=${page}&pageSize=${PAGE_LIMIT}`);
+        const list2 = res2?.data?.songResultData?.result ?? [];
+        if (list2.length > 0) {
+            return { list: list2.map(e => {
+              const songId = `${e?.id ?? e?.songId ?? e?.copyrightId ?? ''}`;
+              const singers = e?.singers ?? [];
+              return {
+                id: songId, name: cleanText(e?.name ?? e?.songName ?? ''), cover: toHttps(e?.imgItems?.[0]?.img ?? ''), duration: 0,
+                artist: { id: `${singers[0]?.id ?? ''}`, name: cleanText(singers.map(s=>s.name).join('/')), cover: '' },
+                ext: { source: 'mg', id: songId, songmid: songId, copyrightId: `${e?.copyrightId ?? e?.songId ?? ''}`, singer: cleanText(singers.map(s=>s.name).join('/')), songName: cleanText(e?.name ?? e?.songName ?? '') }
+              };
+            })};
+        }
+
+        // 后备接口：万一新接口没搜到，再用旧版 H5 接口兜底
+        const res1 = await safeFetch(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=2&keyword=${kw}&pgc=${page}`);
+        if (res1?.musics && res1.musics.length > 0) {
+            return { list: res1.musics.map(e => {
                 const songId = `${e?.songId ?? e?.copyrightId ?? e?.id ?? ''}`;
                 return {
                   id: songId, name: cleanText(e?.songName ?? e?.title ?? ''), cover: toHttps(e?.cover ?? e?.albumCover ?? ''), duration: 0,
@@ -844,27 +865,29 @@ const MG = (function () {
                   ext: { source: 'mg', id: songId, songmid: songId, copyrightId: `${e?.copyrightId ?? e?.songId ?? ''}`, singer: cleanText(e?.singerName ?? ''), songName: cleanText(e?.songName ?? e?.title ?? '') }
                 };
              }) };
-          }
-          const res2 = await fetchJson(`https://pd.music.migu.cn/mts/app/search/v1/searchAll?searchSwitch=${encodeURIComponent('{"song":1}')}&text=${kw}&pageNo=${page}&pageSize=${PAGE_LIMIT}`);
-          const list2 = res2?.data?.songResultData?.result ?? [];
-          if (list2.length > 0) {
-              return { list: list2.map(e => {
-                const songId = `${e?.id ?? e?.songId ?? e?.copyrightId ?? ''}`;
-                const singers = e?.singers ?? [];
-                return {
-                  id: songId, name: cleanText(e?.name ?? e?.songName ?? ''), cover: toHttps(e?.imgItems?.[0]?.img ?? ''), duration: 0,
-                  artist: { id: `${singers[0]?.id ?? ''}`, name: cleanText(singers.map(s=>s.name).join('/')), cover: '' },
-                  ext: { source: 'mg', id: songId, songmid: songId, copyrightId: `${e?.copyrightId ?? e?.songId ?? ''}`, singer: cleanText(singers.map(s=>s.name).join('/')), songName: cleanText(e?.name ?? e?.songName ?? '') }
-                };
-              })};
-          }
         }
-        if (type === 'playlist') return { list: ((await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=6&keyword=${kw}&pgc=${page}`))?.songLists ?? []).map(e => ({ id: `${e?.playListId ?? e?.id ?? ''}`, name: cleanText(e?.playListName ?? e?.name ?? ''), cover: toHttps(e?.img ?? e?.pic ?? ''), artist: { id: 'mg', name: 'mgfm', cover: '' }, ext: { source: 'mg', gid: '1', id: `${e?.playListId ?? e?.id ?? ''}`, type: 'playlist' } })) };
-        if (type === 'album') return { list: ((await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=4&keyword=${kw}&pgc=${page}`))?.albums ?? []).map(e => ({ id: `${e?.albumId ?? e?.id ?? ''}`, name: cleanText(e?.albumName ?? e?.title ?? ''), cover: toHttps(e?.albumPic ?? e?.img ?? ''), artist: { id: `${e?.singerId ?? ''}`, name: cleanText(e?.singerName ?? ''), cover: '' }, ext: { source: 'mg', gid: '6', id: `${e?.albumId ?? e?.id ?? ''}`, type: 'album' } })) };
-        if (type === 'artist') return { list: ((await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=1&keyword=${kw}&pgc=${page}`))?.singers ?? []).map(e => mapArtistCard({ id: `${e?.singerId ?? e?.id ?? ''}`, name: e?.singerName ?? e?.title ?? '', img: e?.singerPic ?? e?.img ?? '' })) };
-      } catch(e) { return { list: [] }; }
+        return { list: [] };
+      }
+      
+      // 其他类型（歌单、专辑、歌手）也统一使用安全请求，防止崩溃
+      if (type === 'playlist') {
+        const res = await safeFetch(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=6&keyword=${kw}&pgc=${page}`);
+        return { list: (res?.songLists ?? []).map(e => ({ id: `${e?.playListId ?? e?.id ?? ''}`, name: cleanText(e?.playListName ?? e?.name ?? ''), cover: toHttps(e?.img ?? e?.pic ?? ''), artist: { id: 'mg', name: 'mgfm', cover: '' }, ext: { source: 'mg', gid: '1', id: `${e?.playListId ?? e?.id ?? ''}`, type: 'playlist' } })) };
+      }
+      
+      if (type === 'album') {
+        const res = await safeFetch(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=4&keyword=${kw}&pgc=${page}`);
+        return { list: (res?.albums ?? []).map(e => ({ id: `${e?.albumId ?? e?.id ?? ''}`, name: cleanText(e?.albumName ?? e?.title ?? ''), cover: toHttps(e?.albumPic ?? e?.img ?? ''), artist: { id: `${e?.singerId ?? ''}`, name: cleanText(e?.singerName ?? ''), cover: '' }, ext: { source: 'mg', gid: '6', id: `${e?.albumId ?? e?.id ?? ''}`, type: 'album' } })) };
+      }
+      
+      if (type === 'artist') {
+        const res = await safeFetch(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=1&keyword=${kw}&pgc=${page}`);
+        return { list: (res?.singers ?? []).map(e => mapArtistCard({ id: `${e?.singerId ?? e?.id ?? ''}`, name: e?.singerName ?? e?.title ?? '', img: e?.singerPic ?? e?.img ?? '' })) };
+      }
+      
       return { list: [] };
     }
+
   };
 })();
 
