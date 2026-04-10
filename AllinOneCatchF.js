@@ -1,7 +1,7 @@
 /*!
  * @name FixAllinOneCatch
  * @description 全网聚合音乐 - 增强版：红心改为“红心（缓存）” + 自动最近播放（离线缓存）
- * @version v1.0.626
+ * @version v1.0.625
  * @author kobe (增强 by Grok)
  * @key csp_FixAllinOneCatch
  */
@@ -957,31 +957,11 @@ const XM = (function () {
       return { list: [] };
     },
     getSongs: async (ext) => {
-      const args = argsify(ext);
-      const { page = 1, gid, text } = args;
-      const gidValue = `${gid ?? ''}`;
-      // 核心修复：兼容搜索结果传过来的 id 或 albumId
-      const albumId = `${args.id ?? args.albumId ?? ''}`;
-    
-      // 增加对 '3' (详情) 和 '2' (分类/搜索重定向) 的兼容
-      if (gidValue == '3' || gidValue == 'album' || gidValue == '2') {
-        if (text || args.kw) {
-          const kw = text || args.kw;
-          const list = await XM.getPlaylists({ gid: '2', kw, page });
-          return list;
-        }
-    
-        if (!albumId) return { list: [] };
-    
-        for (const url of [
-          `https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${albumId}&pageNum=${page}&sort=0&pageSize=${PAGE_LIMIT}`,
-          `https://mobile.ximalaya.com/mobile/v1/album/track/?albumId=${albumId}&pageSize=${PAGE_LIMIT}&pageId=${page}`
-        ]) {
-          try {
-            const data = await fetchJson(url, { Referer: `https://www.ximalaya.com/album/${albumId}` });
-            const list = firstArray(data?.data?.tracks, data?.data?.list, data?.data?.trackList);
-            if (list.length > 0) return { list: list.filter(e => !isPaidItem(e)).map(mapTrack) };
-          } catch (e) {}
+      const { id, page = 1, gid = '', text = '' } = ext;
+      if (gid == '3') {
+        if (text) return { list: firstArray((await fetchJson(`https://www.ximalaya.com/revision/search?core=track&kw=${encodeURIComponent(text)}&page=${page}&rows=${PAGE_LIMIT}&spellchecker=true&condition=relation&device=web`))?.data?.result?.response?.docs).filter(e => !isPaidItem(e)).map(e => mapTrack(e)) };
+        for (const url of [`https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${id}&pageNum=${page}&sort=0&pageSize=${PAGE_LIMIT}`, `https://mobile.ximalaya.com/mobile/v1/album/track/?albumId=${id}&pageSize=${PAGE_LIMIT}&pageId=${page}`]) {
+          try { const data = await fetchJson(url, { Referer: `https://www.ximalaya.com/album/${id}` }); const list = firstArray(data?.data?.tracks, data?.data?.list, data?.data?.trackList); if (list.length > 0) return { list: list.filter(e => !isPaidItem(e)).map(e => mapTrack(e)) }; } catch (e) {}
         }
       }
       return { list: [] };
