@@ -732,22 +732,34 @@ const MG = (function () {
       return { list: [] };
     },
     getSongs: async (ext) => {
-      const { id, page = 1, gid = '' } = ext;
-      let rawSongs = [];
-      // 这里的逻辑统一使用 resourceinfo 接口，因为它能处理 10 位数字的长 ID
-      const infoUrl = `https://app.c.nf.migu.cn/MIGUM2.0/v1.0/content/resourceinfo.do?needSimple=00&resourceId=${encodeURIComponent(id)}&resourceType=${gid == '6' ? '2003' : '2021'}`;
-      
-      if (gid == '1') {
-        rawSongs = (await fetchJson(`https://app.c.nf.migu.cn/pc/bmw/rank/rank-info/v1.0?rankId=${encodeURIComponent(id)}`))?.data?.contents ?? [];
-      } else if (gid == '4') {
-        const blocks = (await fetchJson(`https://app.c.nf.migu.cn/pc/bmw/singer/song/v1.0?pageNo=${page}&singerId=${encodeURIComponent(id)}&type=1`))?.data?.contents ?? [];
-        rawSongs = (blocks.find(each => each?.view == 'ZJ-Singer-Song-Scroll'))?.contents ?? [];
-      } else if (gid == '6' || gid == '8') {
-        const res = await fetchJson(infoUrl);
-        rawSongs = res?.resource?.songs ?? [];
+      const { page = 1, gid = '', text = '' } = ext;
+      // 核心修复：确保能从 ext.id 或 ext.albumId 提取到 ID
+      const albumId = `${ext.id ?? ext.albumId ?? ''}`; 
+    
+      if (gid == '3' || gid == 'album') {
+        // 如果是搜索内部的二次搜索
+        if (text) {
+          const searchRes = await fetchJson(`https://www.ximalaya.com/revision/search?core=track&kw=${encodeURIComponent(text)}&page=${page}&rows=${PAGE_LIMIT}&spellchecker=true&condition=relation&device=web`);
+          return { list: firstArray(searchRes?.data?.result?.response?.docs).filter(e => !isPaidItem(e)).map(e => mapTrack(e)) };
+        }
+    
+        // 详情加载逻辑：增加 Referer 校验和双接口备选
+        if (!albumId) return { list: [] };
+        
+        for (const url of [
+          `https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${albumId}&pageNum=${page}&sort=0&pageSize=${PAGE_LIMIT}`,
+          `https://mobile.ximalaya.com/mobile/v1/album/track/?albumId=${albumId}&pageSize=${PAGE_LIMIT}&pageId=${page}`
+        ]) {
+          try {
+            const data = await fetchJson(url, { Referer: `https://www.ximalaya.com/album/${albumId}` });
+            const list = firstArray(data?.data?.tracks, data?.data?.list, data?.data?.trackList);
+            if (list.length > 0) return { list: list.filter(e => !isPaidItem(e)).map(e => mapTrack(e)) };
+          } catch (e) {}
+        }
       }
-      return { list: rawSongs.map(e => mapSong(e)) };
+      return { list: [] };
     },
+
     getAlbums: async (ext) => {
       const { id, page = 1, gid = '' } = ext;
       if (gid == '5') {
