@@ -104,7 +104,7 @@ const appConfig = {
   // 新增：平台 Tab
   tabPlatforms: {
     name: '平台',
-    options: [
+    groups: [
       { name: '网易', ext: { source: 'wy' } },
       { name: 'QQ', ext: { source: 'tx' } },
       { name: '酷狗', ext: { source: 'kg' } },
@@ -112,9 +112,6 @@ const appConfig = {
       { name: '咪咕', ext: { source: 'mg' } },
       { name: '喜马', ext: { source: 'xm' } }
     ],
-    groups: [
-      { name: '精选内容', type: 'playlist', ui: 1, showMore: true, ext: { is_platform_tab: true } }
-    ]
   },
 
   tabMe: { ... }, // 后面的 Tab 依次排列
