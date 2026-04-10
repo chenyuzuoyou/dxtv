@@ -1,7 +1,7 @@
 /*!
  * @name FixAllinOneCatch
  * @description 全网聚合音乐 - 增强版：红心改为“红心（缓存）” + 自动最近播放（离线缓存）
- * @version v1.0.625
+ * @version v1.0.626
  * @author kobe (增强 by Grok)
  * @key csp_FixAllinOneCatch
  */
@@ -956,37 +956,40 @@ const XM = (function () {
       }
       return { list: [] };
     },
-        getSongs: async (ext) => {
-          // 这里的 id 对应点击时传过来的 ext.id
-          const { id, page = 1, gid = '', text = '' } = argsify(ext);
-          const gidValue = `${gid ?? ''}`;
-          
-          // 核心修复：对齐 xmlyfm3 的 GID.ALBUM_TRACKS (3)
-          // 增加对 'album' 类型标识的直接支持
-          if (gidValue == '3' || gidValue == 'album') {
-            if (text) {
-              const list = await XM.search({ text, page, type: 'track' });
-              return list;
-            }
+    getSongs: async (ext) => {
+      const args = argsify(ext);
+      const { page = 1, gid, text } = args;
+      const gidValue = `${gid ?? ''}`;
+      // 核心修复：兼容搜索结果传过来的 id 或 albumId
+      const albumId = `${args.id ?? args.albumId ?? ''}`;
     
-            // 详情加载：Referer 必须包含 albumId 才能绕过部分限制
-            const albumId = id; 
-            for (const url of [
-              `https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${albumId}&pageNum=${page}&sort=0&pageSize=${PAGE_LIMIT}`,
-              `https://mobile.ximalaya.com/mobile/v1/album/track/?albumId=${albumId}&pageSize=${PAGE_LIMIT}&pageId=${page}`
-            ]) {
-              try {
-                const data = await fetchJson(url, { Referer: `https://www.ximalaya.com/album/${albumId}` });
-                const list = firstArray(data?.data?.tracks, data?.data?.list, data?.data?.trackList);
-                if (list.length > 0) return { list: list.filter(e => !isPaidItem(e)).map(e => mapTrack(e)) };
-              } catch (e) {}
-            }
-          }
-          return { list: [] };
-        },
+      // 增加对 '3' (详情) 和 '2' (分类/搜索重定向) 的兼容
+      if (gidValue == '3' || gidValue == 'album' || gidValue == '2') {
+        if (text || args.kw) {
+          const kw = text || args.kw;
+          const list = await XM.getPlaylists({ gid: '2', kw, page });
+          return list;
+        }
+    
+        if (!albumId) return { list: [] };
+    
+        for (const url of [
+          `https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${albumId}&pageNum=${page}&sort=0&pageSize=${PAGE_LIMIT}`,
+          `https://mobile.ximalaya.com/mobile/v1/album/track/?albumId=${albumId}&pageSize=${PAGE_LIMIT}&pageId=${page}`
+        ]) {
+          try {
+            const data = await fetchJson(url, { Referer: `https://www.ximalaya.com/album/${albumId}` });
+            const list = firstArray(data?.data?.tracks, data?.data?.list, data?.data?.trackList);
+            if (list.length > 0) return { list: list.filter(e => !isPaidItem(e)).map(mapTrack) };
+          } catch (e) {}
+        }
+      }
+      return { list: [] };
+    },
+
     
 
-        search: async ({ text, page = 1, type = 'song' }) => {
+    search: async ({ text, page = 1, type = 'song' }) => {
       const kw = encodeURIComponent(text);
       
       // 专辑搜索修正
@@ -996,32 +999,31 @@ const XM = (function () {
         return { 
           list: docs.filter(e => !isPaidItem(e)).map(e => {
             const item = mapAlbum(e);
-            // 关键：强制指定 gid 为详情页所需的 '3'
+            // 核心修复：强制注入 gid 为 '3'，并确保 ext.id 能够被 getSongs 识别
             item.ext.gid = '3'; 
+            item.ext.id = item.id; 
             return item;
           }) 
         };
       }
+
       
       // 创作者搜索修正：参考 xmlyfm3 逻辑，点击创作者后跳转到该作者的专辑搜索列表
       if (type === 'artist') {
         const data = await fetchJson(`https://www.ximalaya.com/revision/search?core=user&kw=${kw}&page=${page}&rows=${PAGE_LIMIT}&spellchecker=true&condition=relation&device=web`);
         const users = firstArray(data?.data?.result?.response?.docs);
-        return {
+        return { 
           list: users.map(u => ({
             id: `${u.id ?? u.uid ?? ''}`,
-            name: u.nickname ?? u.name ?? '',
+            name: u.nickname ?? u.name ?? '未知主播',
             cover: toHttps(u.mainPic ?? u.logo ?? u.picUrl ?? ''),
-            // 创作者索引：跳转到以作者名为关键词的专辑列表 (gid: '2')
-            groups: [{ 
-              name: '其专辑', 
-              type: 'album', 
-              ext: { source: 'xm', gid: '2', kw: u.nickname } 
-            }],
+            // 核心修复：点击歌手后，跳转去搜索该主播名下的专辑（对应 gid: '2'）
+            groups: [{ name: '专辑', type: 'album', ext: { source: 'xm', gid: '2', kw: u.nickname } }],
             ext: { source: 'xm', gid: 'artist', id: `${u.id ?? u.uid ?? ''}` }
           }))
         };
       }
+
 
       if (type === 'song' || type === 'track') {
         const data = await fetchJson(`https://www.ximalaya.com/revision/search?core=track&kw=${kw}&page=${page}&rows=${PAGE_LIMIT}&spellchecker=true&condition=relation&device=web`);
