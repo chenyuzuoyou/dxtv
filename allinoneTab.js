@@ -47,24 +47,59 @@ function withMgHeaders(extra = {}) { return { ...headers, Referer: 'https://musi
 // ========================== 核心接口配置 ==========================
 const appConfig = {
   ver: 1, name: '全网聚合音乐', message: '', desc: '深度整合全网资源详细分类',
-      tabLibrary: {
+    tabLibrary: {
     name: '探索',
-    // 1. 定义顶部的横排选项卡
-    options: [
-      { name: '全部', ext: { source: 'all' } },
-      { name: '网易', ext: { source: 'wy' } },
-      { name: 'QQ', ext: { source: 'tx' } },
-      { name: '酷狗', ext: { source: 'kg' } },
-      { name: '酷我', ext: { source: 'kw' } },
-      { name: '咪咕', ext: { source: 'mg' } },
-      { name: '喜马', ext: { source: 'xm' } }
-    ],
-    // 2. 初始进入首页时看到的布局
     groups: [
-      { name: '★ 热门推荐', type: 'playlist', ui: 1, showMore: true, ext: { source: 'all', is_home: true } }
+      { name: '★ 全部聚合', type: 'playlist', ui: 1, showMore: true, ext: { source: 'all', gid: 'all_top' } },
+      
+      { name: '网易-推荐新歌', type: 'song', ui: 0, showMore: false, ext: { source: 'wy', gid: '1' } },
+      { name: '网易-推荐歌单', type: 'playlist', ui: 1, showMore: true, ext: { source: 'wy', gid: '2' } },
+      { name: '网易-华语热门', type: 'playlist', ui: 1, showMore: true, ext: { source: 'wy', gid: '3' } },
+      { name: '网易-流行歌单', type: 'playlist', ui: 1, showMore: true, ext: { source: 'wy', gid: '4' } },
+      { name: '网易-官方榜单', type: 'playlist', ui: 1, showMore: true, ext: { source: 'wy', gid: '5' } },
+      { name: '网易-新碟上架', type: 'album', ui: 0, showMore: false, ext: { source: 'wy', gid: '6' } },
+      { name: '网易-热门歌手', type: 'artist', ui: 0, showMore: true, ext: { source: 'wy', gid: '7' } },
+
+      { name: 'QQ-飙升榜', type: 'song', ui: 0, showMore: false, ext: { source: 'tx', gid: '1', id: '62' } },
+      { name: 'QQ-热歌榜', type: 'song', ui: 0, showMore: false, ext: { source: 'tx', gid: '1', id: '26' } },
+      { name: 'QQ-新歌榜', type: 'song', ui: 0, showMore: false, ext: { source: 'tx', gid: '1', id: '27' } },
+      { name: 'QQ-排行榜', type: 'playlist', ui: 1, showMore: true, ext: { source: 'tx', gid: '1' } },
+      { name: 'QQ-流行歌单', type: 'playlist', ui: 1, showMore: true, ext: { source: 'tx', gid: '7', categoryId: '6', sortId: '5' } },
+      { name: 'QQ-国语精选', type: 'playlist', ui: 1, showMore: true, ext: { source: 'tx', gid: '7', categoryId: '165', sortId: '5' } },
+      { name: 'QQ-轻音乐', type: 'playlist', ui: 1, showMore: true, ext: { source: 'tx', gid: '7', categoryId: '15', sortId: '5' } },
+      { name: 'QQ-影视原声', type: 'playlist', ui: 1, showMore: true, ext: { source: 'tx', gid: '7', categoryId: '133', sortId: '5' } },
+      { name: 'QQ-治愈歌单', type: 'playlist', ui: 1, showMore: true, ext: { source: 'tx', gid: '7', categoryId: '116', sortId: '5' } },
+      { name: 'QQ-热门歌手', type: 'artist', ui: 0, showMore: true, ext: { source: 'tx', gid: '2' } },
+
+      { name: '酷狗-飙升榜', type: 'song', ui: 0, showMore: false, ext: { source: 'kg', gid: '1', id: '6666' } },
+      { name: '酷狗-热歌榜', type: 'song', ui: 0, showMore: false, ext: { source: 'kg', gid: '1', id: '8888' } },
+      { name: '酷狗-新歌榜', type: 'song', ui: 0, showMore: false, ext: { source: 'kg', gid: '1', id: '23784' } },
+      { name: '酷狗-排行榜', type: 'playlist', ui: 1, showMore: true, ext: { source: 'kg', gid: '1' } },
+      { name: '酷狗-推荐歌单', type: 'playlist', ui: 1, showMore: true, ext: { source: 'kg', gid: '7' } },
+      { name: '酷狗-热门歌手', type: 'artist', ui: 0, showMore: true, ext: { source: 'kg', gid: '2' } },
+
+      { name: '酷我-排行榜', type: 'playlist', ui: 1, showMore: true, ext: { source: 'kw', gid: '1' } },
+      { name: '酷我-推荐歌单', type: 'playlist', ui: 1, showMore: true, ext: { source: 'kw', gid: '2' } },
+      { name: '酷我-热门歌单', type: 'playlist', ui: 1, showMore: true, ext: { source: 'kw', gid: '7' } },
+      { name: '酷我-经典歌单', type: 'playlist', ui: 1, showMore: true, ext: { source: 'kw', gid: '8' } },
+      { name: '酷我-热门歌手', type: 'artist', ui: 0, showMore: true, ext: { source: 'kw', gid: '9' } },
+
+      { name: '咪咕-新歌榜', type: 'song', ui: 0, showMore: false, ext: { source: 'mg', gid: '1', id: '27553319' } },
+      { name: '咪咕-热歌榜', type: 'song', ui: 0, showMore: false, ext: { source: 'mg', gid: '1', id: '27186466' } },
+      { name: '咪咕-国风热歌', type: 'song', ui: 0, showMore: false, ext: { source: 'mg', gid: '1', id: '83176390' } },
+      { name: '咪咕-会员臻爱', type: 'song', ui: 0, showMore: false, ext: { source: 'mg', gid: '1', id: '76557745' } },
+      { name: '咪咕-排行榜', type: 'playlist', ui: 1, showMore: true, ext: { source: 'mg', gid: '1' } },
+      { name: '咪咕-热门歌手', type: 'artist', ui: 0, showMore: true, ext: { source: 'mg', gid: '2' } },
+
+      { name: '喜马-播客', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', gid: '2', kw: '播客' } },
+      { name: '喜马-历史', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', gid: '2', kw: '历史' } },
+      { name: '喜马-图书', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', gid: '2', kw: '图书' } },
+      { name: '喜马-热门专辑', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', gid: '2', kw: '热门' } },
+      { name: '喜马-小说', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', gid: '2', kw: '小说' } },
+      { name: '喜马-相声', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', gid: '2', kw: '相声' } },
+      { name: '喜马-音乐', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', gid: '2', kw: '音乐' } }
     ]
   },
-
   tabMe: {
     name: '我的',
     groups: [
@@ -925,37 +960,13 @@ const XM = (function () {
 async function getConfig() { return jsonify(appConfig); }
 
 async function getPlaylists(ext) {
-  const args = argsify(ext);
-  const source = args.source || 'all';
-  const page = args.page || 1;
-
-  // 逻辑 A：如果 source 为 all (默认首页)
+  const args = argsify(ext), source = args.source || 'all';
   if (source === 'all') {
-    const results = await Promise.all([
-      WY.getPlaylists({ gid: '5', page }).catch(() => ({ list: [] })),
-      QQ.getPlaylists({ gid: '1', page }).catch(() => ({ list: [] })),
-      KG.getPlaylists({ gid: '1', page }).catch(() => ({ list: [] })),
-      KW.getPlaylists({ gid: '1', page }).catch(() => ({ list: [] })),
-      MG.getPlaylists({ gid: '1', page }).catch(() => ({ list: [] }))
-    ]);
-    // 混合全网数据
-    return jsonify({ list: mixArrays(...results.map(r => r.list || [])) });
+    const results = await Promise.all([WY.getPlaylists({ gid: '5', page: args.page }).catch(() => ({ list: [] })), QQ.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] })), KG.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] })), KW.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] })), MG.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] }))]);
+    return jsonify({ list: mixArrays(results[0].list, results[1].list, results[2].list, results[3].list, results[4].list) });
   }
-
-  // 逻辑 B：如果用户点击了顶部的平台选项 (如 'wy', 'tx')
-  let finalResult = { list: [] };
-  try {
-    if (source === 'wy') finalResult = await WY.getPlaylists({ gid: '2', page }); // 网易推荐
-    else if (source === 'tx') finalResult = await QQ.getPlaylists({ gid: '1', page }); // QQ榜
-    else if (source === 'kg') finalResult = await KG.getPlaylists({ gid: '1', page }); // 酷狗榜
-    else if (source === 'kw') finalResult = await KW.getPlaylists({ gid: '2', page }); // 酷我推荐
-    else if (source === 'mg') finalResult = await MG.getPlaylists({ gid: '1', page }); // 咪咕榜
-    else if (source === 'xm') finalResult = await XM.getPlaylists({ gid: '1', page }); // 喜马专辑
-  } catch (e) {
-    console.log("切换平台失败: " + source);
-  }
-
-  return jsonify(finalResult);
+  if (source === 'wy') return jsonify(await WY.getPlaylists(args)); if (source === 'tx') return jsonify(await QQ.getPlaylists(args)); if (source === 'kg') return jsonify(await KG.getPlaylists(args)); if (source === 'kw') return jsonify(await KW.getPlaylists(args)); if (source === 'mg') return jsonify(await MG.getPlaylists(args)); if (source === 'xm') return jsonify(await XM.getPlaylists(args));
+  return jsonify({ list: [] });
 }
 
 
