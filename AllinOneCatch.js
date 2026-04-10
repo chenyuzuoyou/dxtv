@@ -1,7 +1,7 @@
 /*!
  * @name AllinOneCatch
  * @description 全网聚合音乐 - 增强版：红心改为“红心（缓存）” + 自动最近播放（离线缓存）
- * @version v1.0.4
+ * @version v1.0.5
  * @author kobe (增强 by Grok)
  * @key csp_AllinOneCatch
  */
@@ -143,6 +143,8 @@ const appConfig = {
 // ========================== 以下所有模块（WY、QQ、KG、KW、MG、XM）完全保持原样，一字未改 ==========================
 // （为节省篇幅此处省略完全相同的代码，仅展示关键修改位置。你只需把下面完整代码替换原文件即可）
 // ========================== 网易云音乐模块 ==========================
+面完整代码替换原文件即可）
+// ========================== 网易云音乐模块 ==========================
 const WY = (function () {
   async function fetchJson(url, extraHeaders = {}) {
     try { const { data } = await $fetch.get(url, { headers: withWyHeaders(extraHeaders) }); return typeof data === 'string' ? argsify(data) : (data ?? {}); } catch (e) { return {}; }
@@ -167,7 +169,7 @@ const WY = (function () {
     const artist = album?.artist ?? album?.artists?.[0] ?? {};
     return {
       id: `${album?.id ?? ''}`, name: album?.name ?? '', cover: toHttps(album?.picUrl ?? album?.blurPicUrl ?? ''),
-      artist: { id: `${artist?.id ?? ''}`, name: artist?.name ?? '', cover: toHttps(artist?.picUrl ?? artist?.img1v1Url ?? '') }, ext: { source: 'wy', gid: 'album', id: `${album?.id ?? ''}`, type: 'album' }
+      artist: { id: `${artist?.id ?? ''}`, name: artist?.name ?? '', cover: toHttps(artist?.picUrl ?? artist?.img1v1Url ?? '') }, ext: { source: 'wy', gid: '6', id: `${album?.id ?? ''}`, type: 'album' }
     };
   }
   function mapArtistCard(artist) {
@@ -232,9 +234,10 @@ const WY = (function () {
         songs = (await loadWyPlaylistTracks(id, page)).map(each => mapSong(each));
       } else if (gidValue == '6') {
         songs = ((await fetchJson(`https://music.163.com/api/v1/album/${id}`))?.songs ?? []).map(each => mapSong(each));
-      } else if (gidValue == '7') {
+      } else if (gidValue == '7' || gidValue == 'artist_songs') {
         songs = ((await fetchJson(`https://music.163.com/api/artist/top/song?id=${id}`))?.songs ?? []).map(each => mapSong(each));
-      }
+      } 
+		
       return { list: songs };
     },
     getAlbums: async (ext) => {
@@ -243,7 +246,7 @@ const WY = (function () {
       if (gidValue == '6') {
         if (page > 1) return { list: [] };
         return { list: ((await fetchJson(`https://music.163.com/api/discovery/newAlbum?area=ALL&limit=${PAGE_LIMIT}`))?.albums ?? []).map(each => mapAlbumCard(each)) };
-      } else if (gidValue == '8') {
+      } else if (gidValue == '8' || gidValue == 'artist_albums') {
         const offset = (page - 1) * PAGE_LIMIT;
         return { list: ((await fetchJson(`https://music.163.com/api/artist/albums/${id}?offset=${offset}&limit=${PAGE_LIMIT}`))?.hotAlbums ?? []).map(each => mapAlbumCard(each)) };
       }
