@@ -133,6 +133,10 @@ const appConfig = {
 			{ name: '酷狗歌单', type: 'playlist', ext: { type: 'playlist', source: 'kg' } },
 			{ name: '酷狗专辑', type: 'album', ext: { type: 'album', source: 'kg' } },
 			{ name: '酷狗歌手', type: 'artist', ext: { type: 'artist', source: 'kg' } },
+      { name: '咪咕单曲', type: 'song', ext: { type: 'song', source: 'mg' } },
+      { name: '咪咕歌单', type: 'playlist', ext: { type: 'playlist', source: 'mg' } },
+      { name: '咪咕专辑', type: 'album', ext: { type: 'album', source: 'mg' } },
+      { name: '咪咕歌手', type: 'artist', ext: { type: 'artist', source: 'mg' } },
       { name: '喜马单曲', type: 'song', ext: { type: 'song', source: 'xm' } },
   	  { name: '喜马专辑', type: 'album', ext: { type: 'album', source: 'xm' } },
   	  { name: '喜马歌手', type: 'artist', ext: { type: 'artist', source: 'xm' } } 
