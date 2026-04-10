@@ -1,7 +1,7 @@
 /*!
  * @name FixAllinOneCatch
  * @description 全网聚合音乐 - 增强版：红心改为“红心（缓存）” + 自动最近播放（离线缓存）
- * @version v1.0.4
+ * @version v1.0.5
  * @author kobe (增强 by Grok)
  * @key csp_FixAllinOneCatch
  */
@@ -174,7 +174,7 @@ const WY = (function () {
     const artistId = `${artist?.id ?? ''}`;
     return {
       id: artistId, name: artist?.name ?? '', cover: toHttps(artist?.picUrl ?? artist?.img1v1Url ?? ''),
-      groups: [{ name: '热门歌曲', type: 'song', ext: { source: 'wy', gid: 'artist_songs', id: artistId } }, { name: '专辑', type: 'album', ext: { source: 'wy', gid: 'album', id: artistId } }], ext: { source: 'wy', gid: 'artist', id: artistId }
+      groups: [{ name: '热门歌曲', type: 'song', ext: { source: 'wy', gid: 'artist_songs', id: artistId } }, { name: '专辑', type: 'album', ext: { source: 'wy', gid: 'artist_albums', id: artistId } }], ext: { source: 'wy', gid: 'artist', id: artistId }
     };
   }
   async function loadWyPlaylistTracks(id, page = 1) {
