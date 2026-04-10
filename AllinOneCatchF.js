@@ -741,6 +741,11 @@ const MG = (function () {
       } else if (gid == '4') {
         const blocks = (await fetchJson(`https://app.c.nf.migu.cn/pc/bmw/singer/song/v1.0?pageNo=${page}&singerId=${encodeURIComponent(id)}&type=1`))?.data?.contents ?? [];
         return { list: ((blocks.find(each => each?.view == 'ZJ-Singer-Song-Scroll'))?.contents ?? []).map(e => mapSong(e)) };
+      } else if (gid == '6') {
+        // 【修复】：新增获取专辑内歌曲列表的分支
+        const blocks = (await fetchJson(`https://app.c.nf.migu.cn/pc/bmw/album/song/v1.0?pageNo=${page}&albumId=${encodeURIComponent(id)}`))?.data?.contents ?? [];
+        const rawList = blocks[0]?.contents ? blocks.flatMap(b => b.contents ?? []) : blocks;
+        return { list: rawList.map(e => mapSong(e)) };
       }
       return { list: [] };
     },
@@ -748,27 +753,34 @@ const MG = (function () {
       const { id, page = 1, gid = '' } = ext;
       if (gid == '5') {
         const res = await fetchJson(`https://app.c.nf.migu.cn/pc/bmw/singer/album/v1.0?pageNo=${page}&singerId=${encodeURIComponent(id)}`);
-        // 自动识别：如果返回的是布局块则平铺，如果是直接列表则取列表
         const contents = res?.data?.contents ?? [];
-        const list = contents[0]?.contents ? contents.flatMap(b => b.contents ?? []) : contents;
+        const rawList = contents[0]?.contents ? contents.flatMap(b => b.contents ?? []) : contents;
 
-        return { list: list.map(e => {
-            // 解决截图中的文字空白问题：优先提取 albumName 或 title
+        // 【修复】：使用 Map 对 albumId 进行精准去重，避免重复展示
+        const mapData = new Map();
+        rawList.forEach(e => {
             const albumName = e?.albumName ?? e?.title ?? e?.name ?? e?.txt ?? '未知专辑';
             const albumId = `${e?.albumId ?? e?.resourceId ?? e?.linkId ?? e?.id ?? ''}`;
             const albumPic = e?.albumPic ?? e?.img ?? e?.picUrl ?? e?.pic ?? '';
             
-            return {
-                id: albumId,
-                name: cleanText(albumName),
-                cover: toHttps(albumPic),
-                artist: { id: id, name: '', cover: '' },
-                ext: { source: 'mg', gid: '6', id: albumId, type: 'album' }
-            };
-        }) };
+            // 只要 albumId 存在，且 Map 中还没有记录过这个专辑，才把它存进去
+            if (albumId && !mapData.has(albumId)) {
+                mapData.set(albumId, {
+                    id: albumId,
+                    name: cleanText(albumName),
+                    cover: toHttps(albumPic),
+                    artist: { id: id, name: '', cover: '' },
+                    ext: { source: 'mg', gid: '6', id: albumId, type: 'album' }
+                });
+            }
+        });
+        
+        // 最后把去重后的结果转回数组返回
+        return { list: Array.from(mapData.values()) };
       }
       return { list: [] };
     },
+
     getArtists: async (ext) => {
       const { page = 1, gid = '' } = ext;
       if (gid == '2' && page == 1) {
