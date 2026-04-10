@@ -1,7 +1,7 @@
 /*!
  * @name AllinOneCatch
  * @description 全网聚合音乐 - 增强版：红心改为“红心（缓存）” + 自动最近播放（离线缓存）
- * @version v1.0.5
+ * @version v1.0
  * @author kobe (增强 by Grok)
  * @key csp_AllinOneCatch
  */
@@ -979,11 +979,11 @@ async function getSongs(ext) {
   const args = argsify(ext);
 
   // 新增：红心（缓存）列表返回最近播放记录（支持分页）
-  if (args.cache === true) {
-    const page = args.page || 1;
-    const offset = Math.max(page - 1, 0) * PAGE_LIMIT;
-    return jsonify({ list: recentPlayed.slice(offset, offset + PAGE_LIMIT) });
-  }
+  //if (args.cache === true) {
+    //const page = args.page || 1;
+    //const offset = Math.max(page - 1, 0) * PAGE_LIMIT;
+    //return jsonify({ list: recentPlayed.slice(offset, offset + PAGE_LIMIT) });
+  //}
 
   if (args.source === 'wy') return jsonify(await WY.getSongs(args)); if (args.source === 'tx') return jsonify(await QQ.getSongs(args)); if (args.source === 'kg') return jsonify(await KG.getSongs(args)); if (args.source === 'kw') return jsonify(await KW.getSongs(args)); if (args.source === 'mg') return jsonify(await MG.getSongs(args)); if (args.source === 'xm') return jsonify(await XM.getSongs(args));
   return jsonify({ list: [] });
