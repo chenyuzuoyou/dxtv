@@ -1,7 +1,7 @@
 /*!
  * @name AllinOneTab
  * @description 全网聚合音乐 - 增强版：红心改为“红心（缓存）” + 自动最近播放（离线缓存）
- * @version v1.0.50@
+ * @version v1.0.50@2
  * @author kobe (增强 by Grok)
  * @key csp_AllinOneTab
  */
@@ -141,6 +141,18 @@ const appConfig = {
       { name: '喜马单曲', type: 'song', ext: { type: 'song', source: 'xm' } },
   	  { name: '喜马专辑', type: 'album', ext: { type: 'album', source: 'xm' } }
   	//  { name: '喜马歌手', type: 'artist', ext: { type: 'artist', source: 'xm' } } 
+    ]
+  },
+  // 新增：平台 Tab
+  tabPlatforms: {
+    name: '平台',
+    groups: [
+      { name: '网易', ext: { source: 'wy' } },
+      { name: 'QQ', ext: { source: 'tx' } },
+      { name: '酷狗', ext: { source: 'kg' } },
+      { name: '酷我', ext: { source: 'kw' } },
+      { name: '咪咕', ext: { source: 'mg' } },
+      { name: '喜马', ext: { source: 'xm' } }
     ]
   }
 };
