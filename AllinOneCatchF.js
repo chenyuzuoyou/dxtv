@@ -742,44 +742,72 @@ const MG = (function () {
         const blocks = (await fetchJson(`https://app.c.nf.migu.cn/pc/bmw/singer/song/v1.0?pageNo=${page}&singerId=${encodeURIComponent(id)}&type=1`))?.data?.contents ?? [];
         return { list: ((blocks.find(each => each?.view == 'ZJ-Singer-Song-Scroll'))?.contents ?? []).map(e => mapSong(e)) };
       } else if (gid == '6') {
-        // 【修复】：新增获取专辑内歌曲列表的分支
-        const blocks = (await fetchJson(`https://app.c.nf.migu.cn/pc/bmw/album/song/v1.0?pageNo=${page}&albumId=${encodeURIComponent(id)}`))?.data?.contents ?? [];
-        const rawList = blocks[0]?.contents ? blocks.flatMap(b => b.contents ?? []) : blocks;
-        return { list: rawList.map(e => mapSong(e)) };
+        // 【终极修复】：获取专辑下歌曲。双接口降级策略，确保绝对能抓到歌曲
+        let rawSongs = [];
+        try {
+            // 策略 A：优先使用 H5 接口（数据最稳定）
+            const h5Res = await fetchJson(`https://m.music.migu.cn/migu/remoting/cms_album_song_list_tag?albumId=${encodeURIComponent(id)}&pageSize=${PAGE_LIMIT}`);
+            if (h5Res?.result?.results && h5Res.result.results.length > 0) {
+                rawSongs = h5Res.result.results;
+            } else if (h5Res?.songs && h5Res.songs.length > 0) {
+                rawSongs = h5Res.songs;
+            } else {
+                // 策略 B：降级使用 PC 详情接口，并深度提取 contents
+                const pcRes = await fetchJson(`https://app.c.nf.migu.cn/pc/bmw/album/info/v1.0?albumId=${encodeURIComponent(id)}`);
+                const contents = pcRes?.data?.contents ?? [];
+                contents.forEach(b => {
+                    if (b?.contents && Array.isArray(b.contents)) {
+                        rawSongs.push(...b.contents);
+                    } else if (b?.songId || b?.copyrightId) {
+                        rawSongs.push(b);
+                    }
+                });
+            }
+        } catch (e) {
+            console.log("获取咪咕专辑歌曲失败", e);
+        }
+        return { list: rawSongs.map(e => mapSong(e)) };
       }
       return { list: [] };
     },
+    
     getAlbums: async (ext) => {
       const { id, page = 1, gid = '' } = ext;
       if (gid == '5') {
         const res = await fetchJson(`https://app.c.nf.migu.cn/pc/bmw/singer/album/v1.0?pageNo=${page}&singerId=${encodeURIComponent(id)}`);
+        let rawList = [];
         const contents = res?.data?.contents ?? [];
-        const rawList = contents[0]?.contents ? contents.flatMap(b => b.contents ?? []) : contents;
+        
+        // 【终极修复】：无视排版结构，把所有可能是专辑的子区块强行揪出来
+        contents.forEach(b => {
+            if (b?.contents && Array.isArray(b.contents)) {
+                rawList.push(...b.contents);
+            } else if (b?.albumId || b?.resourceId || b?.linkId) {
+                rawList.push(b);
+            }
+        });
 
-        // 【修复】：使用 Map 对 albumId 进行精准去重，避免重复展示
         const mapData = new Map();
         rawList.forEach(e => {
-            const albumName = e?.albumName ?? e?.title ?? e?.name ?? e?.txt ?? '未知专辑';
             const albumId = `${e?.albumId ?? e?.resourceId ?? e?.linkId ?? e?.id ?? ''}`;
-            const albumPic = e?.albumPic ?? e?.img ?? e?.picUrl ?? e?.pic ?? '';
-            
-            // 只要 albumId 存在，且 Map 中还没有记录过这个专辑，才把它存进去
-            if (albumId && !mapData.has(albumId)) {
+            const albumName = e?.albumName ?? e?.title ?? e?.name ?? e?.txt ?? '';
+            // 过滤：必须有名字和 ID，且利用 Map 去重，解决“重复专辑”问题
+            if (albumId && albumName && !mapData.has(albumId)) {
                 mapData.set(albumId, {
                     id: albumId,
                     name: cleanText(albumName),
-                    cover: toHttps(albumPic),
+                    cover: toHttps(e?.albumPic ?? e?.img ?? e?.picUrl ?? e?.pic ?? ''),
                     artist: { id: id, name: '', cover: '' },
                     ext: { source: 'mg', gid: '6', id: albumId, type: 'album' }
                 });
             }
         });
         
-        // 最后把去重后的结果转回数组返回
         return { list: Array.from(mapData.values()) };
       }
       return { list: [] };
     },
+
 
     getArtists: async (ext) => {
       const { page = 1, gid = '' } = ext;
