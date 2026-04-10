@@ -1,7 +1,7 @@
 /*!
  * @name FixAllinOneCatch
  * @description 全网聚合音乐 - 增强版：红心改为“红心（缓存）” + 自动最近播放（离线缓存）
- * @version v1.0.6
+ * @version v1.0.61
  * @author kobe (增强 by Grok)
  * @key csp_FixAllinOneCatch
  */
@@ -748,15 +748,20 @@ const MG = (function () {
       const { id, page = 1, gid = '' } = ext;
       if (gid == '5') {
         const res = await fetchJson(`https://app.c.nf.migu.cn/pc/bmw/singer/album/v1.0?pageNo=${page}&singerId=${encodeURIComponent(id)}`);
-        // 去除外层嵌套，直接获取列表数据，增加容错兼容
-        const list = res?.data?.contents ?? res?.data?.albumList ?? [];
+        // 自动识别：如果返回的是布局块则平铺，如果是直接列表则取列表
+        const contents = res?.data?.contents ?? [];
+        const list = contents[0]?.contents ? contents.flatMap(b => b.contents ?? []) : contents;
+
         return { list: list.map(e => {
-            // 补全咪咕专辑专用的字段名 (albumId, albumName, albumPic)
+            // 解决截图中的文字空白问题：优先提取 albumName 或 title
+            const albumName = e?.albumName ?? e?.title ?? e?.name ?? e?.txt ?? '未知专辑';
             const albumId = `${e?.albumId ?? e?.resourceId ?? e?.linkId ?? e?.id ?? ''}`;
+            const albumPic = e?.albumPic ?? e?.img ?? e?.picUrl ?? e?.pic ?? '';
+            
             return {
                 id: albumId,
-                name: e?.albumName ?? e?.title ?? e?.name ?? '',
-                cover: toHttps(e?.albumPic ?? e?.picUrl ?? e?.img ?? ''),
+                name: cleanText(albumName),
+                cover: toHttps(albumPic),
                 artist: { id: id, name: '', cover: '' },
                 ext: { source: 'mg', gid: '6', id: albumId, type: 'album' }
             };
