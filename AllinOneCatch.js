@@ -133,9 +133,11 @@ const appConfig = {
 			{ name: '酷狗歌单', type: 'playlist', ext: { type: 'playlist', source: 'kg' } },
 			{ name: '酷狗专辑', type: 'album', ext: { type: 'album', source: 'kg' } },
 			{ name: '酷狗歌手', type: 'artist', ext: { type: 'artist', source: 'kg' } },
+      { name: '咪咕单曲', type: 'song', ext: { type: 'song', source: 'mg' } },
+      { name: '咪咕歌手', type: 'artist', ext: { type: 'artist', source: 'mg' } },
       { name: '喜马单曲', type: 'song', ext: { type: 'song', source: 'xm' } },
-  	  { name: '喜马专辑', type: 'album', ext: { type: 'album', source: 'xm' } },
-  	  { name: '喜马歌手', type: 'artist', ext: { type: 'artist', source: 'xm' } } 
+  	  { name: '喜马专辑', type: 'album', ext: { type: 'album', source: 'xm' } }
+  	//  { name: '喜马歌手', type: 'artist', ext: { type: 'artist', source: 'xm' } } 
     ]
   }
 };
@@ -755,43 +757,134 @@ const MG = (function () {
       return { list: [] };
     },
     search: async ({ text, page = 1, type = 'song' }) => {
-      const kw = encodeURIComponent(text);
+      const mg = encodeURIComponent(text);
+      
+      // 【终极防线】：构建接口备用池。将 3 个不同域名的官方搜索接口做成轮询，总有一个能用
+      const doSearch = async (switchObj) => {
+         const switchStr = encodeURIComponent(JSON.stringify(switchObj));
+         const urls = [
+            `https://pd.music.migu.cn/mts/app/search/v1/searchAll?searchSwitch=${switchStr}&text=${mg}&pageNo=${page}&pageSize=${PAGE_LIMIT}`,
+            `https://app.c.nf.migu.cn/MIGUM2.0/v1.0/content/search_all.do?searchSwitch=${switchStr}&text=${mg}&pageNo=${page}&pageSize=${PAGE_LIMIT}`,
+            `https://jadeite.migu.cn/music_search/v2/search/searchAll?searchSwitch=${switchStr}&text=${mg}&pageNo=${page}&pageSize=${PAGE_LIMIT}`
+         ];
+         
+         for (const url of urls) {
+             try {
+                 const res = await fetchJson(url);
+                 // 验证是否真正获取到了核心数据，拿到了就立刻停止尝试并返回
+                 if (res?.data?.songResultData || res?.songResultData || res?.data?.songListResultData || res?.songListResultData || res?.data?.albumResultData || res?.albumResultData || res?.data?.singerResultData || res?.singerResultData) {
+                     return res;
+                 }
+             } catch(e) {
+                 // 当前接口被拦截或超时，忽略报错，无缝尝试下一个
+             }
+         }
+         return null;
+      };
+
       try {
-        if (type === 'song') {
-          const res1 = await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=2&keyword=${kw}&pgc=${page}`);
-          if (res1?.musics && res1.musics.length > 0) {
-             return { list: res1.musics.map(e => {
-                const songId = `${e?.songId ?? e?.copyrightId ?? e?.id ?? ''}`;
-                return {
-                  id: songId, name: cleanText(e?.songName ?? e?.title ?? ''), cover: toHttps(e?.cover ?? e?.albumCover ?? ''), duration: 0,
-                  artist: { id: `${e?.singerId ?? ''}`, name: cleanText(e?.singerName ?? ''), cover: '' },
-                  ext: { source: 'mg', id: songId, songmid: songId, copyrightId: `${e?.copyrightId ?? e?.songId ?? ''}`, singer: cleanText(e?.singerName ?? ''), songName: cleanText(e?.songName ?? e?.title ?? '') }
-                };
-             }) };
+          if (type === 'song') {
+            const res = await doSearch({ song: 1 });
+            const list = res?.data?.songResultData?.result || res?.songResultData?.result || [];
+            if (list.length > 0) {
+                return { list: list.map(e => {
+                  const songId = `${e?.id ?? e?.songId ?? e?.copyrightId ?? ''}`;
+                  const singers = e?.singers ?? e?.singer ?? [];
+                  return {
+                    id: songId, name: cleanText(e?.name ?? e?.songName ?? ''), cover: toHttps(e?.imgItems?.[0]?.img ?? e?.cover ?? ''), duration: 0,
+                    artist: { id: `${singers[0]?.id ?? ''}`, name: cleanText(singers.map(s=>s.name).join('/')), cover: '' },
+                    ext: { source: 'mg', id: songId, songmid: songId, copyrightId: `${e?.copyrightId ?? e?.songId ?? ''}`, singer: cleanText(singers.map(s=>s.name).join('/')), songName: cleanText(e?.name ?? e?.songName ?? '') }
+                  };
+                })};
+            }
+            
+            // 最老的 H5 接口做最后一次兜底
+            const resOld = await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=2&keyword=${mg}&pgc=${page}`);
+            if (resOld?.musics && resOld.musics.length > 0) {
+                return { list: resOld.musics.map(e => {
+                    const songId = `${e?.songId ?? e?.copyrightId ?? e?.id ?? ''}`;
+                    return {
+                      id: songId, name: cleanText(e?.songName ?? e?.title ?? ''), cover: toHttps(e?.cover ?? e?.albumCover ?? ''), duration: 0,
+                      artist: { id: `${e?.singerId ?? ''}`, name: cleanText(e?.singerName ?? ''), cover: '' },
+                      ext: { source: 'mg', id: songId, songmid: songId, copyrightId: `${e?.copyrightId ?? e?.songId ?? ''}`, singer: cleanText(e?.singerName ?? ''), songName: cleanText(e?.songName ?? e?.title ?? '') }
+                    };
+                 }) };
+            }
+            return { list: [] };
           }
-          const res2 = await fetchJson(`https://pd.music.migu.cn/mts/app/search/v1/searchAll?searchSwitch=${encodeURIComponent('{"song":1}')}&text=${kw}&pageNo=${page}&pageSize=${PAGE_LIMIT}`);
-          const list2 = res2?.data?.songResultData?.result ?? [];
-          if (list2.length > 0) {
-              return { list: list2.map(e => {
-                const songId = `${e?.id ?? e?.songId ?? e?.copyrightId ?? ''}`;
-                const singers = e?.singers ?? [];
-                return {
-                  id: songId, name: cleanText(e?.name ?? e?.songName ?? ''), cover: toHttps(e?.imgItems?.[0]?.img ?? ''), duration: 0,
-                  artist: { id: `${singers[0]?.id ?? ''}`, name: cleanText(singers.map(s=>s.name).join('/')), cover: '' },
-                  ext: { source: 'mg', id: songId, songmid: songId, copyrightId: `${e?.copyrightId ?? e?.songId ?? ''}`, singer: cleanText(singers.map(s=>s.name).join('/')), songName: cleanText(e?.name ?? e?.songName ?? '') }
-                };
-              })};
+          
+          if (type === 'playlist') {
+            const res = await doSearch({ songlist: 1 });
+            const list = res?.data?.songListResultData?.result || res?.songListResultData?.result || [];
+            if (list.length > 0) {
+                // 修复核心：确保 id 字段能取到有效的值
+                return { list: list.map(e => ({ id: `${e?.id ?? e?.resId ?? e?.playlistId ?? ''}`, name: cleanText(e?.name ?? ''), cover: toHttps(e?.img ?? ''), artist: { id: 'mg', name: 'mgfm', cover: '' }, ext: { source: 'mg', gid: '6', id: `${e?.id ?? e?.resId ?? e?.playlistId ?? ''}`, type: 'playlist' } })) };
+            }
+            const resOld = await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=6&keyword=${mg}&pgc=${page}`);
+            return { list: (resOld?.songLists ?? []).map(e => ({ id: `${e?.playListId ?? e?.id ?? ''}`, name: cleanText(e?.playListName ?? e?.name ?? ''), cover: toHttps(e?.img ?? e?.pic ?? ''), artist: { id: 'mg', name: 'mgfm', cover: '' }, ext: { source: 'mg', gid: '6', id: `${e?.playListId ?? e?.id ?? ''}`, type: 'playlist' } })) };
           }
-        }
-        if (type === 'playlist') return { list: ((await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=6&keyword=${kw}&pgc=${page}`))?.songLists ?? []).map(e => ({ id: `${e?.playListId ?? e?.id ?? ''}`, name: cleanText(e?.playListName ?? e?.name ?? ''), cover: toHttps(e?.img ?? e?.pic ?? ''), artist: { id: 'mg', name: 'mgfm', cover: '' }, ext: { source: 'mg', gid: '1', id: `${e?.playListId ?? e?.id ?? ''}`, type: 'playlist' } })) };
-        if (type === 'album') return { list: ((await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=4&keyword=${kw}&pgc=${page}`))?.albums ?? []).map(e => ({ id: `${e?.albumId ?? e?.id ?? ''}`, name: cleanText(e?.albumName ?? e?.title ?? ''), cover: toHttps(e?.albumPic ?? e?.img ?? ''), artist: { id: `${e?.singerId ?? ''}`, name: cleanText(e?.singerName ?? ''), cover: '' }, ext: { source: 'mg', gid: '6', id: `${e?.albumId ?? e?.id ?? ''}`, type: 'album' } })) };
-        if (type === 'artist') return { list: ((await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=1&keyword=${kw}&pgc=${page}`))?.singers ?? []).map(e => mapArtistCard({ id: `${e?.singerId ?? e?.id ?? ''}`, name: e?.singerName ?? e?.title ?? '', img: e?.singerPic ?? e?.img ?? '' })) };
-      } catch(e) { return { list: [] }; }
+          
+          if (type === 'album') {
+            const res = await doSearch({ album: 1 });
+            const list = res?.data?.albumResultData?.result || res?.albumResultData?.result || [];
+            if (list.length > 0) {
+              return {
+                list: list.map(e => {
+                  const singers = e?.singers ?? e?.singer ?? [];
+                  const albId = `${e?.id ?? e?.albumId ?? e?.resId ?? ''}`;
+                  return { id: albId, name: cleanText(e?.albumsName ?? e?.albumName ?? e?.name ?? ''), cover: toHttps(e?.imgItems?.[0]?.img ?? e?.img ?? ''), artist: { id: `${singers[0]?.id ?? ''}`, name: cleanText(singers[0]?.name ?? ''), cover: '' }, ext: { source: 'mg', gid: '6', id: albId, type: 'album' } };
+                })
+              };
+            }
+            // 修正：resOld 必须留在 album 判断块内
+            const resOld = await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=4&keyword=${mg}&pgc=${page}`);
+            return { list: (resOld?.albums ?? []).map(e => ({ id: `${e?.albumId ?? e?.id ?? ''}`, name: cleanText(e?.albumName ?? e?.title ?? ''), cover: toHttps(e?.albumPic ?? e?.img ?? ''), artist: { id: `${e?.singerId ?? ''}`, name: cleanText(e?.singerName ?? ''), cover: '' }, ext: { source: 'mg', gid: '6', id: `${e?.albumId ?? e?.id ?? ''}`, type: 'album' } })) };
+          }
+          
+          if (type === 'artist') {
+            const res = await doSearch({ singer: 1 });
+            // 深度解析：兼容四种可能的返回路径
+            const list = res?.data?.singerResultData?.result || 
+                         res?.singerResultData?.result || 
+                         res?.data?.singerListResultData?.result || 
+                         res?.singerListResultData?.result || [];
+          
+            if (list.length > 0) {
+                return { list: list.map(e => {
+                    const sId = `${e?.id ?? e?.singerId ?? e?.resId ?? ''}`;
+                    const sName = cleanText(e?.name ?? e?.singerName ?? '');
+                    const sPic = toHttps(e?.imgItems?.[0]?.img ?? e?.img ?? e?.picUrl ?? '');
+                    return { 
+                        id: sId, 
+                        name: sName, 
+                        cover: sPic, 
+                        groups: [
+                            { name: '歌曲', type: 'song', ext: { source: 'mg', gid: '4', id: sId } }, 
+                            { name: '专辑', type: 'album', ext: { source: 'mg', gid: '5', id: sId } }
+                        ], 
+                        ext: { source: 'mg', gid: '2', id: sId } 
+                    };
+                })};
+            }
+            // 补全 resOld 的歌手匹配
+            const resOld = await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=1&keyword=${mg}&pgc=${page}`);
+            return { list: (resOld?.singers ?? []).map(e => ({ 
+                id: `${e?.singerId ?? e?.id ?? ''}`, 
+                name: cleanText(e?.singerName ?? e?.title ?? ''), 
+                cover: toHttps(e?.singerPic ?? e?.img ?? ''),
+                groups: [{ name: '歌曲', type: 'song', ext: { source: 'mg', gid: '4', id: `${e?.singerId ?? e?.id ?? ''}` } }],
+                ext: { source: 'mg', gid: '2', id: `${e?.singerId ?? e?.id ?? ''}` } 
+            })) };
+          }
+
+
+      } catch(e) {
+          console.log("咪咕搜索彻底报错", e);
+      }
       return { list: [] };
     }
   };
 })();
-
 // ========================== 喜马拉雅模块 ==========================
 const XM = (function () {
   async function fetchJson(url, extraHeaders = {}) { return safeArgs((await $fetch.get(url, { headers: { ...headers, ...extraHeaders } })).data); }
