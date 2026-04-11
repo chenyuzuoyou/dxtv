@@ -1,10 +1,10 @@
 /*!
  * @name apple_podcast
- * @description 苹果播客 公开接口版
- * @author codex4
+ * @description 苹果播客 公开接口版 (修复版)
+ * @author codex66
  * @key csp_applepodcast
  */
-const $config = argsify($config_str)
+const $config = typeof $config_str !== 'undefined' ? argsify($config_str) : {}
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 const headers = { 'User-Agent': UA }
 
@@ -49,7 +49,6 @@ const appConfig = {
         showMore: true,
         ext: { gid: GID.RECOMMENDED }
       },
-      // 分类：这里格式必须标准，才能自然加载
       ...podcastCategories.map(c => ({
         name: c.name,
         type: "album",
@@ -78,7 +77,12 @@ const appConfig = {
 }
 
 function safeArgs(d) {
-  return typeof d === "string" ? argsify(d) : (d || {})
+  if (!d) return {}
+  try {
+    return typeof d === "string" ? argsify(d) : d
+  } catch (e) {
+    return {}
+  }
 }
 
 function firstArray(...arrays) {
@@ -90,16 +94,19 @@ function firstArray(...arrays) {
 
 async function fetchJson(url) {
   try {
-    const { data } = await $fetch.get(url, { headers })
-    return safeArgs(data)
+    const res = await $fetch.get(url, { headers })
+    // 兼容不同的 HTTP 客户端返回格式 (判断是否有 data 字段，防止解构出 undefined)
+    const body = (res && res.data !== undefined) ? res.data : res
+    return safeArgs(body)
   } catch (e) {
     return {}
   }
 }
 
-// 统一加载播客接口
+// 统一加载播客接口 (增加了 offset 分页计算)
 async function loadPodcasts(keyword, page = 1) {
-  const url = `https://itunes.apple.com/search?term=${encodeURIComponent(keyword)}&media=podcast&limit=${PAGE_LIMIT}&country=cn`
+  const offset = (page - 1) * PAGE_LIMIT
+  const url = `https://itunes.apple.com/search?term=${encodeURIComponent(keyword)}&media=podcast&limit=${PAGE_LIMIT}&offset=${offset}&country=cn`
   const res = await fetchJson(url)
   return firstArray(res.results)
 }
@@ -110,13 +117,31 @@ async function loadEpisodes(feedUrl) {
     const res = await $fetch.get(feedUrl, {
       headers: { ...headers, Accept: "application/xml" }
     })
-    const xml = res.data || ""
+    const xml = (res && res.data !== undefined ? res.data : res) || ""
     const items = xml.match(/<item>([\s\S]*?)<\/item>/g) || []
+    
     return items.map(item => {
-      const title = item.match(/<title>(.*?)<\/title>/)?.[1] || "无标题"
-      const url = item.match(/<enclosure.*?url="(.*?)"/)?.[1] || ""
-      const dur = item.match(/<duration>(.*?)<\/duration>/)?.[1] || "0"
-      return { title, url, duration: dur }
+      // 处理标题可能含有的 CDATA 标签
+      let title = item.match(/<title>([\s\S]*?)<\/title>/)?.[1] || "无标题"
+      title = title.replace(/<!\[CDATA\[(.*?)\]\]>/g, "$1").trim()
+      
+      const url = item.match(/<enclosure[^>]*url="([^"]+)"/i)?.[1] || ""
+      
+      // 兼容标准播客用的 itunes:duration 标签
+      const durMatch = item.match(/<itunes:duration>([\s\S]*?)<\/itunes:duration>/i) || item.match(/<duration>([\s\S]*?)<\/duration>/i)
+      let dur = durMatch ? durMatch[1].trim() : "0"
+      
+      // 将 "HH:MM:SS" 或 "MM:SS" 格式转换为秒数整数
+      let durationSec = 0
+      if (dur.includes(':')) {
+        const parts = dur.split(':').map(Number)
+        if (parts.length === 3) durationSec = parts[0] * 3600 + parts[1] * 60 + parts[2]
+        if (parts.length === 2) durationSec = parts[0] * 60 + parts[1]
+      } else {
+        durationSec = parseInt(dur) || 0
+      }
+
+      return { title, url, duration: durationSec }
     }).filter(i => i.url)
   } catch (e) {
     return []
@@ -126,8 +151,9 @@ async function loadEpisodes(feedUrl) {
 // 专辑格式化
 function mapAlbum(i) {
   return {
-    id: i.collectionId || Math.random().toString(36).slice(2),
-    name: i.collectionName || "未知播客",
+    // 强制转换为 String：许多前端框架接收 Number 类型的 ID 会导致列表渲染彻底崩溃
+    id: String(i.collectionId || Math.random().toString(36).slice(2)),
+    name: i.collectionName || i.trackName || "未知播客",
     cover: i.artworkUrl600 || i.artworkUrl100 || "",
     artist: { name: i.artistName || "主播" },
     ext: {
@@ -148,9 +174,11 @@ async function getConfig() {
 // 首页列表、分类列表 都走这里
 async function getAlbums(ext) {
   const args = safeArgs(ext)
-  const gid = args.gid
-  const kw = args.kw
-  const page = args.page || 1
+  // 兼容部分框架会将 ext 包装在 { ext: {...}, page: 1 } 中的情况
+  const actualExt = args.ext || args
+  const gid = actualExt.gid
+  const kw = actualExt.kw
+  const page = args.page || actualExt.page || 1
 
   let list = []
 
@@ -168,16 +196,18 @@ async function getAlbums(ext) {
 // 播客详情单集
 async function getSongs(ext) {
   const args = safeArgs(ext)
-  if (args.gid !== GID.ALBUM_DETAIL || !args.feedUrl) {
+  const actualExt = args.ext || args
+  
+  if (actualExt.gid !== GID.ALBUM_DETAIL || !actualExt.feedUrl) {
     return jsonify({ list: [] })
   }
 
-  const eps = await loadEpisodes(args.feedUrl)
+  const eps = await loadEpisodes(actualExt.feedUrl)
   return jsonify({
     list: eps.map(e => ({
-      id: e.url,
+      id: String(e.url), // 同样强制 String 防止奔溃
       name: e.title,
-      duration: parseInt(e.duration) || 0,
+      duration: e.duration,
       artist: { name: "播客主播" },
       ext: { url: e.url }
     }))
@@ -187,17 +217,23 @@ async function getSongs(ext) {
 // 搜索
 async function search(ext) {
   const args = safeArgs(ext)
-  if (!args.text || args.type !== "album") {
+  const actualExt = args.ext || args
+  const text = args.text || actualExt.text
+  const page = args.page || actualExt.page || 1
+  
+  if (!text) {
     return jsonify({ list: [] })
   }
-  const list = await loadPodcasts(args.text, args.page || 1)
+  
+  const list = await loadPodcasts(text, page)
   return jsonify({ list: list.map(mapAlbum) })
 }
 
 // 播放地址
 async function getSongInfo(ext) {
   const args = safeArgs(ext)
-  return jsonify({ urls: args.url ? [args.url] : [] })
+  const actualExt = args.ext || args
+  return jsonify({ urls: actualExt.url ? [actualExt.url] : [] })
 }
 
 async function getArtists() { return jsonify({ list: [] }) }
