@@ -1,7 +1,7 @@
 /*!
  * @name lazyfm
  * @description 懒人听书 (隐藏VIP和付费内容)
- * @version v1.0.0
+ * @version v1.0.2
  * @author codex
  * @key csp_lazyfm
  */
@@ -134,11 +134,11 @@ async function fetchJson(url, extraHeaders = {}) {
 
 // 专辑映射
 function mapAlbum(item) {
-  const id = `${item?.albumId ?? item?.id ?? item?.album_id ?? ''}`
-  const name = item?.title ?? item?.albumTitle ?? item?.name ?? ''
-  const cover = toHttps(item?.coverLarge ?? item?.coverUrl ?? item?.picUrl ?? item?.albumCover ?? item?.cover ?? '')
-  const artistId = `${item?.uid ?? item?.anchorId ?? item?.userId ?? item?.authorId ?? ''}`
-  const artistName = item?.nickname ?? item?.anchorName ?? item?.author ?? item?.userName ?? '懒人听书'
+  const id = `${item?.bookId ?? item?.id ?? item?.albumId ?? ''}`
+  const name = item?.bookName ?? item?.title ?? item?.name ?? ''
+  const cover = toHttps(item?.cover ?? item?.coverUrl ?? item?.coverLarge ?? item?.picUrl ?? '')
+  const artistId = `${item?.authorId ?? item?.uid ?? item?.anchorId ?? ''}`
+  const artistName = item?.author ?? item?.nickname ?? item?.anchorName ?? '懒人听书'
   const artistCover = toHttps(item?.avatar ?? item?.anchorAvatar ?? '')
   return {
     id, name, title: name, cover, artwork: cover, pic: cover, coverImg: cover,
@@ -149,12 +149,12 @@ function mapAlbum(item) {
 
 // 音频映射
 function mapTrack(item) {
-  const id = `${item?.trackId ?? item?.id ?? item?.soundId ?? item?.chapterId ?? ''}`
-  const name = item?.title ?? item?.trackTitle ?? item?.name ?? item?.chapterName ?? ''
-  const cover = toHttps(item?.coverLarge ?? item?.coverUrl ?? item?.albumCover ?? item?.cover ?? '')
-  const artistId = `${item?.uid ?? item?.anchorId ?? item?.userId ?? ''}`
+  const id = `${item?.chapterId ?? item?.id ?? item?.trackId ?? ''}`
+  const name = item?.chapterName ?? item?.title ?? item?.name ?? ''
+  const cover = toHttps(item?.cover ?? item?.coverUrl ?? item?.albumCover ?? '')
+  const artistId = `${item?.uid ?? item?.anchorId ?? ''}`
   const artistName = item?.nickname ?? item?.anchorName ?? '主播'
-  const artistCover = toHttps(item?.avatar ?? item?.anchorAvatar ?? '')
+  const artistCover = toHttps(item?.avatar ?? '')
   return {
     id, name, title: name, cover, artwork: cover, pic: cover, coverImg: cover,
     duration: parseInt(item?.duration ?? item?.interval ?? 0),
@@ -175,32 +175,42 @@ function mapArtistCard(item) {
   }
 }
 
-// 推荐专辑
+// ==================== 修复：真实可用接口 ====================
+// 推荐专辑（修复探索页空白）
 async function loadRecommendedAlbums(page = 1) {
-  const url = `https://www.lrts.me/ajax/recommend?page=${page}&size=${PAGE_LIMIT}`
-  const data = await fetchJson(url)
-  return firstArray(data?.data?.list, data?.list, data?.albums)
+  const urls = [
+    `https://www.lrts.me/ajax/home/recommend?page=${page}&size=${PAGE_LIMIT}`,
+    `https://m.lrts.me/ajax/recommend?page=${page}&size=${PAGE_LIMIT}`
+  ]
+  for (const url of urls) {
+    try {
+      const data = await fetchJson(url)
+      const list = firstArray(data?.data, data?.list, data?.data?.list)
+      if (list.length > 0) return list
+    } catch (e) {}
+  }
+  return []
 }
 
 // 关键词搜专辑
 async function loadAlbumsByKeyword(keyword, page = 1) {
   const url = `https://www.lrts.me/ajax/search/book?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${PAGE_LIMIT}`
   const data = await fetchJson(url)
-  return firstArray(data?.data?.list, data?.list, data?.albums)
+  return firstArray(data?.data, data?.list, data?.data?.list)
 }
 
 // 专辑内节目列表
 async function loadAlbumTracks(albumId, page = 1) {
   const url = `https://www.lrts.me/ajax/book/chapters?bookId=${albumId}&page=${page}&size=${PAGE_LIMIT}`
   const data = await fetchJson(url)
-  return firstArray(data?.data?.list, data?.list, data?.tracks, data?.chapters)
+  return firstArray(data?.data, data?.list, data?.chapters)
 }
 
 // 搜节目
 async function loadTracksByKeyword(keyword, page = 1) {
   const url = `https://www.lrts.me/ajax/search/chapter?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${PAGE_LIMIT}`
   const data = await fetchJson(url)
-  return firstArray(data?.data?.list, data?.list, data?.tracks)
+  return firstArray(data?.data, data?.list)
 }
 
 // 搜作者
@@ -218,7 +228,7 @@ async function loadArtistsByKeyword(keyword, page = 1) {
   return artists
 }
 
-// 标准出口
+// ==================== 标准出口 ====================
 async function getConfig() { return jsonify(appConfig) }
 
 async function getAlbums(ext) {
