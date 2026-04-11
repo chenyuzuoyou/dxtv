@@ -27,8 +27,8 @@ const appConfig = {
     "groups": [{
       "name": "VOCALOID·UTAU",
       "type": "song",
-      "ui": 0,
-      "showMore": false,
+      "ui": 1,
+      "showMore": true,
       "ext": {
         "gid": "2",
         "rid": 30
@@ -36,8 +36,8 @@ const appConfig = {
     }, {
       "name": "演奏",
       "type": "song",
-      "ui": 0,
-      "showMore": false,
+      "ui": 1,
+      "showMore": true,
       "ext": {
         "gid": "2",
         "rid": 59
@@ -45,8 +45,8 @@ const appConfig = {
     }, {
       "name": "MV",
       "type": "song",
-      "ui": 0,
-      "showMore": false,
+      "ui": 1,
+      "showMore": true,
       "ext": {
         "gid": "2",
         "rid": 193
@@ -54,8 +54,8 @@ const appConfig = {
     }, {
       "name": "音乐综合",
       "type": "song",
-      "ui": 0,
-      "showMore": false,
+      "ui": 1,
+      "showMore": true,
       "ext": {
         "gid": "2",
         "rid": 130
@@ -63,8 +63,8 @@ const appConfig = {
     }, {
       "name": "原创音乐",
       "type": "song",
-      "ui": 0,
-      "showMore": false,
+      "ui": 1,
+      "showMore": true,
       "ext": {
         "gid": "2",
         "rid": 28
@@ -72,8 +72,8 @@ const appConfig = {
     }, {
       "name": "翻唱",
       "type": "song",
-      "ui": 0,
-      "showMore": false,
+      "ui": 1,
+      "showMore": true,
       "ext": {
         "gid": "2",
         "rid": 31
@@ -81,8 +81,8 @@ const appConfig = {
     }, {
       "name": "音乐现场",
       "type": "song",
-      "ui": 0,
-      "showMore": false,
+      "ui": 1,
+      "showMore": true,
       "ext": {
         "gid": "2",
         "rid": 29
