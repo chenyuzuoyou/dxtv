@@ -1,7 +1,7 @@
 /*!
  * @name AllInOneAudio
  * @description 全网听书聚合 (喜马/荔枝/蜻蜓/懒人/番茄)
- * @version v1.1
+ * @version v1.2
  * @author AI
  * @key csp_AllInOneAudio
  */
@@ -16,15 +16,15 @@ function firstArray(...c) { for (const i of c) if (Array.isArray(i) && i.length 
 async function fetchJson(url, extraHeaders = {}) { try { const { data } = await $fetch.get(url, { headers: { 'User-Agent': UA_MB, ...extraHeaders } }); return typeof data === 'string' ? JSON.parse(data) : data; } catch (e) { return {}; } }
 
 const appConfig = {
-  ver: 1, name: '全网听书聚合', desc: '完美修复加载',
+  ver: 1, name: '全网听书聚合', desc: '完美修复各端探索与播放',
   tabLibrary: {
     name: '探索',
     groups: [
       { name: '喜马-播客', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', kw: '播客' } },
       { name: '喜马-小说', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', kw: '小说' } },
-      { name: '荔枝-热门推荐', type: 'album', ui: 1, showMore: true, ext: { source: 'lz', kw: '推荐' } },
-      { name: '蜻蜓-有声书', type: 'album', ui: 1, showMore: true, ext: { source: 'qt', kw: '有声书' } },
-      { name: '懒人-玄幻', type: 'album', ui: 1, showMore: true, ext: { source: 'lr', kw: '玄幻' } },
+      { name: '荔枝-热门推荐', type: 'album', ui: 1, showMore: true, ext: { source: 'lz', kw: '热门' } },
+      { name: '蜻蜓-有声书', type: 'album', ui: 1, showMore: true, ext: { source: 'qt', kw: '521', reqType: 'category' } },
+      { name: '懒人-玄幻', type: 'album', ui: 1, showMore: true, ext: { source: 'lr', kw: '1', reqType: 'category' } },
       { name: '番茄-热门', type: 'album', ui: 1, showMore: true, ext: { source: 'fq', kw: '热门' } }
     ]
   },
@@ -71,7 +71,6 @@ const LZ = {
   mapAlbum: (v) => { const e = v?.voiceInfo ?? v; return { id: `${e?.voiceId ?? e?.id ?? ''}`, name: e?.name ?? e?.title ?? '', cover: toHttps(e?.imageUrl ?? e?.cover ?? ''), artist: { id: 'lz', name: v?.userInfo?.name ?? '荔枝FM' }, ext: { source: 'lz', id: `${e?.voiceId ?? e?.id ?? ''}`, type: 'album' } }; },
   mapTrack: (v) => { const e = v?.voiceInfo ?? v; return { id: `${e?.voiceId ?? e?.id ?? ''}`, name: e?.name ?? e?.title ?? '', cover: toHttps(e?.imageUrl ?? ''), duration: parseInt(e?.duration ?? 0), artist: { id: 'lz', name: '主播' }, ext: { source: 'lz', trackId: `${e?.voiceId ?? e?.id ?? ''}` } }; },
   async getAlbums({ kw, page = 1 }) {
-    // 强制加入必须的凭据防止被拦截
     const url = `https://m.lizhi.fm/vodapi/search/voice?deviceId=h5-f93e74ac-0065-8207-4853-75dec8585db3&receiptData=CAASJ2g1LWY5M2U3NGFjLTAwNjUtODIwNy00ODUzLTc1ZGVjODU4NWRiMyj%2FhvGLxy0wDDgF&keywords=${encodeURIComponent(kw)}&page=${page}`;
     const d = await fetchJson(url, { Referer: 'https://m.lizhi.fm/' });
     return { list: firstArray(d?.data).map(this.mapAlbum) };
@@ -83,15 +82,25 @@ const LZ = {
   },
   async search(ext) { return await this.getAlbums(ext); },
   async getSongInfo({ trackId }) {
-    const d = await fetchJson(`https://m.lizhi.fm/vodapi/voice/play/${trackId}`);
-    return { urls: d?.data?.trackUrl ? [toHttps(d.data.trackUrl)] : [] };
+    let url = '';
+    const d1 = await fetchJson(`https://m.lizhi.fm/vodapi/voice/play/${trackId}`);
+    url = d1?.data?.trackUrl || d1?.data?.url || d1?.data?.userVoice?.voicePlayProperty?.trackUrl;
+    if (!url) {
+      const d2 = await fetchJson(`https://m.lizhi.fm/vodapi/voice/info/${trackId}`);
+      url = d2?.data?.userVoice?.voicePlayProperty?.trackUrl || d2?.data?.voicePlayProperty?.trackUrl || d2?.data?.userVoice?.voiceInfo?.trackUrl || d2?.data?.trackUrl;
+    }
+    return { urls: url ? [toHttps(url)] : [] };
   }
 };
 
 const QT = {
   mapAlbum: e => ({ id: `${e?.id ?? ''}`, name: e?.title ?? '', cover: toHttps(e?.cover ?? e?.thumb ?? ''), artist: { id: 'qt', name: e?.podcasters?.[0]?.name ?? '蜻蜓FM' }, ext: { source: 'qt', id: `${e?.id ?? ''}`, type: 'album' } }),
   mapTrack: e => ({ id: `${e?.id ?? ''}`, name: e?.title ?? '', cover: toHttps(e?.cover ?? ''), duration: parseInt(e?.duration ?? 0), artist: { id: 'qt', name: '主播' }, ext: { source: 'qt', trackId: `${e?.id ?? ''}`, file_path: e?.file_path ?? '' } }),
-  async getAlbums({ kw, page = 1 }) {
+  async getAlbums({ kw, page = 1, reqType }) {
+    if (reqType === 'category') {
+      const d = await fetchJson(`https://i.qingting.fm/wapi/categories/${kw}/channels?page=${page}`, { Referer: 'https://m.qingting.fm/' });
+      return { list: firstArray(d?.data).map(this.mapAlbum) };
+    }
     const d = await fetchJson(`https://i.qingting.fm/wapi/search?k=${encodeURIComponent(kw)}&page=${page}&pagesize=20`, { Referer: 'https://m.qingting.fm/' });
     return { list: firstArray(d?.data?.data?.docs, d?.data?.docs, d?.docs).map(this.mapAlbum) };
   },
@@ -106,12 +115,16 @@ const QT = {
 const LR = {
   mapAlbum: e => ({ id: `${e?.id ?? e?.bookId ?? ''}`, name: e?.name ?? e?.bookName ?? '', cover: toHttps(e?.cover ?? e?.bookCover ?? ''), artist: { id: 'lr', name: e?.announcer ?? '懒人主播' }, ext: { source: 'lr', id: `${e?.id ?? e?.bookId ?? ''}`, type: 'album' } }),
   mapTrack: e => ({ id: `${e?.id ?? e?.sectionId ?? ''}`, name: e?.name ?? e?.sectionName ?? '', cover: '', duration: 0, artist: { id: 'lr', name: '主播' }, ext: { source: 'lr', trackId: `${e?.id ?? ''}`, path: e?.path ?? '' } }),
-  async getAlbums({ kw, page = 1 }) {
-    const d = await fetchJson(`https://m.lrts.me/ajax/search?word=${encodeURIComponent(kw)}&type=book&page=${page}`, { Referer: 'https://m.lrts.me/' });
+  async getAlbums({ kw, page = 1, reqType }) {
+    if (reqType === 'category') {
+      const d = await fetchJson(`http://m.lrts.me/ajax/getCategoryBookList?id=${kw}&sortType=1&pageNum=${page}&pageSize=20`, { Referer: 'http://m.lrts.me/' });
+      return { list: firstArray(d?.data?.list, d?.list).map(this.mapAlbum) };
+    }
+    const d = await fetchJson(`http://m.lrts.me/ajax/search?word=${encodeURIComponent(kw)}&type=book&page=${page}`, { Referer: 'http://m.lrts.me/' });
     return { list: firstArray(d?.data?.list, d?.list).map(this.mapAlbum) };
   },
   async getSongs({ id, page = 1 }) {
-    const d = await fetchJson(`https://m.lrts.me/ajax/playlist/2/${id}/${page}`);
+    const d = await fetchJson(`http://m.lrts.me/ajax/playlist/2/${id}/${page}`);
     return { list: firstArray(d?.data?.list, d?.list).map(this.mapTrack) };
   },
   async search(ext) { return await this.getAlbums(ext); },
@@ -122,17 +135,17 @@ const FQ = {
   mapAlbum: e => ({ id: `${e?.book_id ?? e?.id ?? ''}`, name: e?.book_name ?? e?.title ?? '', cover: e?.thumb_url ?? '', artist: { id: 'fq', name: e?.author ?? '番茄' }, ext: { source: 'fq', id: `${e?.book_id ?? e?.id ?? ''}`, type: 'album' } }),
   mapTrack: e => ({ id: `${e?.item_id ?? ''}`, name: e?.title ?? '', cover: '', duration: 0, artist: { id: 'fq', name: '主播' }, ext: { source: 'fq', trackId: `${e?.item_id ?? ''}`, url: e?.play_url ?? '' } }),
   async getAlbums({ kw, page = 1 }) {
-    const d = await fetchJson(`https://api5-normal-lf.fqnovel.com/reading/bookapi/search/page/v/?query=${encodeURIComponent(kw)}&offset=${(page-1)*20}&limit=20`);
+    const d = await fetchJson(`https://api5-normal-lf.fqnovel.com/reading/bookapi/search/page/v/?query=${encodeURIComponent(kw)}&offset=${(page-1)*20}&limit=20&aid=1967&device_platform=android&version_code=1000`);
     return { list: firstArray(d?.data?.search_tabs?.[0]?.data, d?.data?.item_list).map(this.mapAlbum) };
   },
   async getSongs({ id, page = 1 }) {
-    const d = await fetchJson(`https://api5-normal-lf.fqnovel.com/reading/bookapi/directory/all_items/v/?book_id=${id}&offset=${(page-1)*20}&limit=20`);
+    const d = await fetchJson(`https://api5-normal-lf.fqnovel.com/reading/bookapi/directory/all_items/v/?book_id=${id}&offset=${(page-1)*20}&limit=20&aid=1967&device_platform=android&version_code=1000`);
     return { list: firstArray(d?.data?.item_list).map(this.mapTrack) };
   },
   async search(ext) { return await this.getAlbums(ext); },
   async getSongInfo({ trackId, url }) {
     if (url) return { urls: [url] };
-    const d = await fetchJson(`https://api5-normal-lf.fqnovel.com/reading/bookapi/audio/info/v/?item_id=${trackId}`);
+    const d = await fetchJson(`https://api5-normal-lf.fqnovel.com/reading/bookapi/audio/info/v/?item_id=${trackId}&aid=1967&device_platform=android&version_code=1000`);
     const audio = d?.data?.audio_info?.play_url || d?.data?.play_url;
     return { urls: audio ? [audio] : [] };
   }
