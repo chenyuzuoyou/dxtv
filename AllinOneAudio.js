@@ -379,6 +379,7 @@ async function getSongInfo(ext) {
   const { source, trackId, quality } = argsify(ext)
   if (!trackId) return jsonify({ urls: [] })
 
+  // 喜马拉雅的播放解析逻辑
   if (source === XM_SOURCE) {
     const urls = [
       `https://m.ximalaya.com/tracks/${trackId}.json`,
@@ -393,16 +394,22 @@ async function getSongInfo(ext) {
     }
   }
 
+  // 荔枝FM的播放解析逻辑 (已修复广播剧链接解析)
   if (source === LIZHI_SOURCE) {
     const playData = await fetchLizhiJson('https://m.lizhi.fm/vodapi/voice/play/' + trackId)
     let url = playData?.data?.trackUrl || playData?.data?.url || playData?.data?.userVoice?.voicePlayProperty?.trackUrl
     
+    // 如果主接口没抓到，走备用信息接口获取
     if (!url) {
       const infoData = await fetchLizhiJson('https://m.lizhi.fm/vodapi/voice/info/' + trackId)
-      url = infoData?.data?.userVoice?.voicePlayProperty?.trackUrl || infoData?.data?.voicePlayProperty?.trackUrl || infoData?.data?.trackUrl
+      url = infoData?.data?.userVoice?.voicePlayProperty?.trackUrl 
+         || infoData?.data?.voicePlayProperty?.trackUrl 
+         || infoData?.data?.userVoice?.voiceInfo?.trackUrl // <-- 补回了原版这里针对特殊节目的解析路径
+         || infoData?.data?.trackUrl
     }
     if (url) return jsonify({ urls: [toHttps(url)] })
   }
 
   return jsonify({ urls: [] })
 }
+
