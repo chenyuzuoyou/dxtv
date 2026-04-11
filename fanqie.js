@@ -1,12 +1,14 @@
 /*!
  * @name fanqie
- * @description 番茄畅听 (修复探索页)
- * @author AI1
+ * @description 番茄畅听 (添加设备标识绕过拦截)
+ * @author AI2
  * @key csp_fanqie
  */
 const $config = typeof $config_str !== 'undefined' ? argsify($config_str) : {};
 const UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0) AppleWebKit/605.1.15 Mobile/15E148';
 const headers = { 'User-Agent': UA };
+// 添加番茄畅听必备标识
+const FQ_PARAMS = 'aid=1967&device_platform=android&version_code=1000'; 
 
 const appConfig = {
   ver: 1, name: '番茄畅听', tabLibrary: {
@@ -36,7 +38,7 @@ async function getConfig() { return jsonify(appConfig); }
 async function getAlbums(ext) {
   try {
     const { page = 1, kw } = safeArgs(ext);
-    let data = await fetchJson(`https://api5-normal-lf.fqnovel.com/reading/bookapi/search/page/v/?query=${encodeURIComponent(kw)}&offset=${(page-1)*20}&limit=20`);
+    let data = await fetchJson(`https://api5-normal-lf.fqnovel.com/reading/bookapi/search/page/v/?query=${encodeURIComponent(kw)}&offset=${(page-1)*20}&limit=20&${FQ_PARAMS}`);
     let list = firstArray(data?.data?.search_tabs?.[0]?.data, data?.data?.item_list);
     return jsonify({ list: list.map(mapAlbum) });
   } catch(e) { return jsonify({ list: [] }); }
@@ -45,7 +47,7 @@ async function getAlbums(ext) {
 async function getSongs(ext) {
   try {
     const { id, page = 1 } = safeArgs(ext);
-    let data = await fetchJson(`https://api5-normal-lf.fqnovel.com/reading/bookapi/directory/all_items/v/?book_id=${id}&offset=${(page-1)*20}&limit=20`);
+    let data = await fetchJson(`https://api5-normal-lf.fqnovel.com/reading/bookapi/directory/all_items/v/?book_id=${id}&offset=${(page-1)*20}&limit=20&${FQ_PARAMS}`);
     return jsonify({ list: firstArray(data?.data?.item_list).map(mapTrack) });
   } catch(e) { return jsonify({ list: [] }); }
 }
@@ -56,7 +58,7 @@ async function getSongInfo(ext) {
   const { trackId, url } = safeArgs(ext);
   if (url) return jsonify({ urls: [url] });
   try {
-      const data = await fetchJson(`https://api5-normal-lf.fqnovel.com/reading/bookapi/audio/info/v/?item_id=${trackId}`);
+      const data = await fetchJson(`https://api5-normal-lf.fqnovel.com/reading/bookapi/audio/info/v/?item_id=${trackId}&${FQ_PARAMS}`);
       const audio = data?.data?.audio_info?.play_url || data?.data?.play_url;
       return jsonify({ urls: audio ? [audio] : [] });
   } catch(e) { return jsonify({ urls: [] }); }
