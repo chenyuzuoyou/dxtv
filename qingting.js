@@ -1,505 +1,226 @@
 /*!
  * @name qingtingfm
- * @description 蜻蜓FM (隐藏VIP和付费内容)
- * @version v1.0.53
+ * @description 蜻蜓FM 参照荔枝FM模板 首页直连版
  * @author codex
  * @key csp_qingtingfm
  */
 const $config = argsify($config_str)
-const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
+const UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1'
 const headers = {
   'User-Agent': UA,
+  'Referer': 'https://m.qingting.fm/'
 }
-const PAGE_LIMIT = 20
+const PAGE_LIMIT = 999
 const SEARCH_PAGE_LIMIT = 5
-const XM_SOURCE = 'qingting'
+const QT_SOURCE = 'qingting'
 const GID = {
   RECOMMENDED_ALBUMS: '1',
   TAG_ALBUMS: '2',
   ALBUM_TRACKS: '3',
 }
+
+// 全分类，和荔枝一样丰富
+const allCategories = [
+  '有声书', '播客', '小说', '相声', '评书',
+  '历史', '助眠', '音乐', '儿童', '情感',
+  '脱口秀', '人文', '科技', '娱乐', '教育',
+  '广播剧', '资讯', '戏曲', '悬疑', '健康'
+];
+
 const appConfig = {
   ver: 1,
-  name: 'qingtingfm',
+  name: '蜻蜓FM',
   message: '',
   warning: '',
-  desc: '',
+  desc: '蜻蜓FM有声书、电台、节目直连播放',
   tabLibrary: {
     name: '探索',
-    groups: [{
-      name: '有声书',
-      type: 'album',
-      ui: 1,
-      showMore: true,
-      ext: {
-        gid: GID.TAG_ALBUMS,
-        kw: '有声书',
-      }
-    }, {
-      name: '历史',
-      type: 'album',
-      ui: 1,
-      showMore: true,
-      ext: {
-        gid: GID.TAG_ALBUMS,
-        kw: '历史',
-      }
-    }, {
-      name: '相声',
-      type: 'album',
-      ui: 1,
-      showMore: true,
-      ext: {
-        gid: GID.TAG_ALBUMS,
-        kw: '相声',
-      }
-    }, {
-      name: '热门专辑',
-      type: 'album',
-      ui: 1,
-      showMore: true,
-      ext: {
-        gid: GID.TAG_ALBUMS,
-        kw: '热门',
-      }
-    }, {
-      name: '新闻',
-      type: 'album',
-      ui: 1,
-      showMore: true,
-      ext: {
-        gid: GID.TAG_ALBUMS,
-        kw: '新闻',
-      }
-    }, {
-      name: '情感',
-      type: 'album',
-      ui: 1,
-      showMore: true,
-      ext: {
-        gid: GID.TAG_ALBUMS,
-        kw: '情感',
-      }
-    }, {
-      name: '儿童',
-      type: 'album',
-      ui: 1,
-      showMore: true,
-      ext: {
-        gid: GID.TAG_ALBUMS,
-        kw: '儿童',
-      }
-    }]
+    // 完全照荔枝：type = song，点击直接播，无层级空白
+    groups: [
+      {
+        name: '我的推荐',
+        type: 'song',
+        showMore: true,
+        ext: { gid: GID.TAG_ALBUMS, kw: '热门推荐' }
+      },
+      ...allCategories.map(kw => ({
+        name: kw,
+        type: 'song',
+        showMore: true,
+        ext: { gid: GID.TAG_ALBUMS, kw: kw }
+      }))
+    ]
   },
   tabMe: {
     name: '我的',
-    groups: [{
-      name: '红心',
-      type: 'song'
-    }, {
-      name: '歌单',
-      type: 'playlist'
-    }, {
-      name: '专辑',
-      type: 'album'
-    }, {
-      name: '创作者',
-      type: 'artist'
-    }]
+    groups: [
+      { name: '红心', type: 'song' },
+      { name: '专辑', type: 'album' }
+    ]
   },
   tabSearch: {
     name: '搜索',
-    groups: [{
-      name: '专辑',
-      type: 'album',
-      ext: {
-        type: 'album',
-      }
-    }, {
-      name: '节目',
-      type: 'song',
-      ext: {
-        type: 'track',
-      }
-    }, {
-      name: '创作者',
-      type: 'artist',
-      ext: {
-        type: 'artist',
-      }
-    }]
+    groups: [
+      { name: '专辑', type: 'album', ext: { type: 'album' } },
+      { name: '节目', type: 'song', ext: { type: 'track' } }
+    ]
   }
 }
+
 function safeArgs(data) {
   return typeof data === 'string' ? argsify(data) : (data ?? {})
 }
+
 function toHttps(url) {
-  if (!url) {
-    return ''
-  }
-  let s = `${url}`;
-  if (s.startsWith('//')) {
-    return 'https:' + s;
-  }
-  if (s.startsWith('http://')) {
-    return s.replace(/^http:\/\//, 'https://');
-  }
-  if (!s.startsWith('http')) {
-    return 'https://img.qingting.fm/' + s.replace(/^\//, '');
-  }
-  return s;
+  if (!url) return ''
+  let s = `${url}`
+  if (s.startsWith('//')) return 'https:' + s
+  return s
 }
+
+function cleanText(t) {
+  return `${t ?? ''}`.replace(/\s+/g, ' ').trim()
+}
+
 function firstArray(...candidates) {
-  for (const item of candidates) {
-    if (Array.isArray(item) && item.length > 0) {
-      return item
-    }
+  for (const i of candidates) {
+    if (Array.isArray(i) && i.length > 0) return i
   }
   return []
 }
-function isPaidItem(item) {
-  if (!item) return false;
-  if (item.isPaid === true || item.isPaid === 1 || item.isPaid === 'true') return true;
-  if (item.is_paid === true || item.is_paid === 1 || item.is_paid === 'true') return true;
-  if (item.isVip === true || item.isVip === 1 || item.is_vip === true || item.is_vip === 1) return true;
-  if (item.payType > 0 || item.pay_type > 0) return true;
-  if (item.priceTypeId > 0 || item.price_type_id > 0) return true;
-  if (item.vipFreeType > 0) return true;
-  return false;
-}
+
 async function fetchJson(url, extraHeaders = {}) {
-  const { data } = await $fetch.get(url, {
-    headers: {
-      ...headers,
-      ...extraHeaders,
-    },
-  })
-  return safeArgs(data)
+  try {
+    const { data } = await $fetch.get(url, {
+      headers: { ...headers, ...extraHeaders }
+    })
+    return safeArgs(data)
+  } catch (e) {
+    return {}
+  }
 }
+
+// ==================== 映射完全照荔枝 ====================
 function mapAlbum(item) {
   const id = `${item?.id ?? item?.channel_id ?? ''}`
-  const name = item?.title ?? item?.name ?? ''
-  const cover = toHttps(
-    item?.cover ?? item?.cover_url ?? item?.pic ?? ''
-  )
-  const artistId = `${item?.uid ?? ''}`
-  const artistName = item?.nickname ?? '蜻蜓FM'
-  const artistCover = toHttps(item?.avatar ?? '')
   return {
-    id,
-    name,
-    title: name,
-    cover,
-    artwork: cover,     
-    pic: cover,         
-    coverImg: cover,    
+    id: id,
+    name: cleanText(item?.title ?? item?.name ?? '未知专辑'),
+    cover: toHttps(item?.cover ?? item?.cover_url ?? item?.pic ?? ''),
     artist: {
-      id: artistId,
-      name: artistName,
-      title: artistName,
-      cover: artistCover,
-      artwork: artistCover,
-      pic: artistCover,
-      avatar: artistCover, 
+      id: `${item?.uid ?? ''}`,
+      name: cleanText(item?.nickname ?? '主播')
     },
     ext: {
       gid: GID.ALBUM_TRACKS,
-      id,
-      type: 'album',
-    }
-  }
-}
-function mapTrack(item) {
-  const id = `${item?.id ?? ''}`
-  const name = item?.title ?? item?.name ?? ''
-  const cover = toHttps(
-    item?.cover ?? item?.cover_url ?? ''
-  )
-  const artistId = `${item?.uid ?? ''}`
-  const artistName = item?.nickname ?? '主播'
-  const artistCover = toHttps(item?.avatar ?? '')
-  return {
-    id,
-    name,
-    title: name,
-    cover,
-    artwork: cover,     
-    pic: cover,
-    coverImg: cover,
-    duration: parseInt(item?.duration ?? 0),
-    artist: {
-      id: artistId,
-      name: artistName,
-      title: artistName,
-      cover: artistCover,
-      artwork: artistCover,
-      pic: artistCover,
-      avatar: artistCover,
-    },
-    ext: {
-      source: XM_SOURCE,
-      trackId: id,
-      title: name,
-      singer: artistName,
-      songName: name,
-    }
-  }
-}
-function mapArtistCard(item) {
-  const artistId = `${item?.uid ?? ''}`
-  const artistName = item?.nickname ?? '创作者'
-  const artistCover = toHttps(item?.avatar ?? '')
-  return {
-    id: artistId,
-    name: artistName,
-    title: artistName,
-    cover: artistCover,
-    artwork: artistCover,
-    pic: artistCover,
-    avatar: artistCover,    
-    coverImg: artistCover,  
-    groups: [{
-      name: '热门节目',
-      type: 'song',
-      ext: {
-        gid: GID.ALBUM_TRACKS,
-        id: artistId,
-        type: 'artist',
-        text: artistName,
-      }
-    }],
-    ext: {
-      gid: GID.ALBUM_TRACKS,
-      id: artistId,
-      type: 'artist',
-      text: artistName,
+      id: id,
+      source: QT_SOURCE,
+      type: 'album'
     }
   }
 }
 
-// ===================== 这里完全照你的喜马拉雅写法 =====================
-async function loadRecommendedAlbums(page = 1) {
-  const urls = [
-    `https://i.qingting.fm/capi/v3/channels/hot?page=${page}&pagesize=${PAGE_LIMIT}`,
-    `https://i.qingting.fm/capi/channel-recommend?pn=${page}&ps=${PAGE_LIMIT}`,
-  ]
-  for (const url of urls) {
-    try {
-      const data = await fetchJson(url)
-      const list = firstArray(
-        data?.data,
-        data?.list,
-        data?.data?.list
-      )
-      if (list.length > 0) {
-        return list
-      }
-    } catch (e) {}
+function mapTrack(item) {
+  const trackId = `${item?.id ?? item?.program_id ?? ''}`
+  const trackName = cleanText(item?.title ?? item?.name ?? '未知节目')
+  return {
+    id: trackId,
+    name: trackName,
+    cover: toHttps(item?.cover ?? item?.cover_url ?? ''),
+    duration: parseInt(item?.duration ?? 0),
+    artist: {
+      id: `${item?.uid ?? ''}`,
+      name: cleanText(item?.nickname ?? '主播')
+    },
+    ext: {
+      source: QT_SOURCE,
+      trackId: trackId,
+      songName: trackName
+    }
   }
-  return []
 }
+
+// ==================== 加载逻辑完全照荔枝 ====================
 async function loadAlbumsByKeyword(keyword, page = 1) {
-  const kw = keyword || ''
-  const urls = [
-    `https://i.qingting.fm/capi/v3/search/channels?q=${encodeURIComponent(kw)}&page=${page}&pagesize=${PAGE_LIMIT}`,
-  ]
-  for (const url of urls) {
-    try {
-      const data = await fetchJson(url)
-      const list = firstArray(
-        data?.data,
-        data?.list,
-        data?.data?.list
-      )
-      if (list.length > 0) {
-        return list
-      }
-    } catch (e) {}
-  }
-  return []
+  const kw = encodeURIComponent(keyword || '热门')
+  const url = `https://i.qingting.fm/capi/v3/search/programs?q=${kw}&page=${page}&pagesize=50`
+  const res = await fetchJson(url)
+  const list = firstArray(res?.data, res?.list) || []
+  return list
 }
-async function loadAlbumTracks(albumId, page = 1) {
-  const urls = [
-    `https://i.qingting.fm/capi/v3/channels/${albumId}/programs?page=${page}&pagesize=${PAGE_LIMIT}`,
-  ]
-  for (const url of urls) {
-    try {
-      const data = await fetchJson(url, {
-        Referer: `https://www.qingting.fm/channel/${albumId}`,
-      })
-      const list = firstArray(
-        data?.data,
-        data?.list,
-        data?.programs
-      )
-      if (list.length > 0) {
-        return list
-      }
-    } catch (e) {}
-  }
-  return []
+
+async function loadAlbumTracks(albumId) {
+  if (!albumId) return []
+  const url = `https://i.qingting.fm/capi/v3/channels/${albumId}/programs?page=1&pagesize=200`
+  const data = await fetchJson(url)
+  return firstArray(data?.data, data?.list, data?.programs) || []
 }
-async function loadTracksByKeyword(keyword, page = 1) {
-  const kw = keyword || ''
-  const urls = [
-    `https://i.qingting.fm/capi/v3/search/programs?q=${encodeURIComponent(kw)}&page=${page}&pagesize=${PAGE_LIMIT}`,
-  ]
-  for (const url of urls) {
-    try {
-      const data = await fetchJson(url)
-      const list = firstArray(
-        data?.data,
-        data?.list
-      )
-      if (list.length > 0) {
-        return list
-      }
-    } catch (e) {}
-  }
-  return []
-}
-async function loadArtistsByKeyword(keyword, page = 1) {
-  if (page > 1) {
-    return []
-  }
-  const list = await loadTracksByKeyword(keyword, 1)
-  const seen = new Set()
-  const artists = []
-  for (const item of list) {
-    const artist = mapArtistCard(item)
-    if (!artist.id || seen.has(artist.id)) {
-      continue
-    }
-    seen.add(artist.id)
-    artists.push(artist)
-    if (artists.length >= PAGE_LIMIT) {
-      break
-    }
-  }
-  return artists
-}
+
+// ==================== 出口函数 1:1 复刻荔枝 ====================
 async function getConfig() {
   return jsonify(appConfig)
 }
+
 async function getAlbums(ext) {
-  const { page, gid, kw } = argsify(ext)
-  const gidValue = `${gid ?? ''}`
-  if (gidValue == GID.RECOMMENDED_ALBUMS) {
-    const list = await loadRecommendedAlbums(page)
-    const freeList = list.filter(item => !isPaidItem(item));
-    return jsonify({
-      list: freeList.map(mapAlbum),
-    })
-  }
-  if (gidValue == GID.TAG_ALBUMS) {
+  const { page = 1, gid, kw } = argsify(ext)
+  if (gid == GID.TAG_ALBUMS) {
     const list = await loadAlbumsByKeyword(kw, page)
-    const freeList = list.filter(item => !isPaidItem(item));
     return jsonify({
-      list: freeList.map(mapAlbum),
+      list: list.map(mapAlbum),
+      isEnd: list.length < 40
     })
   }
-  return jsonify({
-    list: [],
-  })
+  return jsonify({ list: [] })
 }
+
 async function getSongs(ext) {
-  const { page, gid, id, text } = argsify(ext)
-  const gidValue = `${gid ?? ''}`
-  if (gidValue == GID.ALBUM_TRACKS) {
-    if (text) {
-      const list = await loadTracksByKeyword(text, page)
-      const freeList = list.filter(item => !isPaidItem(item));
-      return jsonify({
-        list: freeList.map(mapTrack),
-      })
-    }
-    const list = await loadAlbumTracks(id, page)
-    const freeList = list.filter(item => !isPaidItem(item));
+  const { gid, id, kw, page = 1 } = argsify(ext)
+
+  if (gid == GID.ALBUM_TRACKS && id) {
+    const list = await loadAlbumTracks(id)
+    return jsonify({ list: list.map(mapTrack) })
+  }
+
+  if (gid == GID.TAG_ALBUMS && kw) {
+    const list = await loadAlbumsByKeyword(kw, page)
     return jsonify({
-      list: freeList.map(mapTrack),
+      list: list.map(mapTrack),
+      isEnd: list.length < 40
     })
   }
-  return jsonify({
-    list: [],
-  })
+
+  return jsonify({ list: [] })
 }
+
 async function getArtists(ext) {
-  const { page, text, kw } = argsify(ext)
-  const keyword = text || kw || ''
-  if (!keyword) {
-    return jsonify({
-      list: [],
-    })
-  }
-  const list = await loadArtistsByKeyword(keyword, page)
-  return jsonify({
-    list,
-  })
+  return jsonify({ list: [] })
 }
-async function getPlaylists(ext) {
-  return jsonify({
-    list: [],
-  })
+
+async function getPlaylists() {
+  return jsonify({ list: [] })
 }
+
 async function search(ext) {
-  const { text, page, type } = argsify(ext)
-  if (!text || page > SEARCH_PAGE_LIMIT) {
-    return jsonify({})
+  const { text, page = 1, type } = argsify(ext)
+  if (!text) return jsonify({})
+  const list = await loadAlbumsByKeyword(text, page)
+
+  if (type === 'album') {
+    return jsonify({ list: list.map(mapAlbum), isEnd: list.length < 40 })
+  } else if (type === 'track' || type === 'song') {
+    return jsonify({ list: list.map(mapTrack), isEnd: list.length < 40 })
   }
-  if (type == 'album') {
-    const list = await loadAlbumsByKeyword(text, page)
-    const freeList = list.filter(item => !isPaidItem(item));
-    return jsonify({
-      list: freeList.map(mapAlbum),
-    })
-  }
-  if (type == 'track' || type == 'song') {
-    const list = await loadTracksByKeyword(text, page)
-    const freeList = list.filter(item => !isPaidItem(item));
-    return jsonify({
-      list: freeList.map(mapTrack),
-    })
-  }
-  if (type == 'artist') {
-    const list = await loadArtistsByKeyword(text, page)
-    return jsonify({
-      list,
-    })
-  }
+
   return jsonify({})
 }
+
 async function getSongInfo(ext) {
-  const { trackId, quality } = argsify(ext)
-  if (!trackId) {
-    return jsonify({
-      urls: [],
-    })
-  }
-  const urls = [
-    `https://i.qingting.fm/capi/v3/programs/${trackId}/play`,
-  ]
-  for (const url of urls) {
-    try {
-      const { data } = await $fetch.get(url, {
-        headers: {
-          'User-Agent': UA,
-        },
-      })
-      const info = safeArgs(data)
-      if (info?.is_paid || info?.data?.isPaid) {
-        return jsonify({
-          urls: [],
-        })
-      }
-      const playUrl = info?.data?.url || info?.url || ''
-      if (playUrl) {
-        return jsonify({
-          urls: [playUrl],
-        })
-      }
-    } catch (e) {}
-  }
-  return jsonify({
-    urls: [],
-  })
+  const { trackId } = argsify(ext)
+  if (!trackId) return jsonify({ urls: [] })
+
+  const url1 = `https://i.qingting.fm/capi/v3/programs/${trackId}/play`
+  const data = await fetchJson(url1)
+  const playUrl = data?.data?.url || data?.url || ''
+
+  return jsonify({ urls: playUrl ? [toHttps(playUrl)] : [] })
 }
