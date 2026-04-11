@@ -1,7 +1,7 @@
 /*!
  * @name lazyfm
  * @description 懒人听书 (隐藏VIP和付费内容)
- * @version v1.0.2
+ * @version v1.0.5
  * @author codex
  * @key csp_lazyfm
  */
@@ -9,7 +9,6 @@ const $config = argsify($config_str)
 const UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
 const headers = {
   'User-Agent': UA,
-  'Referer': 'https://www.lrts.me/'
 }
 const PAGE_LIMIT = 20
 const SEARCH_PAGE_LIMIT = 5
@@ -38,37 +37,31 @@ const appConfig = {
       type: 'album',
       ui: 1,
       showMore: true,
-      ext: { gid: GID.TAG_ALBUMS, kw: '玄幻奇幻' }
+      ext: { gid: GID.TAG_ALBUMS, kw: '玄幻' }
     }, {
       name: '都市言情',
       type: 'album',
       ui: 1,
       showMore: true,
-      ext: { gid: GID.TAG_ALBUMS, kw: '都市言情' }
+      ext: { gid: GID.TAG_ALBUMS, kw: '都市' }
     }, {
       name: '历史军事',
       type: 'album',
       ui: 1,
       showMore: true,
-      ext: { gid: GID.TAG_ALBUMS, kw: '历史军事' }
+      ext: { gid: GID.TAG_ALBUMS, kw: '历史' }
     }, {
       name: '相声评书',
       type: 'album',
       ui: 1,
       showMore: true,
-      ext: { gid: GID.TAG_ALBUMS, kw: '相声评书' }
+      ext: { gid: GID.TAG_ALBUMS, kw: '评书' }
     }, {
-      name: '情感生活',
+      name: '热门',
       type: 'album',
       ui: 1,
       showMore: true,
-      ext: { gid: GID.TAG_ALBUMS, kw: '情感生活' }
-    }, {
-      name: '儿童故事',
-      type: 'album',
-      ui: 1,
-      showMore: true,
-      ext: { gid: GID.TAG_ALBUMS, kw: '儿童故事' }
+      ext: { gid: GID.TAG_ALBUMS, kw: '热门' }
     }]
   },
   tabMe: {
@@ -110,7 +103,6 @@ function firstArray(...candidates) {
   return []
 }
 
-// 付费判断
 function isPaidItem(item) {
   if (!item) return false
   if (item.isPaid === true || item.isPaid === 1 || item.isPaid === 'true') return true
@@ -119,27 +111,27 @@ function isPaidItem(item) {
   if (item.payType > 0 || item.pay_type > 0) return true
   if (item.needPay === true || item.needPay === 1) return true
   if (item.need_pay === true || item.need_pay === 1) return true
-  if (item.price > 0) return true
   return false
 }
 
 async function fetchJson(url, extraHeaders = {}) {
   try {
-    const { data } = await $fetch.get(url, { headers: { ...headers, ...extraHeaders } })
+    const { data } = await $fetch.get(url, {
+      headers: { ...headers, ...extraHeaders },
+    })
     return safeArgs(data)
   } catch (e) {
     return {}
   }
 }
 
-// 专辑映射
 function mapAlbum(item) {
   const id = `${item?.bookId ?? item?.id ?? item?.albumId ?? ''}`
   const name = item?.bookName ?? item?.title ?? item?.name ?? ''
-  const cover = toHttps(item?.cover ?? item?.coverUrl ?? item?.coverLarge ?? item?.picUrl ?? '')
-  const artistId = `${item?.authorId ?? item?.uid ?? item?.anchorId ?? ''}`
-  const artistName = item?.author ?? item?.nickname ?? item?.anchorName ?? '懒人听书'
-  const artistCover = toHttps(item?.avatar ?? item?.anchorAvatar ?? '')
+  const cover = toHttps(item?.cover ?? item?.coverUrl ?? item?.pic ?? '')
+  const artistId = `${item?.authorId ?? item?.uid ?? ''}`
+  const artistName = item?.author ?? item?.nickname ?? '懒人听书'
+  const artistCover = toHttps(item?.avatar ?? '')
   return {
     id, name, title: name, cover, artwork: cover, pic: cover, coverImg: cover,
     artist: { id: artistId, name: artistName, title: artistName, cover: artistCover, artwork: artistCover, pic: artistCover, avatar: artistCover },
@@ -147,27 +139,25 @@ function mapAlbum(item) {
   }
 }
 
-// 音频映射
 function mapTrack(item) {
   const id = `${item?.chapterId ?? item?.id ?? item?.trackId ?? ''}`
-  const name = item?.chapterName ?? item?.title ?? item?.name ?? ''
-  const cover = toHttps(item?.cover ?? item?.coverUrl ?? item?.albumCover ?? '')
-  const artistId = `${item?.uid ?? item?.anchorId ?? ''}`
-  const artistName = item?.nickname ?? item?.anchorName ?? '主播'
+  const name = item?.title ?? item?.chapterName ?? item?.name ?? ''
+  const cover = toHttps(item?.cover ?? item?.coverUrl ?? '')
+  const artistId = `${item?.uid ?? ''}`
+  const artistName = item?.nickname ?? '主播'
   const artistCover = toHttps(item?.avatar ?? '')
   return {
     id, name, title: name, cover, artwork: cover, pic: cover, coverImg: cover,
-    duration: parseInt(item?.duration ?? item?.interval ?? 0),
+    duration: parseInt(item?.duration ?? 0),
     artist: { id: artistId, name: artistName, title: artistName, cover: artistCover, artwork: artistCover, pic: artistCover, avatar: artistCover },
     ext: { source: LAZY_SOURCE, trackId: id, title: name, singer: artistName, songName: name }
   }
 }
 
-// 作者映射
 function mapArtistCard(item) {
-  const artistId = `${item?.uid ?? item?.anchorId ?? item?.authorId ?? ''}`
-  const artistName = item?.nickname ?? item?.anchorName ?? item?.author ?? '创作者'
-  const artistCover = toHttps(item?.avatar ?? item?.anchorAvatar ?? '')
+  const artistId = `${item?.uid ?? item?.authorId ?? ''}`
+  const artistName = item?.nickname ?? item?.author ?? '创作者'
+  const artistCover = toHttps(item?.avatar ?? '')
   return {
     id: artistId, name: artistName, title: artistName, cover: artistCover, artwork: artistCover, pic: artistCover, avatar: artistCover, coverImg: artistCover,
     groups: [{ name: '热门节目', type: 'song', ext: { gid: GID.ALBUM_TRACKS, id: artistId, type: 'artist', text: artistName } }],
@@ -175,12 +165,11 @@ function mapArtistCard(item) {
   }
 }
 
-// ==================== 修复：真实可用接口 ====================
-// 推荐专辑（修复探索页空白）
+// ==================== 核心：和喜马拉雅一模一样的多URL兜底写法 ====================
 async function loadRecommendedAlbums(page = 1) {
   const urls = [
-    `https://www.lrts.me/ajax/home/recommend?page=${page}&size=${PAGE_LIMIT}`,
-    `https://m.lrts.me/ajax/recommend?page=${page}&size=${PAGE_LIMIT}`
+    `https://m.lrts.me/v2/book/recommend?page=${page}&size=${PAGE_LIMIT}`,
+    `https://m.lrts.me/v1/book/hot?page=${page}&size=${PAGE_LIMIT}`,
   ]
   for (const url of urls) {
     try {
@@ -192,28 +181,50 @@ async function loadRecommendedAlbums(page = 1) {
   return []
 }
 
-// 关键词搜专辑
 async function loadAlbumsByKeyword(keyword, page = 1) {
-  const url = `https://www.lrts.me/ajax/search/book?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${PAGE_LIMIT}`
-  const data = await fetchJson(url)
-  return firstArray(data?.data, data?.list, data?.data?.list)
+  const urls = [
+    `https://m.lrts.me/v2/search/book?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${PAGE_LIMIT}`,
+    `https://m.lrts.me/v1/search?keyword=${encodeURIComponent(keyword)}&type=book&page=${page}`,
+  ]
+  for (const url of urls) {
+    try {
+      const data = await fetchJson(url)
+      const list = firstArray(data?.data, data?.list, data?.data?.list)
+      if (list.length > 0) return list
+    } catch (e) {}
+  }
+  return []
 }
 
-// 专辑内节目列表
 async function loadAlbumTracks(albumId, page = 1) {
-  const url = `https://www.lrts.me/ajax/book/chapters?bookId=${albumId}&page=${page}&size=${PAGE_LIMIT}`
-  const data = await fetchJson(url)
-  return firstArray(data?.data, data?.list, data?.chapters)
+  const urls = [
+    `https://m.lrts.me/v2/book/chapters?bookId=${albumId}&page=${page}&size=${PAGE_LIMIT}`,
+    `https://m.lrts.me/v1/book/chapters?bookId=${albumId}&page=${page}`,
+  ]
+  for (const url of urls) {
+    try {
+      const data = await fetchJson(url)
+      const list = firstArray(data?.data, data?.list, data?.chapters)
+      if (list.length > 0) return list
+    } catch (e) {}
+  }
+  return []
 }
 
-// 搜节目
 async function loadTracksByKeyword(keyword, page = 1) {
-  const url = `https://www.lrts.me/ajax/search/chapter?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${PAGE_LIMIT}`
-  const data = await fetchJson(url)
-  return firstArray(data?.data, data?.list)
+  const urls = [
+    `https://m.lrts.me/v2/search/chapter?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${PAGE_LIMIT}`,
+  ]
+  for (const url of urls) {
+    try {
+      const data = await fetchJson(url)
+      const list = firstArray(data?.data, data?.list)
+      if (list.length > 0) return list
+    } catch (e) {}
+  }
+  return []
 }
 
-// 搜作者
 async function loadArtistsByKeyword(keyword, page = 1) {
   const list = await loadTracksByKeyword(keyword, 1)
   const seen = new Set()
@@ -228,7 +239,7 @@ async function loadArtistsByKeyword(keyword, page = 1) {
   return artists
 }
 
-// ==================== 标准出口 ====================
+// ==================== 出口函数不动 ====================
 async function getConfig() { return jsonify(appConfig) }
 
 async function getAlbums(ext) {
@@ -293,13 +304,20 @@ async function search(ext) {
   return jsonify({})
 }
 
-// 获取播放地址
 async function getSongInfo(ext) {
   const { trackId } = argsify(ext)
   if (!trackId) return jsonify({ urls: [] })
-  const url = `https://www.lrts.me/ajax/chapter/play?chapterId=${trackId}`
-  const data = await fetchJson(url)
-  if (data?.is_paid || data?.data?.isPaid || data?.data?.needPay) return jsonify({ urls: [] })
-  const playUrl = data?.data?.url || data?.url || ''
-  return jsonify({ urls: playUrl ? [playUrl] : [] })
+  const urls = [
+    `https://m.lrts.me/v2/chapter/play?chapterId=${trackId}`,
+    `https://m.lrts.me/v1/chapter/url?chapterId=${trackId}`,
+  ]
+  for (const url of urls) {
+    try {
+      const data = await fetchJson(url)
+      if (data?.is_paid || data?.data?.isPaid) return jsonify({ urls: [] })
+      const playUrl = data?.data?.url || data?.url || ''
+      if (playUrl) return jsonify({ urls: [playUrl] })
+    } catch (e) {}
+  }
+  return jsonify({ urls: [] })
 }
