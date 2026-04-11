@@ -113,7 +113,6 @@ async function getSongs(ext) {
   const pn = page || 1
 
   if (gid == '1') {
-    // 推荐页（可保留原样，也可加分页）
     if (page > 1) {
       return jsonify({ list: [] })
     }
@@ -131,23 +130,23 @@ async function getSongs(ext) {
           name: archive.owner.name,
           cover: archive.owner.face
         },
-        ext: { aid: archive.aid, cid: archive.cid, bvid: archive.bvid }
+        ext: {
+          aid: archive.aid,
+          cid: archive.cid,
+          bvid: archive.bvid
+        }
       })
     })
-    return jsonify({ list: songs })
   }
 
-  // ========== 重点：分区支持分页 ==========
   if (gid == '2') {
     const { rid } = argsify(ext)
-    // 带上分页 pn & ps
     const { data } = await $fetch.get(
       `https://api.bilibili.com/x/web-interface/dynamic/region?ps=20&pn=${pn}&rid=${rid}`,
       { headers }
     )
     const res = argsify(data)
     const list = res?.data?.archives || []
-
     list.forEach(each => {
       songs.push({
         id: `${each.aid}`,
@@ -159,19 +158,68 @@ async function getSongs(ext) {
           name: each.owner.name,
           cover: each.owner.face,
         },
-        ext: { aid: each.aid, cid: each.cid, bvid: each.bvid }
+        ext: {
+          aid: each.aid,
+          cid: each.cid,
+          bvid: each.bvid
+        }
       })
     })
-
-    // 判断是否还有下页（接口返回count）
     const count = res?.data?.page?.count || 0
     const isEnd = pn * 20 >= count
     return jsonify({ list: songs, isEnd: isEnd })
   }
 
-  // 搜索/剧集逻辑不变
+  // ==============================
+  // ✅ 修复：分 P 列表（合集/多P）全部可播放
+  // ==============================
   if (gid === '99') {
-    // ...这里保持你原来的代码不变...
+    const { aid, cid, bvid } = argsify(ext)
+    let params = { aid: aid }
+    const { data } = await $fetch.get(`https://api.bilibili.com/x/web-interface/view/detail?` + dictToURI(params), { headers })
+    let view = argsify(data).data?.View
+
+    // 处理合集剧集
+    view?.ugc_season?.sections[0]?.episodes?.forEach(each => {
+      songs.push({
+        id: `${each.aid}_${each.cid}`, // 这里修复！唯一ID
+        name: each.title,
+        cover: each.arc.pic,
+        duration: each.arc.duration,
+        artist: {
+          id: `${view.owner.mid}`,
+          name: view.owner.name,
+          cover: view.owner.face
+        },
+        ext: {
+          aid: each.aid,
+          cid: each.cid,
+          bvid: each.bvid
+        }
+      })
+    })
+
+    // 处理普通分 P
+    if (songs.length == 0) {
+      view?.pages?.forEach(each => {
+        songs.push({
+          id: `${view.aid}_${each.cid}`, // 这里修复！唯一ID
+          name: each.part,
+          cover: each.first_frame || view.pic,
+          duration: each.duration,
+          artist: {
+            id: `${view.owner.mid}`,
+            name: view.owner.name,
+            cover: view.owner.face
+          },
+          ext: {
+            aid: view.aid,
+            cid: each.cid,
+            bvid: view.bvid
+          }
+        })
+      })
+    }
   }
 
   return jsonify({ list: songs })
