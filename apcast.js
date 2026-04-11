@@ -9,16 +9,14 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
 const headers = { 'User-Agent': UA }
 
 const PAGE_LIMIT = 20
-const SEARCH_PAGE_LIMIT = 5
 const SOURCE = 'apple'
 
 const GID = {
-  RECOMMENDED_ALBUMS: '1',
   TAG_ALBUMS: '2',
   ALBUM_TRACKS: '3',
 }
 
-// 苹果播客官方真实分类
+// 苹果播客官方分类
 const podcastCategories = [
   { name: '新闻', kw: 'News' },
   { name: '历史', kw: 'History' },
@@ -42,7 +40,7 @@ const appConfig = {
   name: '苹果播客',
   message: '',
   warning: '',
-  desc: 'Apple Podcasts 公开播客',
+  desc: 'Apple Podcasts 公开播客源',
   tabLibrary: {
     name: '探索',
     groups: podcastCategories.map(item => ({
@@ -59,15 +57,14 @@ const appConfig = {
   tabMe: {
     name: '我的',
     groups: [
-      { name: '红心', type: 'song' },
-      { name: '专辑', type: 'album' }
+      { name: '收藏', type: 'song' },
+      { name: '订阅播客', type: 'album' }
     ]
   },
   tabSearch: {
     name: '搜索',
     groups: [
-      { name: '专辑', type: 'album', ext: { type: 'album' } },
-      { name: '节目', type: 'song', ext: { type: 'track' } }
+      { name: '播客专辑', type: 'album', ext: { type: 'album' } },
     ]
   }
 }
@@ -99,68 +96,68 @@ async function fetchJson(url) {
   }
 }
 
-// 搜索专辑
+// 搜索播客专辑
 async function loadAlbumsByKeyword(keyword, page = 1) {
   const url = `https://itunes.apple.com/search?term=${encodeURIComponent(keyword)}&media=podcast&limit=${PAGE_LIMIT}&country=cn`
   const res = await fetchJson(url)
   return firstArray(res?.results) || []
 }
 
-// 获取节目列表
+// 解析 RSS 获取节目单
 async function loadTracksByFeed(feedUrl) {
   try {
-    const res = await $fetch.get(feedUrl, { headers: { ...headers, 'Accept': 'application/xml' } })
+    const res = await $fetch.get(feedUrl, {
+      headers: { ...headers, 'Accept': 'application/xml' }
+    })
     const xml = res.data
     const items = xml.match(/<item>([\s\S]*?)<\/item>/g) || []
-    return items.map(item => ({
-      title: item.match(/<title>(.*?)<\/title>/)?.[1] || '无标题',
-      enclosure: item.match(/<enclosure url="(.*?)"/)?.[1] || '',
-      duration: item.match(/<duration>(.*?)<\/duration>/)?.[1] || '0',
-    })).filter(i => i.enclosure)
+    return items.map(item => {
+      const title = item.match(/<title>(.*?)<\/title>/)?.[1] || '无标题'
+      const enclosure = item.match(/<enclosure.*?url="(.*?)"/)?.[1] || ''
+      const duration = item.match(/<duration>(.*?)<\/duration>/)?.[1] || '0'
+      return { title, enclosure, duration }
+    }).filter(i => i.enclosure)
   } catch (e) {
     return []
   }
 }
 
-// 映射专辑
+// 专辑映射
 function mapAlbum(item) {
   return {
-    id: item.collectionId || item.trackId || Math.random().toString(36),
-    name: item.collectionName || item.trackName || '未知专辑',
+    id: item.collectionId || Math.random().toString(36),
+    name: item.collectionName || '未知播客',
     cover: item.artworkUrl600 || item.artworkUrl100 || '',
     artist: {
       name: item.artistName || '主播'
     },
     ext: {
       gid: GID.ALBUM_TRACKS,
-      id: item.feedUrl || item.collectionId,
       feedUrl: item.feedUrl,
-      type: 'album'
     }
   }
 }
 
-// 映射节目
+// 节目映射
 function mapTrack(item) {
   return {
     id: item.enclosure || Math.random().toString(36),
-    name: item.title || '未知节目',
-    cover: '',
+    name: item.title || '无标题节目',
     duration: parseInt(item.duration) || 0,
-    artist: { name: '播客' },
+    artist: { name: '播客主播' },
     ext: {
       source: SOURCE,
-      trackId: item.enclosure,
       url: item.enclosure
     }
   }
 }
 
-// 出口
+// 导出配置
 async function getConfig() {
   return jsonify(appConfig)
 }
 
+// 获取分类播客列表
 async function getAlbums(ext) {
   const { page = 1, gid, kw } = safeArgs(ext)
   if (gid === GID.TAG_ALBUMS) {
@@ -170,114 +167,37 @@ async function getAlbums(ext) {
   return jsonify({ list: [] })
 }
 
+// 获取播客内节目单
 async function getSongs(ext) {
-  const { page, gid, id, from, text } = argsify(ext)
-  let songs = []
-  const pn = page || 1
-
-  // ======================
-  // ✅ 推荐页 fix：直接用音乐分区接口，不爬主页，必加载
-  // ======================
-  if (gid == '1') {
-    const { data } = await $fetch.get(`https://api.bilibili.com/x/web-interface/dynamic/region?ps=20&pn=${pn}&rid=130`, { headers })
-    const res = argsify(data)
-    const list = res?.data?.archives || []
-    list.forEach(each => {
-      songs.push({
-        id: `${each.aid}_${each.cid}`,
-        name: each.title,
-        cover: each.pic,
-        duration: each.duration,
-        artist: {
-          id: `${each.owner.mid}`,
-          name: each.owner.name,
-          cover: each.owner.face,
-        },
-        ext: { aid: each.aid, cid: each.cid, bvid: each.bvid }
-      })
-    })
-    return jsonify({ list: songs })
+  const { gid, feedUrl } = safeArgs(ext)
+  if (gid !== GID.ALBUM_TRACKS || !feedUrl) {
+    return jsonify({ list: [] })
   }
 
-  // ======================
-  // ✅ 分类页（支持加载更多）
-  // ======================
-  if (gid == '2') {
-    const { rid } = argsify(ext)
-    const { data } = await $fetch.get(`https://api.bilibili.com/x/web-interface/dynamic/region?ps=20&pn=${pn}&rid=${rid}`, { headers })
-    const res = argsify(data)
-    const list = res?.data?.archives || []
-    list.forEach(each => {
-      songs.push({
-        id: `${each.aid}_${each.cid}`,
-        name: each.title,
-        cover: each.pic,
-        duration: each.duration,
-        artist: {
-          id: `${each.owner.mid}`,
-          name: each.owner.name,
-          cover: each.owner.face,
-        },
-        ext: { aid: each.aid, cid: each.cid, bvid: each.bvid }
-      })
-    })
-    return jsonify({ list: songs })
-  }
+  const tracks = await loadTracksByFeed(feedUrl)
+  return jsonify({ list: tracks.map(mapTrack) })
+}
 
-  // ======================
-  // ✅ 分P列表（全部可播放）
-  // ======================
-  if (gid === '99') {
-    const { aid } = argsify(ext)
-    let params = { aid: aid }
-    const { data } = await $fetch.get(`https://api.bilibili.com/x/web-interface/view/detail?` + dictToURI(params), { headers })
-    let view = argsify(data).data?.View
+// 搜索
+async function search(ext) {
+  const { text, page, type } = safeArgs(ext)
+  if (!text) return jsonify({})
 
-    view?.ugc_season?.sections[0]?.episodes?.forEach(each => {
-      songs.push({
-        id: `${each.aid}_${each.cid}`,
-        name: each.title,
-        cover: each.arc.pic,
-        duration: each.arc.duration,
-        artist: { id: `${view.owner.mid}`, name: view.owner.name, cover: view.owner.face },
-        ext: { aid: each.aid, cid: each.cid, bvid: each.bvid }
-      })
-    })
-
-    if (songs.length == 0) {
-      view?.pages?.forEach(each => {
-        songs.push({
-          id: `${view.aid}_${each.cid}`,
-          name: each.part,
-          cover: each.first_frame || view.pic,
-          duration: each.duration,
-          artist: { id: `${view.owner.mid}`, name: view.owner.name, cover: view.owner.face },
-          ext: { aid: view.aid, cid: each.cid, bvid: view.bvid }
-        })
-      })
-    }
-    return jsonify({ list: songs })
+  const list = await loadAlbumsByKeyword(text, page)
+  if (type === 'album') {
+    return jsonify { list: list.map(mapAlbum) }
   }
 
   return jsonify({ list: [] })
 }
 
-async function search(ext) {
-  const { text, page, type } = safeArgs(ext)
-  if (!text) return jsonify({})
-  const list = await loadAlbumsByKeyword(text, page)
-  if (type === 'album') {
-    return jsonify({ list: list.map(mapAlbum) })
-  } else {
-    return jsonify({ list: [] })
-  }
-}
-
+// 播放地址
 async function getSongInfo(ext) {
-  const { trackId } = safeArgs(ext)
-  if (!trackId) return jsonify({ urls: [] })
-  return jsonify({ urls: [trackId] })
+  const { url } = safeArgs(ext)
+  if (!url) return jsonify({ urls: [] })
+  return jsonify({ urls: [url] })
 }
 
+// 空实现（不需要）
 async function getArtists() { return jsonify({ list: [] }) }
 async function getPlaylists() { return jsonify({ list: [] }) }
