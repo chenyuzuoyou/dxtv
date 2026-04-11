@@ -1,7 +1,7 @@
 /*!
  * @name xmly_lizhi_mix
  * @description 喜马拉雅 & 荔枝FM (合并版)
- * @version v1.0.0
+ * @version v1.0.1
  * @author codex (Merged)
  */
 
@@ -15,9 +15,50 @@ const SEARCH_PAGE_LIMIT = 5
 const XM_SOURCE = 'xmly'
 const LIZHI_SOURCE = 'lizhi'
 
-const xmlyCategories = ['播客', '历史', '图书', '热门专辑', '小说', '相声', '音乐']
-const lizhiCategories = ['推荐', '有声书', '播客', '小说', '相声', '脱口秀', '广播剧', '悬疑']
-
+// 喜马拉雅官方真实分类（首页完整收录）
+const xmlyCategories = [
+  '播客',
+  '有声书',
+  '小说',
+  '相声',
+  '评书',
+  '历史',
+  '图书',
+  '音乐',
+  '情感',
+  '儿童',
+  '综艺',
+  '娱乐',
+  '悬疑',
+  '健康',
+  '财经',
+  '教育',
+  '人文',
+  '英语',
+  '二次元',
+  '热门专辑'
+]
+// 荔枝FM 首页真实分类（接口可搜索、可加载）
+const lizhiCategories = [
+  '情感',
+  '助眠',
+  '播客',
+  '脱口秀',
+  '有声书',
+  '广播剧',
+  '二次元',
+  '儿童',
+  '音乐',
+  '人文',
+  '悬疑',
+  '娱乐',
+  '教育',
+  '健康',
+  '旅行',
+  '美食',
+  '校园',
+  '资讯'
+]
 const appConfig = {
   ver: 1,
   name: '喜马拉雅 & 荔枝FM',
