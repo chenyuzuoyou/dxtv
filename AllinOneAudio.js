@@ -1,102 +1,212 @@
 /*!
- * @name AllInOneAudio
- * @description 全网听书聚合 v1.3 - 彻底修复专辑显示与播放
- * @version v1.3
- * @author AI
+ * @name fm_union
+ * @description 喜马拉雅+荔枝FM 二合一听书脚本
+ * @version v1.0
+ * @author codex
+ * @key csp_fmunion
  */
-const $config = typeof $config_str !== 'undefined' ? argsify($config_str) : {};
-const UA_MB = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0) AppleWebKit/605.1.15';
+const $config = argsify($config_str)
+const UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1'
+const headers = { 'User-Agent': UA }
 
-function safeArgs(data) { return typeof data === 'string' ? argsify(data) : (data ?? {}); }
-async function fetchJson(url, extraHeaders = {}) { try { const { data } = await $fetch.get(url, { headers: { 'User-Agent': UA_MB, ...extraHeaders } }); return typeof data === 'string' ? JSON.parse(data) : data; } catch (e) { return {}; } }
+const PAGE_LIMIT = 20
+const SEARCH_PAGE_LIMIT = 5
+const SOURCE_XM = 'xmly'
+const SOURCE_LZ = 'lizhi'
+
+const GID = {
+  RECOMMENDED: '1',
+  TAG: '2',
+  ALBUM_TRACKS: '3',
+}
+
+// 超丰富首页分类（喜马拉雅真实全分类）
+const ALL_CATEGORIES = [
+  { name: '推荐', kw: '推荐', source: SOURCE_XM },
+  { name: '有声书', kw: '有声书', source: SOURCE_XM },
+  { name: '小说', kw: '小说', source: SOURCE_XM },
+  { name: '玄幻', kw: '玄幻', source: SOURCE_XM },
+  { name: '都市', kw: '都市', source: SOURCE_XM },
+  { name: '悬疑', kw: '悬疑', source: SOURCE_XM },
+  { name: '历史', kw: '历史', source: SOURCE_XM },
+  { name: '相声', kw: '相声', source: SOURCE_XM },
+  { name: '评书', kw: '评书', source: SOURCE_XM },
+  { name: '情感', kw: '情感', source: SOURCE_XM },
+  { name: '助眠', kw: '助眠', source: SOURCE_LZ },
+  { name: '儿童', kw: '儿童', source: SOURCE_XM },
+  { name: '综艺', kw: '综艺', source: SOURCE_XM },
+  { name: '教育', kw: '教育', source: SOURCE_XM },
+  { name: '播客', kw: '播客', source: SOURCE_LZ },
+  { name: '脱口秀', kw: '脱口秀', source: SOURCE_LZ },
+  { name: '人文', kw: '人文', source: SOURCE_LZ },
+  { name: '健康', kw: '健康', source: SOURCE_XM },
+  { name: '财经', kw: '财经', source: SOURCE_XM },
+  { name: '英语', kw: '英语', source: SOURCE_LZ },
+]
 
 const appConfig = {
-  ver: 1, name: '全网听书聚合', tabLibrary: {
-    name: '探索', groups: [
-      { name: '喜马-播客', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', kw: '播客' } },
-      { name: '荔枝-热门推荐', type: 'album', ui: 1, showMore: true, ext: { source: 'lz', kw: '热门' } }, // 修复：此处必须为 album
-      { name: '蜻蜓-有声书', type: 'album', ui: 1, showMore: true, ext: { source: 'qt', kw: '521', reqType: 'category' } },
-      { name: '懒人-玄幻', type: 'album', ui: 1, showMore: true, ext: { source: 'lr', kw: '1', reqType: 'category' } },
-      { name: '番茄-畅听', type: 'album', ui: 1, showMore: true, ext: { source: 'fq', kw: '热门' } }
+  ver: 1,
+  name: 'FM合集',
+  message: '喜马拉雅+荔枝FM 二合一',
+  warning: '',
+  desc: '双平台免费有声书、播客、电台',
+  tabLibrary: {
+    name: '探索',
+    groups: ALL_CATEGORIES.map(cat => ({
+      name: cat.name,
+      type: 'song',
+      ui: 1,
+      showMore: true,
+      ext: {
+        gid: GID.TAG,
+        kw: cat.kw,
+        source: cat.source
+      }
+    }))
+  },
+  tabMe: {
+    name: '我的',
+    groups: [
+      { name: '红心', type: 'song' },
+      { name: '专辑', type: 'album' }
     ]
   },
-  tabSearch: { name: '搜索', groups: [{ name: '专辑聚合', type: 'album', ext: { source: 'all' } }] }
-};
-
-const PROVIDERS = {
-  xm: {
-    async getAlbums({ kw, page = 1 }) {
-      const d = await fetchJson(`https://mobile.ximalaya.com/mobile/search/result?query=${encodeURIComponent(kw)}&page=${page}`);
-      return { list: (d?.data?.album?.docs || []).map(e => ({ id: `${e.id}`, name: e.title, cover: e.coverUrl || e.cover_path, ext: { source: 'xm', id: `${e.id}`, type: 'album' } })) };
-    },
-    async getSongs({ id, page = 1 }) {
-      const d = await fetchJson(`https://mobile.ximalaya.com/mobile/v1/album/track/?albumId=${id}&pageSize=20&pageId=${page}`);
-      return { list: (d?.data?.list || []).map(e => ({ id: `${e.trackId}`, name: e.title, ext: { source: 'xm', trackId: `${e.trackId}` } })) };
-    },
-    async getSongInfo({ trackId }) {
-      const d = await fetchJson(`https://m.ximalaya.com/tracks/${trackId}.json`);
-      return { urls: d?.play_path_64 ? [d.play_path_64] : [] };
-    }
-  },
-  lz: {
-    async getAlbums({ kw, page = 1 }) {
-      const d = await fetchJson(`https://m.lizhi.fm/vodapi/search/voice?keywords=${encodeURIComponent(kw)}&page=${page}`, { Referer: 'https://m.lizhi.fm/' });
-      return { list: (d?.data || []).map(e => ({ id: `${e.voiceId || e.id}`, name: e.name || e.title, cover: e.imageUrl || e.cover, ext: { source: 'lz', id: `${e.voiceId || e.id}`, type: 'album' } })) };
-    },
-    async getSongs({ id }) {
-      const d = await fetchJson(`https://m.lizhi.fm/vodapi/voice/info/${id}`);
-      const l = d?.data?.tracks || [d?.data?.voiceInfo || d?.data];
-      return { list: l.map(e => ({ id: `${e.id || e.voiceId}`, name: e.name || e.title, ext: { source: 'lz', trackId: `${e.id || e.voiceId}` } })) };
-    },
-    async getSongInfo({ trackId }) {
-      const d = await fetchJson(`https://m.lizhi.fm/vodapi/voice/play/${trackId}`);
-      const url = d?.data?.trackUrl || d?.data?.url;
-      return { urls: url ? [url] : [] };
-    }
-  },
-  qt: {
-    async getAlbums({ kw, page = 1, reqType }) {
-      const url = reqType === 'category' ? `https://i.qingting.fm/wapi/categories/${kw}/channels?page=${page}` : `https://i.qingting.fm/wapi/search?k=${encodeURIComponent(kw)}&page=${page}`;
-      const d = await fetchJson(url, { Referer: 'https://m.qingting.fm/' });
-      return { list: (d?.data?.data?.docs || d?.data || []).map(e => ({ id: `${e.id}`, name: e.title || e.name, cover: e.cover || e.thumb, ext: { source: 'qt', id: `${e.id}`, type: 'album' } })) };
-    },
-    async getSongs({ id, page = 1 }) {
-      const d = await fetchJson(`https://i.qingting.fm/wapi/channels/${id}/programs/page/${page}/pagesize/20`);
-      return { list: (d?.data || []).map(e => ({ id: `${e.id}`, name: e.title, ext: { source: 'qt', file_path: e.file_path } })) };
-    },
-    async getSongInfo({ file_path }) { return { urls: file_path ? [`https://lcache.qingting.fm/cache/${file_path}`] : [] }; }
-  },
-  lr: {
-    async getAlbums({ kw, page = 1, reqType }) {
-      const url = reqType === 'category' ? `http://m.lrts.me/ajax/getCategoryBookList?id=${kw}&sortType=1&pageNum=${page}&pageSize=20` : `http://m.lrts.me/ajax/search?word=${encodeURIComponent(kw)}&type=book&page=${page}`;
-      const d = await fetchJson(url, { Referer: 'http://m.lrts.me/' });
-      return { list: (d?.data?.list || d?.list || []).map(e => ({ id: `${e.id || e.bookId}`, name: e.name || e.bookName, cover: e.cover || e.bookCover, ext: { source: 'lr', id: `${e.id || e.bookId}`, type: 'album' } })) };
-    },
-    async getSongs({ id, page = 1 }) {
-      const d = await fetchJson(`http://m.lrts.me/ajax/playlist/2/${id}/${page}`);
-      return { list: (d?.data?.list || d?.list || []).map(e => ({ id: `${e.id}`, name: e.name, ext: { source: 'lr', path: e.path } })) };
-    },
-    async getSongInfo({ path }) { return { urls: path ? [path.startsWith('http') ? path : 'https:' + path] : [] }; }
-  },
-  fq: {
-    async getAlbums({ kw, page = 1 }) {
-      const d = await fetchJson(`https://api5-normal-lf.fqnovel.com/reading/bookapi/search/page/v/?query=${encodeURIComponent(kw)}&offset=${(page-1)*20}&limit=20&aid=1967&device_platform=android`);
-      return { list: (d?.data?.search_tabs?.[0]?.data || []).map(e => ({ id: `${e.book_id}`, name: e.book_name, cover: e.thumb_url, ext: { source: 'fq', id: `${e.book_id}`, type: 'album' } })) };
-    },
-    async getSongs({ id, page = 1 }) {
-      const d = await fetchJson(`https://api5-normal-lf.fqnovel.com/reading/bookapi/directory/all_items/v/?book_id=${id}&offset=${(page-1)*20}&limit=20&aid=1967`);
-      return { list: (d?.data?.item_list || []).map(e => ({ id: `${e.item_id}`, name: e.title, ext: { source: 'fq', trackId: e.item_id, url: e.play_url } })) };
-    },
-    async getSongInfo({ trackId, url }) {
-      if (url) return { urls: [url] };
-      const d = await fetchJson(`https://api5-normal-lf.fqnovel.com/reading/bookapi/audio/info/v/?item_id=${trackId}&aid=1967`);
-      return { urls: d?.data?.audio_info?.play_url ? [d.data.audio_info.play_url] : [] };
-    }
+  tabSearch: {
+    name: '搜索',
+    groups: [
+      { name: '专辑', type: 'album', ext: { type: 'album' } },
+      { name: '节目', type: 'song', ext: { type: 'track' } }
+    ]
   }
-};
+}
 
-async function getConfig() { return jsonify(appConfig); }
-async function getAlbums(ext) { const args = safeArgs(ext); return jsonify(await PROVIDERS[args.source].getAlbums(args)); }
-async function getSongs(ext) { const args = safeArgs(ext); return jsonify(await PROVIDERS[args.source].getSongs(args)); }
-async function search(ext) { return await getAlbums(ext); }
-async function getSongInfo(ext) { const args = safeArgs(ext); return jsonify(await PROVIDERS[args.source].getSongInfo(args)); }
+function safeArgs(data) {
+  return typeof data === 'string' ? argsify(data) : (data ?? {})
+}
+
+function toHttps(url) {
+  if (!url) return ''
+  let s = `${url}`
+  if (s.startsWith('//')) return 'https:' + s
+  if (s.startsWith('http://')) return s.replace(/^http:\//, 'https://')
+  return s
+}
+
+function cleanText(t) {
+  return `${t ?? ''}`.replace(/\s+/g, ' ').trim()
+}
+
+function firstArray(...candidates) {
+  for (const i of candidates) if (Array.isArray(i) && i.length > 0) return i
+  return []
+}
+
+function isPaidItem(item) {
+  if (!item) return false
+  return !!(
+    item.isPaid || item.is_paid || item.isVip || item.is_vip ||
+    item.payType > 0 || item.needPay || item.need_paid || item.price > 0
+  )
+}
+
+async function fetch(url) {
+  try {
+    const { data } = await $fetch.get(url, { headers })
+    return safeArgs(data)
+  } catch (e) {
+    return {}
+  }
+}
+
+// ------------------------------
+// 喜马拉雅
+// ------------------------------
+async function xm_search(keyword, page = 1) {
+  const url = `https://www.ximalaya.com/revision/search?core=track&kw=${encodeURIComponent(keyword)}&page=${page}&rows=${PAGE_LIMIT}`
+  const d = await fetch(url)
+  return firstArray(d?.data?.result?.response?.docs, d?.data?.list, d?.list)
+}
+
+async function xm_tracks(albumId, page = 1) {
+  const url = `https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${albumId}&pageNum=${page}`
+  const d = await fetch(url)
+  return firstArray(d?.data?.tracks, d?.data?.list)
+}
+
+async function xm_play(trackId) {
+  const url = `https://www.ximalaya.com/revision/play/v1/audio?id=${trackId}&ptype=1`
+  const d = await fetch(url)
+  return d?.data?.src || d?.src || ''
+}
+
+// ------------------------------
+// 荔枝FM
+// ------------------------------
+async function lz_search(keyword, page = 1) {
+  const url = `https://m.lizhi.fm/vodapi/search/voice?keywords=${encodeURIComponent(keyword)}&page=${page}`
+  const d = await fetch(url)
+  return firstArray(d?.data)
+}
+
+async function lz_play(trackId) {
+  const d = await fetch(`https://m.lizhi.fm/vodapi/voice/play/${trackId}`)
+  return d?.data?.trackUrl || ''
+}
+
+// ------------------------------
+// 数据映射
+// ------------------------------
+function mapTrack(item, source) {
+  const id = `${item?.trackId || item?.id || item?.voiceInfo?.voiceId || ''}`
+  const name = cleanText(item?.title || item?.name || item?.voiceInfo?.name || '未知节目')
+  const cover = toHttps(item?.coverUrl || item?.cover || item?.voiceInfo?.imageUrl || '')
+  const duration = parseInt(item?.duration || 0)
+  return { id, name, cover, duration, source, ext: { source, trackId: id } }
+}
+
+// ------------------------------
+// 出口函数
+// ------------------------------
+async function getConfig() {
+  return jsonify(appConfig)
+}
+
+async function getSongs(ext) {
+  const { gid, kw, source, page = 1 } = argsify(ext)
+  let list = []
+
+  if (gid == GID.TAG) {
+    if (source === SOURCE_XM) list = await xm_search(kw, page)
+    if (source === SOURCE_LZ) list = await lz_search(kw, page)
+  }
+
+  const freeList = list.filter(i => !isPaidItem(i))
+  return jsonify({ list: freeList.map(i => mapTrack(i, source)) })
+}
+
+async function search(ext) {
+  const { text, page, type } = argsify(ext)
+  if (!text || type !== 'track') return jsonify({})
+
+  const xmList = await xm_search(text, page)
+  const lzList = await lz_search(text, page)
+  const combined = [...xmList, ...lzList].filter(i => !isPaidItem(i))
+
+  return jsonify({ list: combined.map(i => mapTrack(i, i.trackId ? SOURCE_XM : SOURCE_LZ)) })
+}
+
+async function getSongInfo(ext) {
+  const { trackId, source } = argsify(ext)
+  if (!trackId) return jsonify({ urls: [] })
+
+  let url = ''
+  if (source === SOURCE_XM) url = await xm_play(trackId)
+  if (source === SOURCE_LZ) url = await lz_play(trackId)
+
+  return jsonify({ urls: url ? [toHttps(url)] : [] })
+}
+
+// 兼容旧接口
+async function getAlbums() { return jsonify({ list: [] }) }
+async function getArtists() { return jsonify({ list: [] }) }
+async function getPlaylists() { return jsonify({ list: [] }) }
