@@ -1,7 +1,7 @@
 /*!
  * @name AllinOneCatchR1
  * @description 全网聚合音乐 - 增强版：红心改为“红心（缓存）” + 自动最近播放（离线缓存）
- * @version v1.1.0
+ * @version v1.1.1
  * @author kobe (增强 by Grok)
  * @key csp_AllinOneCatchR1
  */
@@ -1007,7 +1007,13 @@ async function search(ext) {
 
 async function getSongInfo(ext) {
   const { source, songmid, singer, songName } = argsify(ext)
+  const args = argsify(ext);
 
+
+
+  // 原有播放逻辑完全不变（播放器缓存机制保留）
+  if (args.source === 'xm') return jsonify(await XM.getSongInfo(args));
+  if (!args.source) return jsonify({ urls: [] });
   if (songmid == undefined || source == undefined) {
     return jsonify({ urls: [] })
   }
