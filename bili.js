@@ -351,30 +351,26 @@ async function getWbiKeys () {
 
 async function search(ext) {
   const { text, page, type } = argsify(ext)
-
   if (page > 1) {
     return jsonify({})
   }
-
   if (!text.startsWith('BV')) {
     if (type == 'playlist') {
       return jsonify({})
     }
     let songs = []
     const { img_key, sub_key } = await getWbiKeys()
-    $print(`***keys: ${img_key} , ${sub_key}`)
     const query = encWbi({
         keyword: text,
       },
       img_key,
       sub_key
     )
-    $print(`***query: ${query}`)
     const { data } = await $fetch.get(`https://api.bilibili.com/x/web-interface/wbi/search/all/v2?${query}`, headers)
-    $print(`***data: ${data}`)
     argsify(data).data?.result?.forEach( each => {
       if (each?.result_type === 'video') {
         each?.data.forEach( item => {
+          // 👇 修复：搜索结果统一进入 99 合集解析，自动展开分P
           songs.push({
             id: `${item.aid}`,
             name: item.title.replace(/<[^>]*>/g, ''),
@@ -386,6 +382,7 @@ async function search(ext) {
               cover: item.upic
             },
             ext: {
+              gid: "99",
               aid: item.aid,
               bvid: item.bvid
             }
@@ -398,13 +395,8 @@ async function search(ext) {
 
   if (type == 'song') {
     let songs = []
-    let params = {
-      bvid: text
-    }
-    const { data } = await $fetch.get(`https://api.bilibili.com/x/web-interface/view/detail?` + dictToURI(params), {
-      headers
-    })
-
+    let params = { bvid: text }
+    const { data } = await $fetch.get(`https://api.bilibili.com/x/web-interface/view/detail?` + dictToURI(params), { headers })
     let view = argsify(data).data?.View
     if (view != undefined) {
       songs.push({
@@ -418,29 +410,20 @@ async function search(ext) {
           cover: view.owner.face
         },
         ext: {
+          gid: "99",
           aid: view.aid,
           cid: view.cid,
           bvid: view.bvid
         }
       })
     }
-
-    return jsonify({
-      list: songs,
-    })
+    return jsonify({ list: songs })
   }
 
   if (type == 'playlist') {
     let cards = []
-    let params = {
-      bvid: text
-    }
-    const { data } = await $fetch.get(`https://api.bilibili.com/x/web-interface/view/detail?` + dictToURI(params), {
-      headers
-    })
-
-    $print(`***data: ${data}`)
-
+    let params = { bvid: text }
+    const { data } = await $fetch.get(`https://api.bilibili.com/x/web-interface/view/detail?` + dictToURI(params), { headers })
     let view = argsify(data).data?.View
     if (view != undefined) {
       let ugc = view?.ugc_season
@@ -480,12 +463,9 @@ async function search(ext) {
         })
       }
     }
-
-    return jsonify({
-      list: cards
-    })
+    return jsonify({ list: cards })
   }
-  
+
   return jsonify({})
 }
 
