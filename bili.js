@@ -1,3 +1,11 @@
+/*!
+ * @name bili
+ * @description 
+ * @version v1.0.0
+ * @author kobe
+ * @key csp_bili
+ */
+
 const $config = argsify($config_str)
 const cheerio = createCheerio()
 const CryptoJS = createCryptoJS()
