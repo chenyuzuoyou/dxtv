@@ -1,65 +1,37 @@
 /*!
  * @name fanqie
- * @description 番茄畅听 (添加设备标识绕过拦截)
- * @author AI2
+ * @description 番茄畅听 修复版
+ * @author AI
  * @key csp_fanqie
  */
 const $config = typeof $config_str !== 'undefined' ? argsify($config_str) : {};
-const UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0) AppleWebKit/605.1.15 Mobile/15E148';
-const headers = { 'User-Agent': UA };
-// 添加番茄畅听必备标识
-const FQ_PARAMS = 'aid=1967&device_platform=android&version_code=1000'; 
+const headers = { 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0) AppleWebKit/605.1.15' };
+const FQ_COMMON = 'aid=1967&device_platform=android&version_code=1000';
 
 const appConfig = {
   ver: 1, name: '番茄畅听', tabLibrary: {
-    name: '探索', groups: [
-      { name: '男生热门', type: 'album', ui: 1, showMore: true, ext: { kw: '男生' } },
-      { name: '女生热门', type: 'album', ui: 1, showMore: true, ext: { kw: '女生' } }
-    ]
+    name: '探索', groups: [{ name: '热门小说', type: 'album', ui: 1, showMore: true, ext: { kw: '热门' } }]
   },
   tabSearch: { name: '搜索', groups: [{ name: '专辑', type: 'album' }] }
-};
+}
 
-function safeArgs(data) { return typeof data === 'string' ? argsify(data) : (data ?? {}); }
-function firstArray(...c) { for (const i of c) if (Array.isArray(i) && i.length > 0) return i; return []; }
 async function fetchJson(url) { try { const { data } = await $fetch.get(url, { headers }); return typeof data === 'string' ? JSON.parse(data) : data; } catch (e) { return {}; } }
 
-function mapAlbum(item) {
-  const id = `${item?.book_id ?? item?.id ?? ''}`;
-  return { id, name: item?.book_name ?? item?.title ?? '未知', cover: item?.thumb_url ?? '', artist: { id: 'fq', name: item?.author ?? '番茄' }, ext: { source: 'fq', id, type: 'album' } };
-}
-function mapTrack(item) {
-  const id = `${item?.item_id ?? ''}`;
-  return { id, name: item?.title ?? '未知', cover: '', duration: 0, artist: { id: 'fq', name: '主播' }, ext: { source: 'fq', trackId: id, url: item?.play_url ?? '' } };
-}
-
 async function getConfig() { return jsonify(appConfig); }
-
 async function getAlbums(ext) {
-  try {
-    const { page = 1, kw } = safeArgs(ext);
-    let data = await fetchJson(`https://api5-normal-lf.fqnovel.com/reading/bookapi/search/page/v/?query=${encodeURIComponent(kw)}&offset=${(page-1)*20}&limit=20&${FQ_PARAMS}`);
-    let list = firstArray(data?.data?.search_tabs?.[0]?.data, data?.data?.item_list);
-    return jsonify({ list: list.map(mapAlbum) });
-  } catch(e) { return jsonify({ list: [] }); }
+  const { page = 1, kw } = argsify(ext);
+  const d = await fetchJson(`https://api5-normal-lf.fqnovel.com/reading/bookapi/search/page/v/?query=${encodeURIComponent(kw)}&offset=${(page-1)*20}&limit=20&${FQ_COMMON}`);
+  const list = d?.data?.search_tabs?.[0]?.data || [];
+  return jsonify({ list: list.map(e => ({ id: `${e.book_id}`, name: e.book_name, cover: e.thumb_url, ext: { source: 'fq', id: `${e.book_id}`, type: 'album' } })) });
 }
-
 async function getSongs(ext) {
-  try {
-    const { id, page = 1 } = safeArgs(ext);
-    let data = await fetchJson(`https://api5-normal-lf.fqnovel.com/reading/bookapi/directory/all_items/v/?book_id=${id}&offset=${(page-1)*20}&limit=20&${FQ_PARAMS}`);
-    return jsonify({ list: firstArray(data?.data?.item_list).map(mapTrack) });
-  } catch(e) { return jsonify({ list: [] }); }
+  const { id, page = 1 } = argsify(ext);
+  const d = await fetchJson(`https://api5-normal-lf.fqnovel.com/reading/bookapi/directory/all_items/v/?book_id=${id}&offset=${(page-1)*20}&limit=20&${FQ_COMMON}`);
+  return jsonify({ list: (d?.data?.item_list || []).map(e => ({ id: `${e.item_id}`, name: e.title, ext: { source: 'fq', trackId: e.item_id, url: e.play_url } })) });
 }
-
-async function search(ext) { return await getAlbums(ext); }
-
 async function getSongInfo(ext) {
-  const { trackId, url } = safeArgs(ext);
+  const { url, trackId } = argsify(ext);
   if (url) return jsonify({ urls: [url] });
-  try {
-      const data = await fetchJson(`https://api5-normal-lf.fqnovel.com/reading/bookapi/audio/info/v/?item_id=${trackId}&${FQ_PARAMS}`);
-      const audio = data?.data?.audio_info?.play_url || data?.data?.play_url;
-      return jsonify({ urls: audio ? [audio] : [] });
-  } catch(e) { return jsonify({ urls: [] }); }
+  const d = await fetchJson(`https://api5-normal-lf.fqnovel.com/reading/bookapi/audio/info/v/?item_id=${trackId}&${FQ_COMMON}`);
+  return jsonify({ urls: d?.data?.audio_info?.play_url ? [d.data.audio_info.play_url] : [] });
 }
