@@ -61,49 +61,22 @@ const appConfig = {
           "rid": 130
       }
     }, {
-      "name": "华语",
+      "name": "流行",
       "type": "song",
       "ui": 0,
       "showMore": false,
       "ext": {
           "gid": "2",
-          "rid": 63
+          "rid": 131
       }
     }, {
-      "name": "欧美",
+      "name": "说唱",
       "type": "song",
       "ui": 0,
       "showMore": false,
       "ext": {
           "gid": "2",
-          "rid": 64
-      }
-    }, {
-      "name": "日语",
-      "type": "song",
-      "ui": 0,
-      "showMore": false,
-      "ext": {
-          "gid": "2",
-          "rid": 65
-      }
-    }, {
-      "name": "韩语",
-      "type": "song",
-      "ui": 0,
-      "showMore": false,
-      "ext": {
-          "gid": "2",
-          "rid": 66
-      }
-    }, {
-      "name": "民谣",
-      "type": "song",
-      "ui": 0,
-      "showMore": false,
-      "ext": {
-          "gid": "2",
-          "rid": 70
+          "rid": 132
       }
     }, {
       "name": "摇滚",
@@ -112,34 +85,16 @@ const appConfig = {
       "showMore": false,
       "ext": {
           "gid": "2",
-          "rid": 71
+          "rid": 133
       }
     }, {
-      "name": "轻音乐",
+      "name": "电子",
       "type": "song",
       "ui": 0,
       "showMore": false,
       "ext": {
           "gid": "2",
-          "rid": 72
-      }
-    }, {
-      "name": "影视",
-      "type": "song",
-      "ui": 0,
-      "showMore": false,
-      "ext": {
-          "gid": "2",
-          "rid": 73
-      }
-    }, {
-      "name": "游戏",
-      "type": "song",
-      "ui": 0,
-      "showMore": false,
-      "ext": {
-          "gid": "2",
-          "rid": 74
+          "rid": 136
       }
     }]
   },
