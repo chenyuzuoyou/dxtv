@@ -1,9 +1,9 @@
 /*!
- * @name 喜马荔枝
+ * @name xmlylizhi
  * @description 喜马拉雅 & 荔枝FM (合并版) - 首页搜索正常 + 自动最近播放（缓存歌曲）
  * @version v1.0.5
  * @author codex (增强 & 最终修复 by Grok)
- * @key csp_xmlz
+ * @key csp_xmlylizhi
  */
 
 const $config = argsify($config_str)
