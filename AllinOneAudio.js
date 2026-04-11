@@ -1,7 +1,7 @@
 /*!
  * @name xmly_lizhi_mix
  * @description 喜马拉雅 & 荔枝FM (合并版)
- * @version v1.0.1
+ * @version v1.03
  * @author codex (Merged)
  */
 
