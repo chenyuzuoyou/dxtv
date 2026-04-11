@@ -1,7 +1,7 @@
 /*!
  * @name apple_podcast
  * @description 苹果播客 公开接口版
- * @author codex2
+ * @author codex4
  * @key csp_applepodcast
  */
 const $config = argsify($config_str)
@@ -12,9 +12,9 @@ const PAGE_LIMIT = 20
 const SOURCE = 'apple'
 
 const GID = {
-  RECOMMENDED_ALBUMS: '1',
-  TAG_ALBUMS: '2',
-  ALBUM_TRACKS: '3',
+  RECOMMENDED: '1',
+  CATEGORY: '2',
+  ALBUM_DETAIL: '3',
 }
 
 const podcastCategories = [
@@ -37,54 +37,53 @@ const podcastCategories = [
 
 const appConfig = {
   ver: 1,
-  name: '苹果播客',
-  message: '',
-  warning: '',
-  desc: 'Apple Podcasts 公开接口',
+  name: "苹果播客",
+  desc: "Apple Podcasts 公开播客",
   tabLibrary: {
-    name: '探索',
+    name: "探索",
     groups: [
       {
-        name: '推荐播客',
-        type: 'album',
+        name: "推荐播客",
+        type: "album",
         ui: 1,
         showMore: true,
-        ext: { gid: GID.RECOMMENDED_ALBUMS }
+        ext: { gid: GID.RECOMMENDED }
       },
-      ...podcastCategories.map(item => ({
-        name: item.name,
-        type: 'album',
+      // 分类：这里格式必须标准，才能自然加载
+      ...podcastCategories.map(c => ({
+        name: c.name,
+        type: "album",
         ui: 1,
         showMore: true,
         ext: {
-          gid: GID.TAG_ALBUMS,
-          kw: item.kw,
+          gid: GID.CATEGORY,
+          kw: c.kw
         }
       }))
     ]
   },
-  tabMe: {
-    name: '我的',
+  tabSearch: {
+    name: "搜索",
     groups: [
-      { name: '红心', type: 'song' },
-      { name: '专辑', type: 'album' }
+      { name: "播客", type: "album", ext: { type: "album" } }
     ]
   },
-  tabSearch: {
-    name: '搜索',
+  tabMe: {
+    name: "我的",
     groups: [
-      { name: '专辑', type: 'album', ext: { type: 'album' } },
+      { name: "收藏", type: "song" },
+      { name: "订阅", type: "album" }
     ]
   }
 }
 
-function safeArgs(data) {
-  return typeof data === 'string' ? argsify(data) : (data ?? {})
+function safeArgs(d) {
+  return typeof d === "string" ? argsify(d) : (d || {})
 }
 
-function firstArray(...candidates) {
-  for (const i of candidates) {
-    if (Array.isArray(i) && i.length > 0) return i
+function firstArray(...arrays) {
+  for (const a of arrays) {
+    if (Array.isArray(a) && a.length > 0) return a
   }
   return []
 }
@@ -98,25 +97,25 @@ async function fetchJson(url) {
   }
 }
 
-// 核心：加载播客列表（推荐、分类、搜索都用它）
+// 统一加载播客接口
 async function loadPodcasts(keyword, page = 1) {
   const url = `https://itunes.apple.com/search?term=${encodeURIComponent(keyword)}&media=podcast&limit=${PAGE_LIMIT}&country=cn`
   const res = await fetchJson(url)
-  return firstArray(res?.results) || []
+  return firstArray(res.results)
 }
 
-// 解析 RSS 播客单集
-async function loadTracksFromFeed(feedUrl) {
+// 解析 RSS 单集
+async function loadEpisodes(feedUrl) {
   try {
     const res = await $fetch.get(feedUrl, {
-      headers: { ...headers, Accept: 'application/xml' }
+      headers: { ...headers, Accept: "application/xml" }
     })
-    const xml = res.data || ''
+    const xml = res.data || ""
     const items = xml.match(/<item>([\s\S]*?)<\/item>/g) || []
     return items.map(item => {
-      const title = item.match(/<title>(.*?)<\/title>/)?.[1] || '无标题'
-      const url = item.match(/<enclosure.*?url="(.*?)"/)?.[1] || ''
-      const dur = item.match(/<duration>(.*?)<\/duration>/)?.[1] || '0'
+      const title = item.match(/<title>(.*?)<\/title>/)?.[1] || "无标题"
+      const url = item.match(/<enclosure.*?url="(.*?)"/)?.[1] || ""
+      const dur = item.match(/<duration>(.*?)<\/duration>/)?.[1] || "0"
       return { title, url, duration: dur }
     }).filter(i => i.url)
   } catch (e) {
@@ -125,27 +124,28 @@ async function loadTracksFromFeed(feedUrl) {
 }
 
 // 专辑格式化
-function mapAlbum(item) {
+function mapAlbum(i) {
   return {
-    id: item.collectionId || Math.random().toString(36),
-    name: item.collectionName || '未知专辑',
-    cover: item.artworkUrl600 || item.artworkUrl100 || '',
-    artist: { name: item.artistName || '主播' },
+    id: i.collectionId || Math.random().toString(36).slice(2),
+    name: i.collectionName || "未知播客",
+    cover: i.artworkUrl600 || i.artworkUrl100 || "",
+    artist: { name: i.artistName || "主播" },
     ext: {
-      gid: GID.ALBUM_TRACKS,
-      feedUrl: item.feedUrl,
+      gid: GID.ALBUM_DETAIL,
+      feedUrl: i.feedUrl
     }
   }
 }
 
-// ==========================
-// 接口实现
-// ==========================
+// ==============================
+// 标准出口方法
+// ==============================
+
 async function getConfig() {
   return jsonify(appConfig)
 }
 
-// 首页 + 分类（这里是你之前坏的地方，我修好了）
+// 首页列表、分类列表 都走这里
 async function getAlbums(ext) {
   const args = safeArgs(ext)
   const gid = args.gid
@@ -154,9 +154,9 @@ async function getAlbums(ext) {
 
   let list = []
 
-  if (gid === GID.RECOMMENDED_ALBUMS) {
-    list = await loadPodcasts('podcast', page)
-  } else if (gid === GID.TAG_ALBUMS && kw) {
+  if (gid === GID.RECOMMENDED) {
+    list = await loadPodcasts("podcast", page)
+  } else if (gid === GID.CATEGORY && kw) {
     list = await loadPodcasts(kw, page)
   }
 
@@ -165,21 +165,21 @@ async function getAlbums(ext) {
   })
 }
 
-// 点开专辑看单集
+// 播客详情单集
 async function getSongs(ext) {
   const args = safeArgs(ext)
-  if (args.gid !== GID.ALBUM_TRACKS || !args.feedUrl) {
+  if (args.gid !== GID.ALBUM_DETAIL || !args.feedUrl) {
     return jsonify({ list: [] })
   }
 
-  const tracks = await loadTracksFromFeed(args.feedUrl)
+  const eps = await loadEpisodes(args.feedUrl)
   return jsonify({
-    list: tracks.map(t => ({
-      id: t.url,
-      name: t.title,
-      duration: parseInt(t.duration) || 0,
-      artist: { name: '播客主播' },
-      ext: { url: t.url }
+    list: eps.map(e => ({
+      id: e.url,
+      name: e.title,
+      duration: parseInt(e.duration) || 0,
+      artist: { name: "播客主播" },
+      ext: { url: e.url }
     }))
   })
 }
@@ -187,17 +187,17 @@ async function getSongs(ext) {
 // 搜索
 async function search(ext) {
   const args = safeArgs(ext)
-  if (!args.text || args.type !== 'album') {
+  if (!args.text || args.type !== "album") {
     return jsonify({ list: [] })
   }
   const list = await loadPodcasts(args.text, args.page || 1)
   return jsonify({ list: list.map(mapAlbum) })
 }
 
-// 播放
+// 播放地址
 async function getSongInfo(ext) {
-  const { url } = safeArgs(ext)
-  return jsonify({ urls: url ? [url] : [] })
+  const args = safeArgs(ext)
+  return jsonify({ urls: args.url ? [args.url] : [] })
 }
 
 async function getArtists() { return jsonify({ list: [] }) }
