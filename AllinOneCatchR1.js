@@ -1012,8 +1012,8 @@ async function getSongInfo(ext) {
 
 
   // 原有播放逻辑完全不变（播放器缓存机制保留）
-  if (args.source === 'xm') return jsonify(await XM.getSongInfo(args));
-  if (!args.source) return jsonify({ urls: [] });
+  //if (args.source === 'xm') return jsonify(await XM.getSongInfo(args));
+  //if (!args.source) return jsonify({ urls: [] });
   if (songmid == undefined || source == undefined) {
     return jsonify({ urls: [] })
   }
