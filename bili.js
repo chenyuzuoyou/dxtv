@@ -87,15 +87,6 @@ const appConfig = {
         "gid": "2",
         "rid": 29
       }
-    }, {
-      "name": "电音",
-      "type": "song",
-      "ui": 0,
-      "showMore": false,
-      "ext": {
-        "gid": "2",
-        "rid": 194
-      }
     }]
   },
   "tabMe": {
