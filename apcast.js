@@ -171,11 +171,94 @@ async function getAlbums(ext) {
 }
 
 async function getSongs(ext) {
-  const { gid, id, feedUrl } = safeArgs(ext)
-  if (gid === GID.ALBUM_TRACKS && (id || feedUrl)) {
-    const list = await loadTracksByFeed(feedUrl || id)
-    return jsonify({ list: list.map(mapTrack) })
+  const { page, gid, id, from, text } = argsify(ext)
+  let songs = []
+  const pn = page || 1
+
+  // ======================
+  // ✅ 推荐页 fix：直接用音乐分区接口，不爬主页，必加载
+  // ======================
+  if (gid == '1') {
+    const { data } = await $fetch.get(`https://api.bilibili.com/x/web-interface/dynamic/region?ps=20&pn=${pn}&rid=130`, { headers })
+    const res = argsify(data)
+    const list = res?.data?.archives || []
+    list.forEach(each => {
+      songs.push({
+        id: `${each.aid}_${each.cid}`,
+        name: each.title,
+        cover: each.pic,
+        duration: each.duration,
+        artist: {
+          id: `${each.owner.mid}`,
+          name: each.owner.name,
+          cover: each.owner.face,
+        },
+        ext: { aid: each.aid, cid: each.cid, bvid: each.bvid }
+      })
+    })
+    return jsonify({ list: songs })
   }
+
+  // ======================
+  // ✅ 分类页（支持加载更多）
+  // ======================
+  if (gid == '2') {
+    const { rid } = argsify(ext)
+    const { data } = await $fetch.get(`https://api.bilibili.com/x/web-interface/dynamic/region?ps=20&pn=${pn}&rid=${rid}`, { headers })
+    const res = argsify(data)
+    const list = res?.data?.archives || []
+    list.forEach(each => {
+      songs.push({
+        id: `${each.aid}_${each.cid}`,
+        name: each.title,
+        cover: each.pic,
+        duration: each.duration,
+        artist: {
+          id: `${each.owner.mid}`,
+          name: each.owner.name,
+          cover: each.owner.face,
+        },
+        ext: { aid: each.aid, cid: each.cid, bvid: each.bvid }
+      })
+    })
+    return jsonify({ list: songs })
+  }
+
+  // ======================
+  // ✅ 分P列表（全部可播放）
+  // ======================
+  if (gid === '99') {
+    const { aid } = argsify(ext)
+    let params = { aid: aid }
+    const { data } = await $fetch.get(`https://api.bilibili.com/x/web-interface/view/detail?` + dictToURI(params), { headers })
+    let view = argsify(data).data?.View
+
+    view?.ugc_season?.sections[0]?.episodes?.forEach(each => {
+      songs.push({
+        id: `${each.aid}_${each.cid}`,
+        name: each.title,
+        cover: each.arc.pic,
+        duration: each.arc.duration,
+        artist: { id: `${view.owner.mid}`, name: view.owner.name, cover: view.owner.face },
+        ext: { aid: each.aid, cid: each.cid, bvid: each.bvid }
+      })
+    })
+
+    if (songs.length == 0) {
+      view?.pages?.forEach(each => {
+        songs.push({
+          id: `${view.aid}_${each.cid}`,
+          name: each.part,
+          cover: each.first_frame || view.pic,
+          duration: each.duration,
+          artist: { id: `${view.owner.mid}`, name: view.owner.name, cover: view.owner.face },
+          ext: { aid: view.aid, cid: each.cid, bvid: view.bvid }
+        })
+      })
+    }
+    return jsonify({ list: songs })
+  }
+
   return jsonify({ list: [] })
 }
 
