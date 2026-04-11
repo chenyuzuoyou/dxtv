@@ -1,7 +1,7 @@
 /*!
- * @name xmly_lizhi_mix
+ * @name 喜马荔枝
  * @description 喜马拉雅 & 荔枝FM (合并版)
- * @version v1.03
+ * @version v1.0
  * @author codex (Merged)
  */
 
@@ -26,7 +26,7 @@ const xmlyCategories = [
   '图书',
   '音乐',
   '情感',
-  '儿童',
+  //'儿童',
   '综艺',
   '娱乐',
   '悬疑',
@@ -35,7 +35,7 @@ const xmlyCategories = [
   '教育',
   '人文',
   '英语',
-  '二次元',
+  //'二次元',
   '热门专辑'
 ]
 // 荔枝FM 首页真实分类（接口可搜索、可加载）
@@ -45,9 +45,9 @@ const lizhiCategories = [
   '播客',
   '脱口秀',
   '有声书',
-  '广播剧',
-  '二次元',
-  '儿童',
+  //'广播剧',
+  //'二次元',
+  //'儿童',
   '音乐',
   '人文',
   '悬疑',
