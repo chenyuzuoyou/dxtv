@@ -1,7 +1,7 @@
 /*!
  * @name bili
  * @description 
- * @version v1.1
+ * @version v1.2
  * @author kobe
  * @key csp_bili
  */
@@ -356,28 +356,34 @@ async function search(ext) {
     return jsonify({ list: [] })
   }
 
-  if (type == "playlist") {
-    const playlists = []
+  // ======================
+  // 歌单搜索（合集 = 歌单，必出结果）
+  // ======================
+  if (type === "playlist") {
     const { img_key, sub_key } = await getWbiKeys()
     const query = encWbi({
       keyword: text,
+      search_type: "video",
       page: page || 1
     }, img_key, sub_key)
 
-    const { data } = await $fetch.get(`https://api.bilibili.com/x/web-interface/wbi/search/all/v2?${query}`, headers)
+    const { data } = await $fetch.get(
+      `https://api.bilibili.com/x/web-interface/wbi/search/all/v2?${query}`,
+      headers
+    )
     const res = argsify(data)
+    const list = []
 
-    res.data?.result?.forEach((each) => {
-      if (each?.result_type === "video") {
-        each.data.forEach((item) => {
-          if (item.title.includes("合集") || item.title.includes("系列") || item.title.includes("专辑") || item.title.includes("全集")) {
-            playlists.push({
+    res.data?.result?.forEach(each => {
+      if (each.result_type === "video") {
+        each.data.forEach(item => {
+          // 只要有多P，就当作歌单
+          if (item.videos > 1 || /合集|系列|全集|专辑|歌单/.test(item.title)) {
+            list.push({
               id: `${item.aid}`,
               name: item.title.replace(/<[^>]*>/g, ""),
               cover: "https:" + item.pic,
-              artist: {
-                name: item.author
-              },
+              artist: { name: item.author },
               ext: {
                 gid: "99",
                 aid: item.aid,
@@ -388,28 +394,35 @@ async function search(ext) {
         })
       }
     })
-    return jsonify({ list: playlists })
+    return jsonify({ list: list })
   }
 
-  if (type == "song") {
-    const songs = []
+  // ======================
+  // 歌曲搜索
+  // ======================
+  if (type === "song") {
     const { img_key, sub_key } = await getWbiKeys()
     const query = encWbi({
       keyword: text,
+      search_type: "video",
       page: page || 1
     }, img_key, sub_key)
 
-    const { data } = await $fetch.get(`https://api.bilibili.com/x/web-interface/wbi/search/all/v2?${query}`, headers)
+    const { data } = await $fetch.get(
+      `https://api.bilibili.com/x/web-interface/wbi/search/all/v2?${query}`,
+      headers
+    )
     const res = argsify(data)
+    const songs = []
 
-    res.data?.result?.forEach((each) => {
-      if (each?.result_type === "video") {
-        each.data.forEach((item) => {
+    res.data?.result?.forEach(each => {
+      if (each.result_type === "video") {
+        each.data.forEach(item => {
           songs.push({
             id: `${item.aid}`,
             name: item.title.replace(/<[^>]*>/g, ""),
             cover: "https:" + item.pic,
-            duration: 0,
+            duration: item.duration || 0,
             artist: {
               id: `${item.mid}`,
               name: item.author,
