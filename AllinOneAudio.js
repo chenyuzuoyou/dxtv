@@ -3,6 +3,7 @@
  * @description 喜马拉雅 & 荔枝FM (合并版)
  * @version v1.0
  * @author codex (Merged)
+ * @key csp_xmlz
  */
 
 const $config = argsify($config_str)
