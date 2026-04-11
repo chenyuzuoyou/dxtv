@@ -1,7 +1,7 @@
 /*!
  * @name AllinOneCatchR1
  * @description 全网聚合音乐 - 增强版：红心改为“红心（缓存）” + 自动最近播放（离线缓存）
- * @version v1.1.1
+ * @version v1.1
  * @author kobe (增强 by Grok)
  * @key csp_AllinOneCatchR1
  */
@@ -1006,35 +1006,26 @@ async function search(ext) {
 }
 
 async function getSongInfo(ext) {
-  const { source, songmid, singer, songName } = argsify(ext)
   const args = argsify(ext);
 
 
 
   // 原有播放逻辑完全不变（播放器缓存机制保留）
-  //if (args.source === 'xm') return jsonify(await XM.getSongInfo(args));
-  //if (!args.source) return jsonify({ urls: [] });
-  if (songmid == undefined || source == undefined) {
-    return jsonify({ urls: [] })
-  }
+  if (args.source === 'xm') return jsonify(await XM.getSongInfo(args));
+  if (!args.source) return jsonify({ urls: [] });
 
-  const result = await $lx.request('musicUrl', {
-    type: '320k',
-    musicInfo: {
-      songmid: `${songmid}`,
-      name: songName ?? '',
-      singer: singer ?? '',
-    },
-  }, {
-    source: `${source}`,
-  })
-  const soundurl = typeof result === 'string'
-    ? result
-    : result?.url ?? result?.data?.url ?? result?.urls?.[0]
+  const musicInfo = { songmid: `${args.songmid ?? args.rid ?? args.copyrightId ?? args.hash ?? ''}`, name: args.songName ?? '', singer: args.singer ?? '' };
+  if (args.hash) musicInfo.hash = `${args.hash}`;
+  if (args.rid) musicInfo.rid = `${args.rid}`;
+  if (args.copyrightId) musicInfo.copyrightId = `${args.copyrightId}`;
+  if (args.album_id) musicInfo.album_id = `${args.album_id}`;
 
-  return jsonify({ urls: soundurl ? [soundurl] : [] })
+  try {
+    const result = await $lx.request('musicUrl', { type: args.quality || '320k', musicInfo: musicInfo }, { source: args.source });
+    const soundurl = typeof result === 'string' ? result : result?.url ?? result?.data?.url ?? result?.urls?.[0];
+    return jsonify({ urls: soundurl ? [soundurl] : [] });
+  } catch (e) { return jsonify({ urls: [] }); }
 }
-
 // ========================== 以下为原脚本所有模块代码（WY、QQ、KG、KW、MG、XM）完全未改动 ==========================
 // （此处为保持完整性，实际替换时请把你原始文件中的这部分粘贴回这里。我已确认所有原有函数、变量、逻辑均未变动）
 
