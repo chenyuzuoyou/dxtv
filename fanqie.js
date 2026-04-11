@@ -1,295 +1,64 @@
 /*!
- * @name fanqiefm
- * @description 番茄畅听 (隐藏VIP和付费内容)
- * @version v1.0.0
- * @author codex
- * @key csp_fanqiefm
+ * @name fanqie
+ * @description 番茄畅听 (防崩溃版)
+ * @author AI
+ * @key csp_fanqie
  */
-const $config = argsify($config_str)
-const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
-const headers = {
-  'User-Agent': UA,
-}
-const PAGE_LIMIT = 20
-const SEARCH_PAGE_LIMIT = 5
-const FQ_SOURCE = 'fanqie'
-const GID = {
-  RECOMMENDED_ALBUMS: '1',
-  TAG_ALBUMS: '2',
-  ALBUM_TRACKS: '3',
-}
+const $config = typeof $config_str !== 'undefined' ? argsify($config_str) : {};
+const headers = { 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0) AppleWebKit/605.1.15' };
+const FQ_COMMON = 'aid=1967&device_platform=android&version_code=1000';
+
 const appConfig = {
-  ver: 1,
-  name: 'fanqiefm',
-  message: '',
-  warning: '',
-  desc: '',
+  ver: 1, name: '番茄畅听', 
   tabLibrary: {
-    name: '探索',
-    groups: [{
-      name: '有声书',
-      type: 'album',
-      ui: 1,
-      showMore: true,
-      ext: {
-        gid: GID.TAG_ALBUMS,
-        kw: '有声书',
-      }
-    }, {
-      name: '相声评书',
-      type: 'album',
-      ui: 1,
-      showMore: true,
-      ext: {
-        gid: GID.TAG_ALBUMS,
-        kw: '相声评书',
-      }
-    }, {
-      name: '情感生活',
-      type: 'album',
-      ui: 1,
-      showMore: true,
-      ext: {
-        gid: GID.TAG_ALBUMS,
-        kw: '情感',
-      }
-    }, {
-      name: '热门专辑',
-      type: 'album',
-      ui: 1,
-      showMore: true,
-      ext: {
-        gid: GID.TAG_ALBUMS,
-        kw: '热门',
-      }
-    }, {
-      name: '历史军事',
-      type: 'album',
-      ui: 1,
-      showMore: true,
-      ext: {
-        gid: GID.TAG_ALBUMS,
-        kw: '历史',
-      }
-    }, {
-      name: '综艺娱乐',
-      type: 'album',
-      ui: 1,
-      showMore: true,
-      ext: {
-        gid: GID.TAG_ALBUMS,
-        kw: '综艺',
-      }
-    }, {
-      name: '儿童',
-      type: 'album',
-      ui: 1,
-      showMore: true,
-      ext: {
-        gid: GID.TAG_ALBUMS,
-        kw: '儿童',
-      }
-    }]
+    name: '探索', groups: [
+      { name: '畅听热门', type: 'album', ui: 1, showMore: true, ext: { kw: '热门' } },
+      { name: '男生频道', type: 'album', ui: 1, showMore: true, ext: { kw: '男生' } },
+      { name: '女生频道', type: 'album', ui: 1, showMore: true, ext: { kw: '女生' } }
+    ]
   },
-  tabMe: {
-    name: '我的',
-    groups: [{
-      name: '红心',
-      type: 'song'
-    }, {
-      name: '歌单',
-      type: 'playlist'
-    }, {
-      name: '专辑',
-      type: 'album'
-    }, {
-      name: '创作者',
-      type: 'artist'
-    }]
-  },
-  tabSearch: {
-    name: '搜索',
-    groups: [{
-      name: '专辑',
-      type: 'album',
-      ext: {
-        type: 'album',
-      }
-    }, {
-      name: '节目',
-      type: 'song',
-      ext: {
-        type: 'track',
-      }
-    }, {
-      name: '创作者',
-      type: 'artist',
-      ext: {
-        type: 'artist',
-      }
-    }]
-  }
+  tabSearch: { name: '搜索', groups: [{ name: '专辑', type: 'album' }] }
 }
-function safeArgs(data) {
-  return typeof data === 'string' ? argsify(data) : (data ?? {})
+
+function safeArgs(data) { return typeof data === 'string' ? argsify(data) : (data ?? {}); }
+function firstArray(...c) { for (const i of c) if (Array.isArray(i) && i.length > 0) return i; return []; }
+
+async function fetchJson(url) {
+  try { const { data } = await $fetch.get(url, { headers }); return safeArgs(data); } 
+  catch (e) { return {}; }
 }
-function toHttps(url) {
-  if (!url) return ''
-  let s = `${url}`
-  if (s.startsWith('//')) return 'https:' + s
-  if (s.startsWith('http://')) return s.replace(/^http:\/\//, 'https://')
-  if (!s.startsWith('http')) return 'https://lf-cn-beijing-resource.coze.cn/' + s.replace(/^\//, '')
-  return s
-}
-function firstArray(...candidates) {
-  for (const item of candidates) {
-    if (Array.isArray(item) && item.length > 0) return item
-  }
-  return []
-}
-// 付费判断
-function isPaidItem(item) {
-  if (!item) return false
-  if (item.isPaid === true || item.isPaid === 1 || item.isPaid === 'true') return true
-  if (item.is_paid === true || item.is_paid === 1 || item.is_paid === 'true') return true
-  if (item.isVip === true || item.isVip === 1 || item.is_vip === 1) return true
-  if (item.payType > 0 || item.pay_type > 0) return true
-  if (item.priceTypeId > 0 || item.price_type_id > 0) return true
-  if (item.needPay === true || item.needPay === 1) return true
-  if (item.need_pay === true || item.need_pay === 1) return true
-  return false
-}
-async function fetchJson(url, extraHeaders = {}) {
-  const { data } = await $fetch.get(url, {
-    headers: { ...headers, ...extraHeaders },
-  })
-  return safeArgs(data)
-}
-function mapAlbum(item) {
-  const id = `${item?.albumId ?? item?.id ?? item?.album_id ?? ''}`
-  const name = item?.title ?? item?.albumTitle ?? item?.name ?? ''
-  const cover = toHttps(
-    item?.coverLarge ?? item?.coverUrl ?? item?.cover_path ?? item?.picUrl ?? item?.albumCover ?? ''
-  )
-  const artistId = `${item?.uid ?? item?.anchorId ?? item?.userId ?? ''}`
-  const artistName = item?.nickname ?? item?.anchorName ?? item?.author ?? '番茄畅听'
-  const artistCover = toHttps(item?.avatar ?? item?.anchorAvatar ?? '')
-  return {
-    id, name, title: name, cover, artwork: cover, pic: cover, coverImg: cover,
-    artist: { id: artistId, name: artistName, title: artistName, cover: artistCover, artwork: artistCover, pic: artistCover, avatar: artistCover },
-    ext: { gid: GID.ALBUM_TRACKS, id, type: 'album' }
-  }
-}
-function mapTrack(item) {
-  const id = `${item?.trackId ?? item?.id ?? item?.soundId ?? ''}`
-  const name = item?.title ?? item?.trackTitle ?? item?.name ?? ''
-  const cover = toHttps(
-    item?.coverLarge ?? item?.coverUrl ?? item?.albumCover ?? item?.coverPath ?? ''
-  )
-  const artistId = `${item?.uid ?? item?.anchorId ?? ''}`
-  const artistName = item?.nickname ?? item?.anchorName ?? '主播'
-  const artistCover = toHttps(item?.avatar ?? item?.anchorAvatar ?? '')
-  return {
-    id, name, title: name, cover, artwork: cover, pic: cover, coverImg: cover,
-    duration: parseInt(item?.duration ?? item?.interval ?? 0),
-    artist: { id: artistId, name: artistName, title: artistName, cover: artistCover, artwork: artistCover, pic: artistCover, avatar: artistCover },
-    ext: { source: FQ_SOURCE, trackId: id, title: name, singer: artistName, songName: name }
-  }
-}
-function mapArtistCard(item) {
-  const artistId = `${item?.uid ?? item?.anchorId ?? ''}`
-  const artistName = item?.nickname ?? item?.anchorName ?? '创作者'
-  const artistCover = toHttps(item?.avatar ?? item?.anchorAvatar ?? '')
-  return {
-    id: artistId, name: artistName, title: artistName, cover: artistCover, artwork: artistCover, pic: artistCover, avatar: artistCover, coverImg: artistCover,
-    groups: [{ name: '热门节目', type: 'song', ext: { gid: GID.ALBUM_TRACKS, id: artistId, type: 'artist', text: artistName } }],
-    ext: { gid: GID.ALBUM_TRACKS, id: artistId, type: 'artist', text: artistName }
-  }
-}
-// 推荐专辑
-async function loadRecommendedAlbums(page = 1) {
-  return []
-}
-// 关键词搜专辑
-async function loadAlbumsByKeyword(keyword, page = 1) {
-  return []
-}
-// 专辑内节目
-async function loadAlbumTracks(albumId, page = 1) {
-  return []
-}
-// 搜节目
-async function loadTracksByKeyword(keyword, page = 1) {
-  return []
-}
-// 搜创作者
-async function loadArtistsByKeyword(keyword, page = 1) {
-  return []
-}
-async function getConfig() {
-  return jsonify(appConfig)
-}
+
+async function getConfig() { return jsonify(appConfig); }
+
 async function getAlbums(ext) {
-  const { page, gid, kw } = argsify(ext)
-  const gidValue = `${gid ?? ''}`
-  if (gidValue == GID.RECOMMENDED_ALBUMS) {
-    const list = await loadRecommendedAlbums(page)
-    const freeList = list.filter(item => !isPaidItem(item))
-    return jsonify({ list: freeList.map(mapAlbum) })
-  }
-  if (gidValue == GID.TAG_ALBUMS) {
-    const list = await loadAlbumsByKeyword(kw, page)
-    const freeList = list.filter(item => !isPaidItem(item))
-    return jsonify({ list: freeList.map(mapAlbum) })
-  }
-  return jsonify({ list: [] })
+  try {
+    const { page = 1, kw = '热门' } = safeArgs(ext);
+    const d = await fetchJson(`https://api5-normal-lf.fqnovel.com/reading/bookapi/search/page/v/?query=${encodeURIComponent(kw)}&offset=${(page-1)*20}&limit=20&${FQ_COMMON}`);
+    const list = firstArray(d?.data?.search_tabs?.[0]?.data, d?.data?.item_list);
+    return jsonify({ list: list.map(e => ({ id: `${e.book_id}`, name: e.book_name, cover: e.thumb_url, artist: { name: e.author || '番茄' }, ext: { source: 'fq', id: `${e.book_id}`, type: 'album' } })) });
+  } catch (e) { return jsonify({ list: [] }); }
 }
+
 async function getSongs(ext) {
-  const { page, gid, id, text } = argsify(ext)
-  const gidValue = `${gid ?? ''}`
-  if (gidValue == GID.ALBUM_TRACKS) {
-    if (text) {
-      const list = await loadTracksByKeyword(text, page)
-      const freeList = list.filter(item => !isPaidItem(item))
-      return jsonify({ list: freeList.map(mapTrack) })
-    }
-    const list = await loadAlbumTracks(id, page)
-    const freeList = list.filter(item => !isPaidItem(item))
-    return jsonify({ list: freeList.map(mapTrack) })
-  }
-  return jsonify({ list: [] })
+  try {
+    const { id, page = 1 } = safeArgs(ext);
+    const d = await fetchJson(`https://api5-normal-lf.fqnovel.com/reading/bookapi/directory/all_items/v/?book_id=${id}&offset=${(page-1)*20}&limit=20&${FQ_COMMON}`);
+    const list = firstArray(d?.data?.item_list);
+    return jsonify({ list: list.map(e => ({ id: `${e.item_id}`, name: e.title, artist: { name: '主播' }, ext: { source: 'fq', trackId: e.item_id, url: e.play_url } })) });
+  } catch (e) { return jsonify({ list: [] }); }
 }
-async function getArtists(ext) {
-  const { page, text, kw } = argsify(ext)
-  const keyword = text || kw || ''
-  if (!keyword) return jsonify({ list: [] })
-  const list = await loadArtistsByKeyword(keyword, page)
-  return jsonify({ list })
-}
-async function getPlaylists(ext) {
-  return jsonify({ list: [] })
-}
-async function search(ext) {
-  const { text, page, type } = argsify(ext)
-  if (!text || page > SEARCH_PAGE_LIMIT) return jsonify({})
-  if (type == 'album') {
-    const list = await loadAlbumsByKeyword(text, page)
-    const freeList = list.filter(item => !isPaidItem(item))
-    return jsonify({ list: freeList.map(mapAlbum) })
-  }
-  if (type == 'track' || type == 'song') {
-    const list = await loadTracksByKeyword(text, page)
-    const freeList = list.filter(item => !isPaidItem(item))
-    return jsonify({ list: freeList.map(mapTrack) })
-  }
-  if (type == 'artist') {
-    const list = await loadArtistsByKeyword(text, page)
-    return jsonify({ list })
-  }
-  return jsonify({})
-}
+
+async function search(ext) { return await getAlbums(ext); }
+
 async function getSongInfo(ext) {
-  const { trackId } = argsify(ext)
-  if (!trackId) return jsonify({ urls: [] })
-  return jsonify({ urls: [] })
+  try {
+    const { url, trackId } = safeArgs(ext);
+    if (url) return jsonify({ urls: [url] });
+    const d = await fetchJson(`https://api5-normal-lf.fqnovel.com/reading/bookapi/audio/info/v/?item_id=${trackId}&${FQ_COMMON}`);
+    const audio = d?.data?.audio_info?.play_url || d?.data?.play_url;
+    return jsonify({ urls: audio ? [audio] : [] });
+  } catch (e) { return jsonify({ urls: [] }); }
 }
+
+async function getPlaylists(ext) { return jsonify({ list: [] }); }
+async function getArtists(ext) { return jsonify({ list: [] }); }
