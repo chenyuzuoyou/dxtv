@@ -30,8 +30,8 @@ const appConfig = {
       "ui": 0,
       "showMore": false,
       "ext": {
-          "gid": "2",
-          "rid": 30
+        "gid": "2",
+        "rid": 30
       }
     }, {
       "name": "演奏",
@@ -39,8 +39,8 @@ const appConfig = {
       "ui": 0,
       "showMore": false,
       "ext": {
-          "gid": "2",
-          "rid": 59
+        "gid": "2",
+        "rid": 59
       }
     }, {
       "name": "MV",
@@ -48,8 +48,8 @@ const appConfig = {
       "ui": 0,
       "showMore": false,
       "ext": {
-          "gid": "2",
-          "rid": 193
+        "gid": "2",
+        "rid": 193
       }
     }, {
       "name": "音乐综合",
@@ -57,44 +57,44 @@ const appConfig = {
       "ui": 0,
       "showMore": false,
       "ext": {
-          "gid": "2",
-          "rid": 130
+        "gid": "2",
+        "rid": 130
       }
     }, {
-      "name": "流行",
+      "name": "原创音乐",
       "type": "song",
       "ui": 0,
       "showMore": false,
       "ext": {
-          "gid": "2",
-          "rid": 131
+        "gid": "2",
+        "rid": 28
       }
     }, {
-      "name": "说唱",
+      "name": "翻唱",
       "type": "song",
       "ui": 0,
       "showMore": false,
       "ext": {
-          "gid": "2",
-          "rid": 132
+        "gid": "2",
+        "rid": 31
       }
     }, {
-      "name": "摇滚",
+      "name": "音乐现场",
       "type": "song",
       "ui": 0,
       "showMore": false,
       "ext": {
-          "gid": "2",
-          "rid": 133
+        "gid": "2",
+        "rid": 29
       }
     }, {
-      "name": "电子",
+      "name": "电音",
       "type": "song",
       "ui": 0,
       "showMore": false,
       "ext": {
-          "gid": "2",
-          "rid": 136
+        "gid": "2",
+        "rid": 194
       }
     }]
   },
