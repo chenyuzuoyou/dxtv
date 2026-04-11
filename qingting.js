@@ -1,7 +1,7 @@
 /*!
  * @name qingtingfm
  * @description 蜻蜓FM (隐藏VIP和付费内容)
- * @version v1.0.5
+ * @version v1.0.53
  * @author codex
  * @key csp_qingtingfm
  */
