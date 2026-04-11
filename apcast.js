@@ -1,41 +1,21 @@
 /*!
  * @name apple_podcast
- * @description 苹果播客 公开接口版 (高兼容防错版)
- * @author codex32
+ * @description 苹果播客 公开接口版 (极致兼容版 - 解决引擎白屏崩溃)
+ * @author codex12
  * @key csp_applepodcast
  */
 
-// 兼容安全的 JSON 转换，防止因底层 argsify/jsonify 崩溃
-function safeArgs(d) {
-  if (!d) return {};
-  if (typeof d === "object") return d;
-  if (typeof d === "string") {
-    try { if (typeof argsify === 'function') return argsify(d); } catch (e) {}
-    try { return JSON.parse(d); } catch (e) { return {}; }
-  }
-  return {};
-}
+var UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+var headers = { 'User-Agent': UA };
+var PAGE_LIMIT = 20;
 
-function safeJsonify(d) {
-  try { if (typeof jsonify === 'function') return jsonify(d); } catch (e) {}
-  try { return JSON.stringify(d); } catch (e) { return "{}"; }
-}
-
-const $config = typeof $config_str !== 'undefined' ? safeArgs($config_str) : {}
-const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-const headers = { 'User-Agent': UA }
-
-const PAGE_LIMIT = 20
-
-// 统一强制转换为字符串类型对比
-const GID = {
+var GID = {
   RECOMMENDED: '1',
   CATEGORY: '2',
-  ALBUM_DETAIL: '3',
-}
+  ALBUM_DETAIL: '3'
+};
 
-// 优化了搜索关键词，使用中文在 cn 区搜索结果会更多更准
-const podcastCategories = [
+var podcastCategories = [
   { name: '新闻', kw: '新闻' },
   { name: '历史', kw: '历史' },
   { name: '喜剧', kw: '喜剧' },
@@ -50,34 +30,37 @@ const podcastCategories = [
   { name: '有声书', kw: '有声书' },
   { name: '脱口秀', kw: '脱口秀' },
   { name: '儿童', kw: '儿童' },
-  { name: '音乐', kw: '音乐' },
-]
+  { name: '音乐', kw: '音乐' }
+];
 
-const appConfig = {
+// 使用 ES5 的方式拼接数组，绝对避免使用 ... 展开符
+var exploreGroups = [
+  {
+    name: "推荐播客",
+    type: "album",
+    ui: 1,
+    showMore: true,
+    ext: { gid: GID.RECOMMENDED }
+  }
+];
+
+for (var i = 0; i < podcastCategories.length; i++) {
+  exploreGroups.push({
+    name: podcastCategories[i].name,
+    type: "album",
+    ui: 1,
+    showMore: true,
+    ext: { gid: GID.CATEGORY, kw: podcastCategories[i].kw }
+  });
+}
+
+var appConfig = {
   ver: 1,
   name: "苹果播客",
-  desc: "Apple Podcasts 公开播客",
+  desc: "Apple Podcasts",
   tabLibrary: {
     name: "探索",
-    groups: [
-      {
-        name: "推荐播客",
-        type: "album",
-        ui: 1,
-        showMore: true,
-        ext: { gid: GID.RECOMMENDED }
-      },
-      ...podcastCategories.map(c => ({
-        name: c.name,
-        type: "album",
-        ui: 1,
-        showMore: true,
-        ext: {
-          gid: GID.CATEGORY,
-          kw: c.kw
-        }
-      }))
-    ]
+    groups: exploreGroups
   },
   tabSearch: {
     name: "搜索",
@@ -92,207 +75,194 @@ const appConfig = {
       { name: "订阅", type: "album" }
     ]
   }
+};
+
+// 放弃框架自带的 bug 较多的 argsify/jsonify，直接使用原生 JSON
+function safeParse(d) {
+  if (!d) return {};
+  if (typeof d === 'object') return d;
+  try { return JSON.parse(d); } catch(e) { return {}; }
 }
 
-function firstArray(...arrays) {
-  for (const a of arrays) {
-    if (Array.isArray(a) && a.length > 0) return a
-  }
-  return []
+function safeStringify(d) {
+  try { return JSON.stringify(d); } catch(e) { return "{}"; }
 }
 
-// 超强兼容版网络请求
 async function fetchJson(url) {
   try {
-    let res;
-    // 兼容多种框架内置的 $fetch 和原生 fetch
-    if (typeof $fetch !== 'undefined') {
-      res = typeof $fetch.get === 'function' 
-        ? await $fetch.get(url, { headers }) 
-        : await $fetch(url, { headers });
-    } else {
-      res = { data: await (await fetch(url, { headers })).json() };
+    var res = await $fetch.get(url, { headers: headers });
+    var body = res;
+    if (res && typeof res === 'object' && res.data !== undefined) {
+      body = res.data;
     }
-    
-    let body = (res && res.data !== undefined) ? res.data : res;
-    // 如果拿到的是 JSON 字符串，帮它 Parse 掉
     if (typeof body === 'string') {
-      try { body = JSON.parse(body); } catch (e) {}
+      try { body = JSON.parse(body); } catch(e){}
     }
     return body || {};
   } catch (e) {
-    throw new Error("网络请求失败: " + e.message);
+    return {};
   }
 }
 
-// 统一加载播客接口
-async function loadPodcasts(keyword, page = 1) {
-  const offset = (page - 1) * PAGE_LIMIT;
-  const url = `https://itunes.apple.com/search?term=${encodeURIComponent(keyword)}&media=podcast&limit=${PAGE_LIMIT}&offset=${offset}&country=cn`;
-  const res = await fetchJson(url);
-  return firstArray(res.results);
-}
-
-// 解析 RSS 单集
-async function loadEpisodes(feedUrl) {
-  try {
-    let res;
-    if (typeof $fetch !== 'undefined') {
-      res = typeof $fetch.get === 'function' 
-        ? await $fetch.get(feedUrl, { headers: { ...headers, Accept: "application/xml" } }) 
-        : await $fetch(feedUrl, { headers: { ...headers, Accept: "application/xml" } });
-    } else {
-      res = { data: await (await fetch(feedUrl, { headers })).text() };
-    }
-
-    const xml = (res && res.data !== undefined ? res.data : res) || "";
-    const items = xml.match(/<item>([\s\S]*?)<\/item>/g) || [];
-    
-    return items.map(item => {
-      let title = item.match(/<title>([\s\S]*?)<\/title>/)?.[1] || "无标题";
-      title = title.replace(/<!\[CDATA\[(.*?)\]\]>/g, "$1").trim();
-      
-      const url = item.match(/<enclosure[^>]*url="([^"]+)"/i)?.[1] || "";
-      const durMatch = item.match(/<itunes:duration>([\s\S]*?)<\/itunes:duration>/i) || item.match(/<duration>([\s\S]*?)<\/duration>/i);
-      let dur = durMatch ? durMatch[1].trim() : "0";
-      
-      let durationSec = 0;
-      if (dur.includes(':')) {
-        const parts = dur.split(':').map(Number);
-        if (parts.length === 3) durationSec = parts[0] * 3600 + parts[1] * 60 + parts[2];
-        if (parts.length === 2) durationSec = parts[0] * 60 + parts[1];
-      } else {
-        durationSec = parseInt(dur) || 0;
-      }
-
-      return { title, url, duration: durationSec };
-    }).filter(i => i.url);
-  } catch (e) {
-    return [];
+async function loadPodcasts(keyword, page) {
+  var p = page || 1;
+  var offset = (p - 1) * PAGE_LIMIT;
+  var url = "https://itunes.apple.com/search?term=" + encodeURIComponent(keyword) + "&media=podcast&limit=" + PAGE_LIMIT + "&offset=" + offset + "&country=cn";
+  var res = await fetchJson(url);
+  if (res && Array.isArray(res.results)) {
+    return res.results;
   }
+  return [];
 }
 
-// 专辑格式化
 function mapAlbum(i) {
+  var id = i.collectionId ? String(i.collectionId) : String(Math.random());
+  var name = i.collectionName || i.trackName || "未知播客";
+  var cover = i.artworkUrl600 || i.artworkUrl100 || "https://is1-ssl.mzstatic.com/image/thumb/Podcasts113/v4/f2/f4/f4/f2f4f4f4-0b1a-8b1a-8b1a-8b1a8b1a8b1a/mza_123456789.jpg/600x600bb.jpg";
+  var artistName = i.artistName || "主播";
   return {
-    id: String(i.collectionId || Math.random().toString(36).slice(2)),
-    name: i.collectionName || i.trackName || "未知播客",
-    cover: i.artworkUrl600 || i.artworkUrl100 || "https://is1-ssl.mzstatic.com/image/thumb/Podcasts113/v4/f2/f4/f4/f2f4f4f4-0b1a-8b1a-8b1a-8b1a8b1a8b1a/mza_123456789.jpg/600x600bb.jpg",
-    artist: { name: i.artistName || "主播" },
+    id: id,
+    name: name,
+    cover: cover,
+    artist: { name: artistName },
     ext: {
       gid: GID.ALBUM_DETAIL,
       feedUrl: i.feedUrl
     }
-  }
+  };
 }
 
 // ==============================
-// 标准出口方法
+// 暴露给播放器框架的出口方法
 // ==============================
 
 async function getConfig() {
-  return safeJsonify(appConfig);
+  return safeStringify(appConfig);
 }
 
-// 首页列表、分类列表
-async function getAlbums(ext) {
+async function getAlbums(ext, page) {
   try {
-    const args = safeArgs(ext);
-    const actualExt = args.ext || args;
-    
-    // 强制转换为 String 避免底层框架类型自动转换导致全等 (===) 判断失败
-    const gid = String(actualExt.gid); 
-    const kw = actualExt.kw;
-    const page = Number(args.page || actualExt.page || 1);
+    var args = safeParse(ext);
+    var actualExt = args.ext || args;
+    var gid = String(actualExt.gid);
+    var kw = actualExt.kw;
+    var p = page || args.page || actualExt.page || 1;
 
-    let list = [];
-
+    var list = [];
     if (gid === GID.RECOMMENDED) {
-      list = await loadPodcasts("播客", page);
+      list = await loadPodcasts("播客", p);
     } else if (gid === GID.CATEGORY && kw) {
-      list = await loadPodcasts(kw, page);
+      list = await loadPodcasts(kw, p);
     } else {
-      // 容错：如果参数全丢了，兜底搜索"播客"
-      list = await loadPodcasts("播客", page);
+      list = await loadPodcasts("播客", p);
     }
 
-    // 可视化 DEBUG：如果列表还是空，抛出可视化卡片供排查
-    if (!list || list.length === 0) {
-      return safeJsonify({
-        list: [{
-          id: "error_empty",
-          name: "接口未返回数据或网络被阻断，请检查网络",
-          cover: "https://via.placeholder.com/150/000000/FFFFFF?text=Empty",
-          artist: { name: "系统调试提示" },
-          ext: {}
-        }]
+    var mappedList = list.map(mapAlbum);
+    
+    // 如果没有获取到数据，返回一个提示卡片，防止彻底白屏
+    if (mappedList.length === 0) {
+      mappedList.push({
+        id: "empty_01",
+        name: "未能获取到数据，请检查网络",
+        cover: "https://via.placeholder.com/400x400?text=Empty",
+        artist: { name: "系统提示" },
+        ext: {}
       });
     }
 
-    return safeJsonify({
-      list: list.map(mapAlbum)
-    });
-
-  } catch(e) {
-    // 捕捉代码崩溃，直接显示在 UI 上
-    return safeJsonify({
+    return safeStringify({ list: mappedList });
+  } catch (e) {
+    return safeStringify({
       list: [{
-        id: "error_crash",
-        name: "代码执行报错: " + e.message,
-        cover: "https://via.placeholder.com/150/FF0000/FFFFFF?text=Error",
-        artist: { name: "代码错误提示" },
+        id: "error_01",
+        name: "程序报错: " + e.message,
+        cover: "https://via.placeholder.com/400x400?text=Error",
+        artist: { name: "错误" },
         ext: {}
       }]
     });
   }
 }
 
-// 播客详情单集
 async function getSongs(ext) {
   try {
-    const args = safeArgs(ext);
-    const actualExt = args.ext || args;
-    
+    var args = safeParse(ext);
+    var actualExt = args.ext || args;
+
     if (String(actualExt.gid) !== GID.ALBUM_DETAIL || !actualExt.feedUrl) {
-      return safeJsonify({ list: [] });
+      return safeStringify({ list: [] });
     }
 
-    const eps = await loadEpisodes(actualExt.feedUrl);
-    return safeJsonify({
-      list: eps.map(e => ({
-        id: String(e.url), 
-        name: e.title,
-        duration: e.duration,
-        artist: { name: "播客主播" },
-        ext: { url: e.url }
-      }))
+    var res = await $fetch.get(actualExt.feedUrl, {
+      headers: { 'User-Agent': UA, 'Accept': 'application/xml' }
     });
-  } catch(e) {
-    return safeJsonify({ list: [] });
+    var xml = res;
+    if (res && typeof res === 'object' && res.data !== undefined) {
+      xml = res.data;
+    }
+    if (typeof xml !== 'string') xml = "";
+
+    var items = xml.match(/<item>([\s\S]*?)<\/item>/g) || [];
+    var eps = [];
+
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      
+      // 去除 ?.[1] 这种可选链写法
+      var titleMatch = item.match(/<title>([\s\S]*?)<\/title>/);
+      var title = titleMatch ? titleMatch[1] : "无标题";
+      title = title.replace(/<!\[CDATA\[(.*?)\]\]>/g, "$1").trim();
+
+      var urlMatch = item.match(/<enclosure[^>]*url="([^"]+)"/i);
+      var url = urlMatch ? urlMatch[1] : "";
+
+      var durMatch = item.match(/<itunes:duration>([\s\S]*?)<\/itunes:duration>/i) || item.match(/<duration>([\s\S]*?)<\/duration>/i);
+      var dur = durMatch ? durMatch[1].trim() : "0";
+
+      var durationSec = 0;
+      if (dur.indexOf(':') > -1) {
+        var parts = dur.split(':');
+        if (parts.length === 3) durationSec = parseInt(parts[0])*3600 + parseInt(parts[1])*60 + parseInt(parts[2]);
+        if (parts.length === 2) durationSec = parseInt(parts[0])*60 + parseInt(parts[1]);
+      } else {
+        durationSec = parseInt(dur) || 0;
+      }
+
+      if (url) {
+        eps.push({
+          id: String(url),
+          name: title,
+          duration: durationSec,
+          artist: { name: "播客主播" },
+          ext: { url: url }
+        });
+      }
+    }
+
+    return safeStringify({ list: eps });
+  } catch (e) {
+    return safeStringify({ list: [] });
   }
 }
 
-// 搜索
-async function search(ext) {
-  const args = safeArgs(ext);
-  const actualExt = args.ext || args;
-  const text = args.text || actualExt.text;
-  const page = Number(args.page || actualExt.page || 1);
-  
-  if (!text) {
-    return safeJsonify({ list: [] });
-  }
-  
-  const list = await loadPodcasts(text, page);
-  return safeJsonify({ list: list.map(mapAlbum) });
+async function search(ext, page) {
+  var args = safeParse(ext);
+  var actualExt = args.ext || args;
+  var text = args.text || actualExt.text;
+  var p = page || args.page || actualExt.page || 1;
+
+  if (!text) return safeStringify({ list: [] });
+
+  var list = await loadPodcasts(text, p);
+  var mappedList = list.map(mapAlbum);
+  return safeStringify({ list: mappedList });
 }
 
-// 播放地址
 async function getSongInfo(ext) {
-  const args = safeArgs(ext);
-  const actualExt = args.ext || args;
-  return safeJsonify({ urls: actualExt.url ? [actualExt.url] : [] });
+  var args = safeParse(ext);
+  var actualExt = args.ext || args;
+  return safeStringify({ urls: actualExt.url ? [actualExt.url] : [] });
 }
 
-async function getArtists() { return safeJsonify({ list: [] }) }
-async function getPlaylists() { return safeJsonify({ list: [] }) }
+async function getArtists() { return safeStringify({ list: [] }); }
+async function getPlaylists() { return safeStringify({ list: [] }); }
