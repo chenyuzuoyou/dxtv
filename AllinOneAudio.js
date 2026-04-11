@@ -1,212 +1,170 @@
 /*!
  * @name fm_union
- * @description 喜马拉雅+荔枝FM 二合一听书脚本
+ * @description 喜马拉雅+荔枝FM 无损合并
  * @version v1.0
  * @author codex
  * @key csp_fmunion
  */
 const $config = argsify($config_str)
-const UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1'
+const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
 const headers = { 'User-Agent': UA }
-
 const PAGE_LIMIT = 20
 const SEARCH_PAGE_LIMIT = 5
 const SOURCE_XM = 'xmly'
 const SOURCE_LZ = 'lizhi'
 
 const GID = {
-  RECOMMENDED: '1',
-  TAG: '2',
+  RECOMMENDED_ALBUMS: '1',
+  TAG_ALBUMS: '2',
   ALBUM_TRACKS: '3',
 }
 
-// 超丰富首页分类（喜马拉雅真实全分类）
-const ALL_CATEGORIES = [
-  { name: '推荐', kw: '推荐', source: SOURCE_XM },
-  { name: '有声书', kw: '有声书', source: SOURCE_XM },
-  { name: '小说', kw: '小说', source: SOURCE_XM },
-  { name: '玄幻', kw: '玄幻', source: SOURCE_XM },
-  { name: '都市', kw: '都市', source: SOURCE_XM },
-  { name: '悬疑', kw: '悬疑', source: SOURCE_XM },
-  { name: '历史', kw: '历史', source: SOURCE_XM },
-  { name: '相声', kw: '相声', source: SOURCE_XM },
-  { name: '评书', kw: '评书', source: SOURCE_XM },
-  { name: '情感', kw: '情感', source: SOURCE_XM },
-  { name: '助眠', kw: '助眠', source: SOURCE_LZ },
-  { name: '儿童', kw: '儿童', source: SOURCE_XM },
-  { name: '综艺', kw: '综艺', source: SOURCE_XM },
-  { name: '教育', kw: '教育', source: SOURCE_XM },
-  { name: '播客', kw: '播客', source: SOURCE_LZ },
-  { name: '脱口秀', kw: '脱口秀', source: SOURCE_LZ },
-  { name: '人文', kw: '人文', source: SOURCE_LZ },
-  { name: '健康', kw: '健康', source: SOURCE_XM },
-  { name: '财经', kw: '财经', source: SOURCE_XM },
-  { name: '英语', kw: '英语', source: SOURCE_LZ },
-]
-
+// 喜马拉雅原版完整分类 + 荔枝补充分类
 const appConfig = {
   ver: 1,
-  name: 'FM合集',
-  message: '喜马拉雅+荔枝FM 二合一',
+  name: 'fm_union',
+  message: '',
   warning: '',
-  desc: '双平台免费有声书、播客、电台',
+  desc: '',
   tabLibrary: {
     name: '探索',
-    groups: ALL_CATEGORIES.map(cat => ({
-      name: cat.name,
-      type: 'song',
-      ui: 1,
-      showMore: true,
-      ext: {
-        gid: GID.TAG,
-        kw: cat.kw,
-        source: cat.source
-      }
-    }))
-  },
-  tabMe: {
-    name: '我的',
     groups: [
-      { name: '红心', type: 'song' },
-      { name: '专辑', type: 'album' }
+      { name: '推荐', type: 'song', ui: 1, showMore: true, ext: { gid: GID.RECOMMENDED_ALBUMS, source: SOURCE_XM } },
+      { name: '有声书', type: 'song', ui: 1, showMore: true, ext: { gid: GID.TAG_ALBUMS, kw: '有声书', source: SOURCE_XM } },
+      { name: '播客', type: 'song', ui: 1, showMore: true, ext: { gid: GID.TAG_ALBUMS, kw: '播客', source: SOURCE_XM } },
+      { name: '历史', type: 'song', ui: 1, showMore: true, ext: { gid: GID.TAG_ALBUMS, kw: '历史', source: SOURCE_XM } },
+      { name: '图书', type: 'song', ui: 1, showMore: true, ext: { gid: GID.TAG_ALBUMS, kw: '图书', source: SOURCE_XM } },
+      { name: '热门', type: 'song', ui: 1, showMore: true, ext: { gid: GID.TAG_ALBUMS, kw: '热门', source: SOURCE_XM } },
+      { name: '小说', type: 'song', ui: 1, showMore: true, ext: { gid: GID.TAG_ALBUMS, kw: '小说', source: SOURCE_XM } },
+      { name: '相声', type: 'song', ui: 1, showMore: true, ext: { gid: GID.TAG_ALBUMS, kw: '相声', source: SOURCE_XM } },
+      { name: '音乐', type: 'song', ui: 1, showMore: true, ext: { gid: GID.TAG_ALBUMS, kw: '音乐', source: SOURCE_XM } },
+      { name: '悬疑', type: 'song', ui: 1, showMore: true, ext: { gid: GID.TAG_ALBUMS, kw: '悬疑', source: SOURCE_XM } },
+      { name: '情感', type: 'song', ui: 1, showMore: true, ext: { gid: GID.TAG_ALBUMS, kw: '情感', source: SOURCE_LZ } },
+      { name: '助眠', type: 'song', ui: 1, showMore: true, ext: { gid: GID.TAG_ALBUMS, kw: '助眠', source: SOURCE_LZ } },
+      { name: '儿童', type: 'song', ui: 1, showMore: true, ext: { gid: GID.TAG_ALBUMS, kw: '儿童', source: SOURCE_LZ } },
+      { name: '脱口秀', type: 'song', ui: 1, showMore: true, ext: { gid: GID.TAG_ALBUMS, kw: '脱口秀', source: SOURCE_LZ } },
     ]
   },
+  tabMe: { name: '我的', groups: [{ name: '红心', type: 'song' }] },
   tabSearch: {
     name: '搜索',
     groups: [
-      { name: '专辑', type: 'album', ext: { type: 'album' } },
-      { name: '节目', type: 'song', ext: { type: 'track' } }
+      { name: '节目', type: 'song', ext: { type: 'track' } },
     ]
   }
 }
 
-function safeArgs(data) {
-  return typeof data === 'string' ? argsify(data) : (data ?? {})
-}
-
+function safeArgs(data) { return typeof data === 'string' ? argsify(data) : (data ?? {}) }
 function toHttps(url) {
   if (!url) return ''
   let s = `${url}`
   if (s.startsWith('//')) return 'https:' + s
   if (s.startsWith('http://')) return s.replace(/^http:\//, 'https://')
+  if (!s.startsWith('http')) return 'https://imagev2.xmcdn.com/' + s.replace(/^\//, '')
   return s
 }
-
-function cleanText(t) {
-  return `${t ?? ''}`.replace(/\s+/g, ' ').trim()
-}
-
-function firstArray(...candidates) {
-  for (const i of candidates) if (Array.isArray(i) && i.length > 0) return i
-  return []
-}
-
+function firstArray(...candidates) { for (const i of candidates) if (Array.isArray(i) && i.length > 0) return i; return [] }
 function isPaidItem(item) {
   if (!item) return false
-  return !!(
-    item.isPaid || item.is_paid || item.isVip || item.is_vip ||
-    item.payType > 0 || item.needPay || item.need_paid || item.price > 0
-  )
+  return !!(item.isPaid || item.is_paid || item.isVip || item.is_vip || item.payType > 0 || item.needPay || item.need_pay)
+}
+async function fetchJson(url, extraHeaders = {}) {
+  try {
+    const { data } = await $fetch.get(url, { headers: { ...headers, ...extraHeaders } })
+    return safeArgs(data)
+  } catch (e) { return {} }
 }
 
-async function fetch(url) {
-  try {
-    const { data } = await $fetch.get(url, { headers })
-    return safeArgs(data)
-  } catch (e) {
-    return {}
+// ==================== 喜马拉雅原版逻辑 ====================
+async function xm_loadRecommended(page = 1) {
+  const urls = [
+    `https://mobile.ximalaya.com/mobile/discovery/v3/recommend/album?pageId=${page}&pageSize=${PAGE_LIMIT}`,
+    `https://www.ximalaya.com/revision/search?core=album&kw=&page=${page}&rows=${PAGE_LIMIT}`
+  ]
+  for (const url of urls) { try { const d = await fetchJson(url); const l = firstArray(d.data?.list, d.data?.albums, d.list, d.albums); if (l.length) return l } catch {} }
+  return []
+}
+async function xm_searchTrack(keyword, page = 1) {
+  const url = `https://www.ximalaya.com/revision/search?core=track&kw=${encodeURIComponent(keyword)}&page=${page}&rows=${PAGE_LIMIT}`
+  const d = await fetchJson(url)
+  return firstArray(d.data?.result?.response?.docs, d.data?.list, d.list)
+}
+async function xm_getPlayUrl(trackId) {
+  const url = `https://www.ximalaya.com/revision/play/v1/audio?id=${trackId}&ptype=1`
+  const d = await fetchJson(url)
+  return d?.data?.src || ''
+}
+function xm_mapTrack(item) {
+  return {
+    id: `${item?.trackId ?? item?.id ?? ''}`,
+    name: item?.title ?? item?.trackTitle ?? '',
+    cover: toHttps(item?.coverLarge ?? item?.coverUrl ?? item?.albumCover ?? ''),
+    duration: parseInt(item?.duration ?? 0),
+    artist: { name: item?.nickname ?? item?.anchorName ?? '主播' },
+    ext: { source: SOURCE_XM, trackId: `${item?.trackId ?? item?.id ?? ''}` }
   }
 }
 
-// ------------------------------
-// 喜马拉雅
-// ------------------------------
-async function xm_search(keyword, page = 1) {
-  const url = `https://www.ximalaya.com/revision/search?core=track&kw=${encodeURIComponent(keyword)}&page=${page}&rows=${PAGE_LIMIT}`
-  const d = await fetch(url)
-  return firstArray(d?.data?.result?.response?.docs, d?.data?.list, d?.list)
-}
-
-async function xm_tracks(albumId, page = 1) {
-  const url = `https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${albumId}&pageNum=${page}`
-  const d = await fetch(url)
-  return firstArray(d?.data?.tracks, d?.data?.list)
-}
-
-async function xm_play(trackId) {
-  const url = `https://www.ximalaya.com/revision/play/v1/audio?id=${trackId}&ptype=1`
-  const d = await fetch(url)
-  return d?.data?.src || d?.src || ''
-}
-
-// ------------------------------
-// 荔枝FM
-// ------------------------------
+// ==================== 荔枝原版逻辑 ====================
 async function lz_search(keyword, page = 1) {
   const url = `https://m.lizhi.fm/vodapi/search/voice?keywords=${encodeURIComponent(keyword)}&page=${page}`
-  const d = await fetch(url)
-  return firstArray(d?.data)
+  const d = await fetchJson(url)
+  return firstArray(d.data) || []
 }
-
-async function lz_play(trackId) {
-  const d = await fetch(`https://m.lizhi.fm/vodapi/voice/play/${trackId}`)
+async function lz_getPlayUrl(trackId) {
+  const d = await fetchJson(`https://m.lizhi.fm/vodapi/voice/play/${trackId}`)
   return d?.data?.trackUrl || ''
 }
-
-// ------------------------------
-// 数据映射
-// ------------------------------
-function mapTrack(item, source) {
-  const id = `${item?.trackId || item?.id || item?.voiceInfo?.voiceId || ''}`
-  const name = cleanText(item?.title || item?.name || item?.voiceInfo?.name || '未知节目')
-  const cover = toHttps(item?.coverUrl || item?.cover || item?.voiceInfo?.imageUrl || '')
-  const duration = parseInt(item?.duration || 0)
-  return { id, name, cover, duration, source, ext: { source, trackId: id } }
+function lz_mapTrack(item) {
+  const v = item?.voiceInfo || item
+  const u = item?.userInfo || item
+  return {
+    id: `${v?.voiceId ?? v?.id ?? ''}`,
+    name: v?.name ?? v?.title ?? '未知',
+    cover: toHttps(v?.imageUrl ?? v?.cover ?? ''),
+    duration: parseInt(v?.duration ?? 0),
+    artist: { name: u?.name ?? u?.nickname ?? '主播' },
+    ext: { source: SOURCE_LZ, trackId: `${v?.voiceId ?? v?.id ?? ''}` }
+  }
 }
 
-// ------------------------------
-// 出口函数
-// ------------------------------
-async function getConfig() {
-  return jsonify(appConfig)
-}
+// ==================== 统一出口 ====================
+async function getConfig() { return jsonify(appConfig) }
 
 async function getSongs(ext) {
-  const { gid, kw, source, page = 1 } = argsify(ext)
-  let list = []
+  const { gid, kw, source, page = 1 } = safeArgs(ext)
+  let list = [], mapped = []
 
-  if (gid == GID.TAG) {
-    if (source === SOURCE_XM) list = await xm_search(kw, page)
-    if (source === SOURCE_LZ) list = await lz_search(kw, page)
+  if (source === SOURCE_XM) {
+    if (gid == GID.RECOMMENDED_ALBUMS) list = await xm_loadRecommended(page)
+    if (gid == GID.TAG_ALBUMS) list = await xm_searchTrack(kw, page)
+    mapped = list.filter(i => !isPaidItem(i)).map(xm_mapTrack)
   }
 
-  const freeList = list.filter(i => !isPaidItem(i))
-  return jsonify({ list: freeList.map(i => mapTrack(i, source)) })
+  if (source === SOURCE_LZ) {
+    list = await lz_search(kw, page)
+    mapped = list.map(lz_mapTrack)
+  }
+
+  return jsonify({ list: mapped })
 }
 
 async function search(ext) {
-  const { text, page, type } = argsify(ext)
-  if (!text || type !== 'track') return jsonify({})
-
-  const xmList = await xm_search(text, page)
-  const lzList = await lz_search(text, page)
-  const combined = [...xmList, ...lzList].filter(i => !isPaidItem(i))
-
-  return jsonify({ list: combined.map(i => mapTrack(i, i.trackId ? SOURCE_XM : SOURCE_LZ)) })
+  const { text, page } = safeArgs(ext)
+  if (!text) return jsonify({ list: [] })
+  const xm = (await xm_searchTrack(text, page)).filter(i => !isPaidItem(i)).map(xm_mapTrack)
+  const lz = (await lz_search(text, page)).map(lz_mapTrack)
+  return jsonify({ list: [...xm, ...lz] })
 }
 
 async function getSongInfo(ext) {
-  const { trackId, source } = argsify(ext)
+  const { trackId, source } = safeArgs(ext)
   if (!trackId) return jsonify({ urls: [] })
-
-  let url = ''
-  if (source === SOURCE_XM) url = await xm_play(trackId)
-  if (source === SOURCE_LZ) url = await lz_play(trackId)
-
+  const url = source === SOURCE_XM ? await xm_getPlayUrl(trackId) : await lz_getPlayUrl(trackId)
   return jsonify({ urls: url ? [toHttps(url)] : [] })
 }
 
-// 兼容旧接口
+// 兼容占位
 async function getAlbums() { return jsonify({ list: [] }) }
 async function getArtists() { return jsonify({ list: [] }) }
 async function getPlaylists() { return jsonify({ list: [] }) }
