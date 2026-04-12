@@ -1,8 +1,8 @@
 /*!
  * @name GDMusic
- * @description 全网聚合音乐 - 增强版：红心改为“红心（缓存）” + 自动最近播放（离线缓存）+ 酷狗封面修复
- * @version v1.0
- * @author kobe (增强 by Grok, Fix by Gemini)
+ * @description 聚合音乐
+ * @version v1.1
+ * @author kobe 
  * @key csp_GD_music
  */
 
@@ -21,15 +21,15 @@ const ALL_SOURCES = [
 	{ id: 'joox', name: 'JOOX' },
 	{ id: 'tencent', name: 'QQ' },
 	{ id: 'bilibili', name: 'b站' },
-	{ id: 'tidal', name: 'Tidal' },
-	{ id: 'spotify', name: 'Spotify' },
-	{ id: 'ytmusic', name: 'YouTube' },
-	{ id: 'qobuz', name: 'Qobuz' },
-	{ id: 'deezer', name: 'Deezer' },
-	{ id: 'migu', name: '咪咕' },
-	{ id: 'kugou', name: '酷狗' },
-	{ id: 'ximalaya', name: '喜马拉雅' },
-	{ id: 'apple', name: 'Apple' }
+	//{ id: 'tidal', name: 'Tidal' },
+	//{ id: 'spotify', name: 'Spotify' },
+	//{ id: 'ytmusic', name: 'YouTube' },
+	//{ id: 'qobuz', name: 'Qobuz' },
+	//{ id: 'deezer', name: 'Deezer' },
+	//{ id: 'migu', name: '咪咕' },
+	//{ id: 'kugou', name: '酷狗' },
+	//{ id: 'ximalaya', name: '喜马拉雅' },
+	//{ id: 'apple', name: 'Apple' }
 ]
 
 !(function (n) {
@@ -801,7 +801,7 @@ function crc32(id) {
 	
 	if (!id) return '';
 	
-	const hostname = 'music.gdstudio.org';
+	const hostname = 'music.gdstudio.xyz';
 	const version = mkPlayer.version || '1.0.0';
 	const versionStr = version.split('.').map(part => {
 		return part.length === 1 ? '0' + part : part;
@@ -821,10 +821,10 @@ function urlEncode(str) {
 }
 
 const apis = {
-	lo: 'https://music-api.gdstudio.org/api.php',
-	cn: 'https://music-api-cn.gdstudio.org/api.php',
-	hk: 'https://music-api-hk.gdstudio.org/api.php',
-	us: 'https://music-api-us.gdstudio.org/api.php',
+	lo: 'https://music-api.gdstudio.xyz/api.php',
+	cn: 'https://music-api-cn.gdstudio.xyz/api.php',
+	hk: 'https://music-api-hk.gdstudio.xyz/api.php',
+	us: 'https://music-api-us.gdstudio.xyz/api.php',
 }
 
 function sourceNode(source) {
@@ -1022,7 +1022,7 @@ async function getConfig() {
 
 async function getCoverUrl(pic_id, source = 'netease') {
 	if (!pic_id) {
-		return 'https://music.gdstudio.org/favicon.ico'
+		return 'https://music.gdstudio.xyz/favicon.ico'
 	}
 	
 	try {
@@ -1037,7 +1037,7 @@ async function getCoverUrl(pic_id, source = 'netease') {
 			try {
 				result = JSON.parse(data)
 			} catch(e) {
-				return 'https://music.gdstudio.org/favicon.ico'
+				return 'https://music.gdstudio.xyz/favicon.ico'
 			}
 		} else {
 			result = data
@@ -1049,7 +1049,7 @@ async function getCoverUrl(pic_id, source = 'netease') {
 	} catch (error) {
 	}
 	
-	return 'https://music.gdstudio.org/favicon.ico'
+	return 'https://music.gdstudio.xyz/favicon.ico'
 }
 
 async function getArtists(ext) {
@@ -1117,7 +1117,7 @@ async function getArtists(ext) {
 					artistId = match2[1]
 				}
 				
-				const cover = artistId !== 'unknown' ? `https://y.qq.com/music/photo_new/T001R500x500M000${artistId}.jpg` : 'https://music.gdstudio.org/favicon.ico'
+				const cover = artistId !== 'unknown' ? `https://y.qq.com/music/photo_new/T001R500x500M000${artistId}.jpg` : 'https://music.gdstudio.xyz/favicon.ico'
 				
 				if (!artists.some(a => a.name === name)) {
 					artists.push({
@@ -1224,7 +1224,7 @@ async function searchSource(text, source, page = 1, count = 20) {
 					songs.push({
 						id: `${videoInfo.aid}`,
 						name: videoInfo.title,
-						cover: videoInfo.pic || 'https://music.gdstudio.org/favicon.ico',
+						cover: videoInfo.pic || 'https://music.gdstudio.xyz/favicon.ico',
 						duration: duration,
 						artist: {
 							id: `${videoInfo.owner?.mid}`,
@@ -1284,7 +1284,7 @@ async function searchSource(text, source, page = 1, count = 20) {
 										}
 									}
 									
-									const cover = item.pic ? (item.pic.startsWith('http') ? item.pic : 'https:' + item.pic) : 'https://music.gdstudio.org/favicon.ico'
+									const cover = item.pic ? (item.pic.startsWith('http') ? item.pic : 'https:' + item.pic) : 'https://music.gdstudio.xyz/favicon.ico'
 									
 									songs.push({
 										id: `${item.aid}`,
@@ -1338,13 +1338,13 @@ async function searchSource(text, source, page = 1, count = 20) {
 			
 			const coverPromises = searchResults.map(async (item, index) => {
 				try {
-					let coverUrl = 'https://music.gdstudio.org/favicon.ico'
+					let coverUrl = 'https://music.gdstudio.xyz/favicon.ico'
 					if (item.pic_id) {
 						coverUrl = await getCoverUrl(item.pic_id, item.source || source)
 					}
 					return { index, coverUrl, success: true }
 				} catch (error) {
-					return { index, coverUrl: 'https://music.gdstudio.org/favicon.ico', success: false }
+					return { index, coverUrl: 'https://music.gdstudio.xyz/favicon.ico', success: false }
 				}
 			})
 			
@@ -1374,7 +1374,7 @@ async function searchSource(text, source, page = 1, count = 20) {
 					}
 				}
 				
-				const coverUrl = coverMap[i] || 'https://music.gdstudio.org/favicon.ico'
+				const coverUrl = coverMap[i] || 'https://music.gdstudio.xyz/favicon.ico'
 				
 				songs.push({
 					id: `${item.source || source}_${item.id || i}`,
@@ -1429,7 +1429,7 @@ async function getSongs(ext) {
 				songs.push({
 					id: `${each.aid}`,
 					name: each.title,
-					cover: each.pic || 'https://music.gdstudio.org/favicon.ico',
+					cover: each.pic || 'https://music.gdstudio.xyz/favicon.ico',
 					duration: each.duration,
 					artist: {
 						id: `${each.owner.mid}`,
@@ -1636,7 +1636,7 @@ async function getSongInfo(ext) {
 				playUrl = result.url
 			}
 			
-			let coverUrl = 'https://music.gdstudio.org/favicon.ico'
+			let coverUrl = 'https://music.gdstudio.xyz/favicon.ico'
 			if (pic_id) {
 				coverUrl = await getCoverUrl(pic_id, source)
 			} else if (qqMusicId) {
@@ -1665,7 +1665,7 @@ async function getSongInfo(ext) {
 		}
 		
 		try {
-			let coverUrl = 'https://music.gdstudio.org/favicon.ico'
+			let coverUrl = 'https://music.gdstudio.xyz/favicon.ico'
 			let videoInfo = null
 			
 			if (bilibiliBvid) {
@@ -1675,7 +1675,7 @@ async function getSongInfo(ext) {
 			}
 			
 			if (videoInfo) {
-				coverUrl = videoInfo.pic || 'https://music.gdstudio.org/favicon.ico'
+				coverUrl = videoInfo.pic || 'https://music.gdstudio.xyz/favicon.ico'
 				
 				if (!bilibiliCid) {
 					bilibiliCid = videoInfo.cid || videoInfo.pages?.[0]?.cid
@@ -1839,7 +1839,7 @@ async function getSongInfo(ext) {
 				}
 			}
 			
-			let coverUrl = 'https://music.gdstudio.org/favicon.ico'
+			let coverUrl = 'https://music.gdstudio.xyz/favicon.ico'
 			if (pic_id) {
 				coverUrl = await getCoverUrl(pic_id, source)
 			}
@@ -1848,7 +1848,7 @@ async function getSongInfo(ext) {
 				urls: playUrl ? [playUrl] : [],
 				headers: [{
 					'User-Agent': UA,
-					'Referer': 'https://music.gdstudio.org/'
+					'Referer': 'https://music.gdstudio.xyz/'
 				}],
 				cover: coverUrl
 			})
@@ -1885,7 +1885,7 @@ async function getPlaylistInfo(ext) {
 								songs.push({
 									id: `${each.aid}`,
 									name: each.title,
-									cover: each.pic || videoInfo.pic || 'https://music.gdstudio.org/favicon.ico',
+									cover: each.pic || videoInfo.pic || 'https://music.gdstudio.xyz/favicon.ico',
 									duration: each.duration || 0,
 									artist: {
 										id: `${videoInfo.owner?.mid}`,
@@ -1915,7 +1915,7 @@ async function getPlaylistInfo(ext) {
 								songs.push({
 									id: `${each.cid}`,
 									name: each.title || each.arc?.title || '未知标题',
-									cover: each.arc?.pic || videoInfo.pic || 'https://music.gdstudio.org/favicon.ico',
+									cover: each.arc?.pic || videoInfo.pic || 'https://music.gdstudio.xyz/favicon.ico',
 									duration: each.arc?.duration || 0,
 									artist: {
 										id: `${videoInfo.owner?.mid}`,
@@ -1939,7 +1939,7 @@ async function getPlaylistInfo(ext) {
 						songs.push({
 							id: `${each.cid}`,
 							name: each.part || `P${each.page}`,
-							cover: each.first_frame || videoInfo.pic || 'https://music.gdstudio.org/favicon.ico',
+							cover: each.first_frame || videoInfo.pic || 'https://music.gdstudio.xyz/favicon.ico',
 							duration: each.duration || 0,
 							artist: {
 								id: `${videoInfo.owner?.mid}`,
@@ -1960,7 +1960,7 @@ async function getPlaylistInfo(ext) {
 					songs.push({
 						id: `${videoInfo.cid}`,
 						name: videoInfo.title,
-						cover: videoInfo.pic || 'https://music.gdstudio.org/favicon.ico',
+						cover: videoInfo.pic || 'https://music.gdstudio.xyz/favicon.ico',
 						duration: videoInfo.duration || 0,
 						artist: {
 							id: `${videoInfo.owner?.mid}`,
@@ -2035,7 +2035,7 @@ async function getBackupSongInfo(source, track_id, pic_id) {
 			}
 		}
 		
-		let coverUrl = 'https://music.gdstudio.org/favicon.ico'
+		let coverUrl = 'https://music.gdstudio.xyz/favicon.ico'
 		if (pic_id) {
 			coverUrl = await getCoverUrl(pic_id, source)
 		}
@@ -2044,7 +2044,7 @@ async function getBackupSongInfo(source, track_id, pic_id) {
 			urls: playUrl ? [playUrl] : [],
 			headers: [{
 				'User-Agent': UA,
-				'Referer': 'https://music.gdstudio.org/'
+				'Referer': 'https://music.gdstudio.xyz/'
 			}],
 			cover: coverUrl
 		})
