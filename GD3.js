@@ -1033,6 +1033,14 @@ const appConfig = {
 				}
 			},
 			{
+				name: 'Apple Music', // 这里就是在搜索栏显示的名称
+				type: 'song',
+				ext: {
+					type: 'song',
+					source: 'apple' // 对应 GD API 的 source
+				}
+			},
+			{
 				name: 'b站',
 				type: 'song',
 				ext: {
