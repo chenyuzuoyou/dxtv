@@ -1,9 +1,9 @@
 /*!
- * @name GADMusic
- * @description 聚合音乐
- * @version v1.8   1.6正常搜索，1.7搜索慢但是带封面
+ * @name GaDMusic
+ * @description 聚合音乐 (网易/酷我/JOOX 精简版)
+ * @version v2.0
  * @author kobe (Modified)
- * @key csp_GAD_music
+ * @key csp_GaD_music
  */
 
 const $config = argsify($config_str)
@@ -18,13 +18,11 @@ const headers = {
 	'X-Requested-With': 'XMLHttpRequest'
 }
 
+// 只保留三大平台
 const ALL_SOURCES = [
-	{ id: 'netease', name: '网易' },
+	{ id: 'netease', name: '网易云' },
 	{ id: 'kuwo', name: '酷我' },
-	{ id: 'joox', name: 'JOOX' },
-	{ id: 'tencent', name: 'QQ' },
-	{ id: 'bilibili', name: 'b站' },
-	{ id: 'apple', name: 'Apple' }
+	{ id: 'joox', name: 'JOOX' }
 ]
 
 !(function (n) {
@@ -78,593 +76,82 @@ const ALL_SOURCES = [
 			h < n['\u006C\u0065\u006E\u0067\u0074\u0068'];
 			h += 556107 ^ 556123
 		)
-			(c = _0x1c64f(
-				(r = c),
-				(e = f),
-				(o = i),
-				(u = a),
-				n[h],
-				203195 ^ 203196,
-				-680876936
-			)),
-				(a = _0x1c64f(
-					a,
-					c,
-					f,
-					i,
-					n[h + (668723 ^ 668722)],
-					371783 ^ 371787,
-					-389564586
-				)),
-				(i = _0x1c64f(
-					i,
-					a,
-					c,
-					f,
-					n[h + (949049 ^ 949051)],
-					938935 ^ 938918,
-					606105819
-				)),
-				(f = _0x1c64f(
-					f,
-					i,
-					a,
-					c,
-					n[h + (930796 ^ 930799)],
-					155265 ^ 155287,
-					-1044525330
-				)),
-				(c = _0x1c64f(
-					c,
-					f,
-					i,
-					a,
-					n[h + (641944 ^ 641948)],
-					344334 ^ 344329,
-					-176418897
-				)),
-				(a = _0x1c64f(
-					a,
-					c,
-					f,
-					i,
-					n[h + (431303 ^ 431298)],
-					531914 ^ 531910,
-					1200080426
-				)),
-				(i = _0x1c64f(
-					i,
-					a,
-					c,
-					f,
-					n[h + (507733 ^ 507731)],
-					286130 ^ 286115,
-					-1473231341
-				)),
-				(f = _0x1c64f(
-					f,
-					i,
-					a,
-					c,
-					n[h + (915513 ^ 915518)],
-					223744 ^ 223766,
-					-45705983
-				)),
-				(c = _0x1c64f(
-					c,
-					f,
-					i,
-					a,
-					n[h + (412142 ^ 412134)],
-					875728 ^ 875735,
-					1770035416
-				)),
-				(a = _0x1c64f(
-					a,
-					c,
-					f,
-					i,
-					n[h + (219497 ^ 219488)],
-					508069 ^ 508074,
-					-1958414417
-				)),
-				(i = _0x1c64f(
-					i,
-					a,
-					c,
-					f,
-					n[h + (318384 ^ 318394)],
-					283908 ^ 283925,
-					-(656920 ^ 696919)
-				)),
-				(f = _0x1c64f(
-					f,
-					i,
-					a,
-					c,
-					n[h + (426894 ^ 426885)],
-					511658 ^ 511676,
-					-1990404162
-				)),
-				(c = _0x1c64f(
-					c,
-					f,
-					i,
-					a,
-					n[h + (337386 ^ 337382)],
-					703997 ^ 703994,
-					1804603682
-				)),
-				(a = _0x1c64f(
-					a,
-					c,
-					f,
-					i,
-					n[h + (868334 ^ 868323)],
-					167771 ^ 167767,
-					-40341101
-				)),
-				(i = _0x1c64f(
-					i,
-					a,
-					c,
-					f,
-					n[h + (437888 ^ 437902)],
-					613007 ^ 613022,
-					-1502002290
-				)),
-				(c = _0xfb_0x5f5(
-					c,
-					(f = _0x1c64f(
-						f,
-						i,
-						a,
-						c,
-						n[h + (252446 ^ 252433)],
-						160598 ^ 160576,
-						1236535329
-					)),
-					i,
-					a,
-					n[h + (938072 ^ 938073)],
-					841271 ^ 841266,
-					-165796510
-				)),
-				(a = _0xfb_0x5f5(
-					a,
-					c,
-					f,
-					i,
-					n[h + (729061 ^ 729059)],
-					340519 ^ 340527,
-					-1069501632
-				)),
-				(i = _0xfb_0x5f5(
-					i,
-					a,
-					c,
-					f,
-					n[h + (426084 ^ 426095)],
-					488481 ^ 488495,
-					643717713
-				)),
-				(f = _0xfb_0x5f5(
-					f,
-					i,
-					a,
-					c,
-					n[h],
-					454780 ^ 454760,
-					-373897302
-				)),
-				(c = _0xfb_0x5f5(
-					c,
-					f,
-					i,
-					a,
-					n[h + (869090 ^ 869095)],
-					753617 ^ 753620,
-					-701558691
-				)),
-				(a = _0xfb_0x5f5(
-					a,
-					c,
-					f,
-					i,
-					n[h + (511330 ^ 511336)],
-					325620 ^ 325629,
-					38016083
-				)),
-				(i = _0xfb_0x5f5(
-					i,
-					a,
-					c,
-					f,
-					n[h + (422400 ^ 422415)],
-					436787 ^ 436797,
-					-660478335
-				)),
-				(f = _0xfb_0x5f5(
-					f,
-					i,
-					a,
-					c,
-					n[h + (730717 ^ 730713)],
-					631499 ^ 631519,
-					-405537848
-				)),
-				(c = _0xfb_0x5f5(
-					c,
-					f,
-					i,
-					a,
-					n[h + (569928 ^ 569921)],
-					345268 ^ 345265,
-					568446438
-				)),
-				(a = _0xfb_0x5f5(
-					a,
-					c,
-					f,
-					i,
-					n[h + (976674 ^ 976684)],
-					915924 ^ 915933,
-					-1019803690
-				)),
-				(i = _0xfb_0x5f5(
-					i,
-					a,
-					c,
-					f,
-					n[h + (483370 ^ 483369)],
-					118410 ^ 118404,
-					-187363961
-				)),
-				(f = _0xfb_0x5f5(
-					f,
-					i,
-					a,
-					c,
-					n[h + (331905 ^ 331913)],
-					296287 ^ 296267,
-					1163531501
-				)),
-				(c = _0xfb_0x5f5(
-					c,
-					f,
-					i,
-					a,
-					n[h + (205920 ^ 205933)],
-					845245 ^ 845240,
-					-1444681467
-				)),
-				(a = _0xfb_0x5f5(
-					a,
-					c,
-					f,
-					i,
-					n[h + (394678 ^ 394676)],
-					519578 ^ 519571,
-					-51403784
-				)),
-				(i = _0xfb_0x5f5(
-					i,
-					a,
-					c,
-					f,
-					n[h + (716049 ^ 716054)],
-					828862 ^ 828848,
-					1735328473
-				)),
-				(c = _0xd_0x5e9(
-					c,
-					(f = _0xfb_0x5f5(
-						f,
-						i,
-						a,
-						c,
-						n[h + (611289 ^ 611285)],
-						380507 ^ 380495,
-						-1926607734
-					)),
-					i,
-					a,
-					n[h + (952986 ^ 952991)],
-					649350 ^ 649346,
-					-378558
-				)),
-				(a = _0xd_0x5e9(
-					a,
-					c,
-					f,
-					i,
-					n[h + (931855 ^ 931847)],
-					649199 ^ 649188,
-					-2022574463
-				)),
-				(i = _0xd_0x5e9(
-					i,
-					a,
-					c,
-					f,
-					n[h + (824364 ^ 824359)],
-					731251 ^ 731235,
-					1839030562
-				)),
-				(f = _0xd_0x5e9(
-					f,
-					i,
-					a,
-					c,
-					n[h + (735313 ^ 735327)],
-					832357 ^ 832370,
-					-35309556
-				)),
-				(c = _0xd_0x5e9(
-					c,
-					f,
-					i,
-					a,
-					n[h + (715041 ^ 715040)],
-					668616 ^ 668620,
-					-1530992060
-				)),
-				(a = _0xd_0x5e9(
-					a,
-					c,
-					f,
-					i,
-					n[h + (103314 ^ 103318)],
-					312171 ^ 312160,
-					1272893353
-				)),
-				(i = _0xd_0x5e9(
-					i,
-					a,
-					c,
-					f,
-					n[h + (101467 ^ 101468)],
-					444248 ^ 444232,
-					-155497632
-				)),
-				(f = _0xd_0x5e9(
-					f,
-					i,
-					a,
-					c,
-					n[h + (884303 ^ 884293)],
-					177582 ^ 177593,
-					-1094730640
-				)),
-				(c = _0xd_0x5e9(
-					c,
-					f,
-					i,
-					a,
-					n[h + (641499 ^ 641494)],
-					808818 ^ 808822,
-					681279174
-				)),
-				(a = _0xd_0x5e9(a, c, f, i, n[h], 718981 ^ 718990, -358537222)),
-				(i = _0xd_0x5e9(
-					i,
-					a,
-					c,
-					f,
-					n[h + (367825 ^ 367826)],
-					170342 ^ 170358,
-					-722521979
-				)),
-				(f = _0xd_0x5e9(
-					f,
-					i,
-					a,
-					c,
-					n[h + (838503 ^ 838497)],
-					968360 ^ 968383,
-					76029189
-				)),
-				(c = _0xd_0x5e9(
-					c,
-					f,
-					i,
-					a,
-					n[h + (908418 ^ 908427)],
-					607083 ^ 607087,
-					-640364487
-				)),
-				(a = _0xd_0x5e9(
-					a,
-					c,
-					f,
-					i,
-					n[h + (258045 ^ 258033)],
-					740678 ^ 740685,
-					-421815835
-				)),
-				(i = _0xd_0x5e9(
-					i,
-					a,
-					c,
-					f,
-					n[h + (375201 ^ 375214)],
-					713066 ^ 713082,
-					530742520
-				)),
-				(c = _0xge8d(
-					c,
-					(f = _0xd_0x5e9(
-						f,
-						i,
-						a,
-						c,
-						n[h + (640770 ^ 640768)],
-						598057 ^ 598078,
-						-995338651
-					)),
-					i,
-					a,
-					n[h],
-					184424 ^ 184430,
-					-198630844
-				)),
-				(a = _0xge8d(
-					a,
-					c,
-					f,
-					i,
-					n[h + (117062 ^ 117057)],
-					272072 ^ 272066,
-					1126891415
-				)),
-				(i = _0xge8d(
-					i,
-					a,
-					c,
-					f,
-					n[h + (101517 ^ 101507)],
-					474789 ^ 474794,
-					-1416354905
-				)),
-				(f = _0xge8d(
-					f,
-					i,
-					a,
-					c,
-					n[h + (481168 ^ 481173)],
-					284190 ^ 284171,
-					-57434055
-				)),
-				(c = _0xge8d(
-					c,
-					f,
-					i,
-					a,
-					n[h + (963513 ^ 963509)],
-					782784 ^ 782790,
-					1700485571
-				)),
-				(a = _0xge8d(
-					a,
-					c,
-					f,
-					i,
-					n[h + (552248 ^ 552251)],
-					632946 ^ 632952,
-					-1894986606
-				)),
-				(i = _0xge8d(
-					i,
-					a,
-					c,
-					f,
-					n[h + (572015 ^ 572005)],
-					274813 ^ 274802,
-					-1051523
-				)),
-				(f = _0xge8d(
-					f,
-					i,
-					a,
-					c,
-					n[h + (870735 ^ 870734)],
-					725173 ^ 725152,
-					-2054922799
-				)),
-				(c = _0xge8d(
-					c,
-					f,
-					i,
-					a,
-					n[h + (671801 ^ 671793)],
-					929882 ^ 929884,
-					1873313359
-				)),
-				(a = _0xge8d(
-					a,
-					c,
-					f,
-					i,
-					n[h + (586039 ^ 586040)],
-					167396 ^ 167406,
-					-30611744
-				)),
-				(i = _0xge8d(
-					i,
-					a,
-					c,
-					f,
-					n[h + (140557 ^ 140555)],
-					563789 ^ 563778,
-					-1560198380
-				)),
-				(f = _0xge8d(
-					f,
-					i,
-					a,
-					c,
-					n[h + (249727 ^ 249714)],
-					284711 ^ 284722,
-					1309151649
-				)),
-				(c = _0xge8d(
-					c,
-					f,
-					i,
-					a,
-					n[h + (301693 ^ 301689)],
-					974141 ^ 974139,
-					-145523070
-				)),
-				(a = _0xge8d(
-					a,
-					c,
-					f,
-					i,
-					n[h + (499061 ^ 499070)],
-					381725 ^ 381719,
-					-1120210379
-				)),
-				(i = _0xge8d(
-					i,
-					a,
-					c,
-					f,
-					n[h + (157228 ^ 157230)],
-					991419 ^ 991412,
-					718787259
-				)),
-				(f = _0xge8d(
-					f,
-					i,
-					a,
-					c,
-					n[h + (956698 ^ 956691)],
-					529761 ^ 529780,
-					-343485551
-				)),
-				(c = _0x116c6g(c, r)),
-				(f = _0x116c6g(f, e)),
-				(i = _0x116c6g(i, o)),
-				(a = _0x116c6g(a, u))
+			(c = _0x1c64f((r = c),(e = f),(o = i),(u = a),n[h],203195 ^ 203196,-680876936)),
+			(a = _0x1c64f(a,c,f,i,n[h + (668723 ^ 668722)],371783 ^ 371787,-389564586)),
+			(i = _0x1c64f(i,a,c,f,n[h + (949049 ^ 949051)],938935 ^ 938918,606105819)),
+			(f = _0x1c64f(f,i,a,c,n[h + (930796 ^ 930799)],155265 ^ 155287,-1044525330)),
+			(c = _0x1c64f(c,f,i,a,n[h + (641944 ^ 641948)],344334 ^ 344329,-176418897)),
+			(a = _0x1c64f(a,c,f,i,n[h + (431303 ^ 431298)],531914 ^ 531910,1200080426)),
+			(i = _0x1c64f(i,a,c,f,n[h + (507733 ^ 507731)],286130 ^ 286115,-1473231341)),
+			(f = _0x1c64f(f,i,a,c,n[h + (915513 ^ 915518)],223744 ^ 223766,-45705983)),
+			(c = _0x1c64f(c,f,i,a,n[h + (412142 ^ 412134)],875728 ^ 875735,1770035416)),
+			(a = _0x1c64f(a,c,f,i,n[h + (219497 ^ 219488)],508069 ^ 508074,-1958414417)),
+			(i = _0x1c64f(i,a,c,f,n[h + (318384 ^ 318394)],283908 ^ 283925,-(656920 ^ 696919))),
+			(f = _0x1c64f(f,i,a,c,n[h + (426894 ^ 426885)],511658 ^ 511676,-1990404162)),
+			(c = _0x1c64f(c,f,i,a,n[h + (337386 ^ 337382)],703997 ^ 703994,1804603682)),
+			(a = _0x1c64f(a,c,f,i,n[h + (868334 ^ 868323)],167771 ^ 167767,-40341101)),
+			(i = _0x1c64f(i,a,c,f,n[h + (437888 ^ 437902)],613007 ^ 613022,-1502002290)),
+			(c = _0xfb_0x5f5(c,(f = _0x1c64f(f,i,a,c,n[h + (252446 ^ 252433)],160598 ^ 160576,1236535329)),i,a,n[h + (938072 ^ 938073)],841271 ^ 841266,-165796510)),
+			(a = _0xfb_0x5f5(a,c,f,i,n[h + (729061 ^ 729059)],340519 ^ 340527,-1069501632)),
+			(i = _0xfb_0x5f5(i,a,c,f,n[h + (426084 ^ 426095)],488481 ^ 488495,643717713)),
+			(f = _0xfb_0x5f5(f,i,a,c,n[h],454780 ^ 454760,-373897302)),
+			(c = _0xfb_0x5f5(c,f,i,a,n[h + (869090 ^ 869095)],753617 ^ 753620,-701558691)),
+			(a = _0xfb_0x5f5(a,c,f,i,n[h + (511330 ^ 511336)],325620 ^ 325629,38016083)),
+			(i = _0xfb_0x5f5(i,a,c,f,n[h + (422400 ^ 422415)],436787 ^ 436797,-660478335)),
+			(f = _0xfb_0x5f5(f,i,a,c,n[h + (730717 ^ 730713)],631499 ^ 631519,-405537848)),
+			(c = _0xfb_0x5f5(c,f,i,a,n[h + (569928 ^ 569921)],345268 ^ 345265,568446438)),
+			(a = _0xfb_0x5f5(a,c,f,i,n[h + (976674 ^ 976684)],915924 ^ 915933,-1019803690)),
+			(i = _0xfb_0x5f5(i,a,c,f,n[h + (483370 ^ 483369)],118410 ^ 118404,-187363961)),
+			(f = _0xfb_0x5f5(f,i,a,c,n[h + (331905 ^ 331913)],296287 ^ 296267,1163531501)),
+			(c = _0xfb_0x5f5(c,f,i,a,n[h + (205920 ^ 205933)],845245 ^ 845240,-1444681467)),
+			(a = _0xfb_0x5f5(a,c,f,i,n[h + (394678 ^ 394676)],519578 ^ 519571,-51403784)),
+			(i = _0xfb_0x5f5(i,a,c,f,n[h + (716049 ^ 716054)],828862 ^ 828848,1735328473)),
+			(c = _0xd_0x5e9(c,(f = _0xfb_0x5f5(f,i,a,c,n[h + (611289 ^ 611285)],380507 ^ 380495,-1926607734)),i,a,n[h + (952986 ^ 952991)],649350 ^ 649346,-378558)),
+			(a = _0xd_0x5e9(a,c,f,i,n[h + (931855 ^ 931847)],649199 ^ 649188,-2022574463)),
+			(i = _0xd_0x5e9(i,a,c,f,n[h + (824364 ^ 824359)],731251 ^ 731235,1839030562)),
+			(f = _0xd_0x5e9(f,i,a,c,n[h + (735313 ^ 735327)],832357 ^ 832370,-35309556)),
+			(c = _0xd_0x5e9(c,f,i,a,n[h + (715041 ^ 715040)],668616 ^ 668620,-1530992060)),
+			(a = _0xd_0x5e9(a,c,f,i,n[h + (103314 ^ 103318)],312171 ^ 312160,1272893353)),
+			(i = _0xd_0x5e9(i,a,c,f,n[h + (101467 ^ 101468)],444248 ^ 444232,-155497632)),
+			(f = _0xd_0x5e9(f,i,a,c,n[h + (884303 ^ 884293)],177582 ^ 177593,-1094730640)),
+			(c = _0xd_0x5e9(c,f,i,a,n[h + (641499 ^ 641494)],808818 ^ 808822,681279174)),
+			(a = _0xd_0x5e9(a,c,f,i,n[h],718981 ^ 718990,-358537222)),
+			(i = _0xd_0x5e9(i,a,c,f,n[h + (367825 ^ 367826)],170342 ^ 170358,-722521979)),
+			(f = _0xd_0x5e9(f,i,a,c,n[h + (838503 ^ 838497)],968360 ^ 968383,76029189)),
+			(c = _0xd_0x5e9(c,f,i,a,n[h + (908418 ^ 908427)],607083 ^ 607087,-640364487)),
+			(a = _0xd_0x5e9(a,c,f,i,n[h + (258045 ^ 258033)],740678 ^ 740685,-421815835)),
+			(i = _0xd_0x5e9(i,a,c,f,n[h + (375201 ^ 375214)],713066 ^ 713082,530742520)),
+			(c = _0xge8d(c,(f = _0xd_0x5e9(f,i,a,c,n[h + (640770 ^ 640768)],598057 ^ 598078,-995338651)),i,a,n[h],184424 ^ 184430,-198630844)),
+			(a = _0xge8d(a,c,f,i,n[h + (117062 ^ 117057)],272072 ^ 272066,1126891415)),
+			(i = _0xge8d(i,a,c,f,n[h + (101517 ^ 101507)],474789 ^ 474794,-1416354905)),
+			(f = _0xge8d(f,i,a,c,n[h + (481168 ^ 481173)],284190 ^ 284171,-57434055)),
+			(c = _0xge8d(c,f,i,a,n[h + (963513 ^ 963509)],782784 ^ 782790,1700485571)),
+			(a = _0xge8d(a,c,f,i,n[h + (552248 ^ 552251)],632946 ^ 632952,-1894986606)),
+			(i = _0xge8d(i,a,c,f,n[h + (572015 ^ 572005)],274813 ^ 274802,-1051523)),
+			(f = _0xge8d(f,i,a,c,n[h + (870735 ^ 870734)],725173 ^ 725152,-2054922799)),
+			(c = _0xge8d(c,f,i,a,n[h + (671801 ^ 671793)],929882 ^ 929884,1873313359)),
+			(a = _0xge8d(a,c,f,i,n[h + (586039 ^ 586040)],167396 ^ 167406,-30611744)),
+			(i = _0xge8d(i,a,c,f,n[h + (140557 ^ 140555)],563789 ^ 563778,-1560198380)),
+			(f = _0xge8d(f,i,a,c,n[h + (249727 ^ 249714)],284711 ^ 284722,1309151649)),
+			(c = _0xge8d(c,f,i,a,n[h + (301693 ^ 301689)],974141 ^ 974139,-145523070)),
+			(a = _0xge8d(a,c,f,i,n[h + (499061 ^ 499070)],381725 ^ 381719,-1120210379)),
+			(i = _0xge8d(i,a,c,f,n[h + (157228 ^ 157230)],991419 ^ 991412,718787259)),
+			(f = _0xge8d(f,i,a,c,n[h + (956698 ^ 956691)],529761 ^ 529780,-343485551)),
+			(c = _0x116c6g(c, r)),
+			(f = _0x116c6g(f, e)),
+			(i = _0x116c6g(i, o)),
+			(a = _0x116c6g(a, u))
 		return [c, f, i, a]
 	}
 	function _0x77f8c(n) {
 		for (
 			var t = '',
-				r =
-					(788838 ^ 788806) *
-					n['\u006C\u0065\u006E\u0067\u0074\u0068'],
+				r = (788838 ^ 788806) * n['\u006C\u0065\u006E\u0067\u0074\u0068'],
 				e = 897385 ^ 897385;
 			e < r;
 			e += 823433 ^ 823425
 		)
-			t += String[
-				'\u0066\u0072\u006F\u006D\u0043\u0068\u0061\u0072\u0043\u006F\u0064\u0065'
-			](
-				(n[e >> (276380 ^ 276377)] >>> e % (477668 ^ 477636)) &
-					(116135 ^ 116056)
-			)
+			t += String['\u0066\u0072\u006F\u006D\u0043\u0068\u0061\u0072\u0043\u006F\u0064\u0065']((n[e >> (276380 ^ 276377)] >>> e % (477668 ^ 477636)) & (116135 ^ 116056))
 		return t
 	}
 	function _0x4cbe4f(n) {
@@ -672,134 +159,55 @@ const ALL_SOURCES = [
 		var t = []
 		_0x_0x9c8 = 243631 ^ 243624
 		for (
-			t[
-				(n['\u006C\u0065\u006E\u0067\u0074\u0068'] >>
-					(431982 ^ 431980)) -
-					(502514 ^ 502515)
-			] = void (398355 ^ 398355),
+			t[(n['\u006C\u0065\u006E\u0067\u0074\u0068'] >> (431982 ^ 431980)) - (502514 ^ 502515)] = void (398355 ^ 398355),
 				e = 987172 ^ 987172;
 			e < t['\u006C\u0065\u006E\u0067\u0074\u0068'];
 			e += 549036 ^ 549037
 		)
 			t[e] = 194263 ^ 194263
 		for (
-			var r =
-					(442162 ^ 442170) *
-					n['\u006C\u0065\u006E\u0067\u0074\u0068'],
+			var r = (442162 ^ 442170) * n['\u006C\u0065\u006E\u0067\u0074\u0068'],
 				e = 281249 ^ 281249;
 			e < r;
 			e += 321446 ^ 321454
 		)
-			t[e >> (287797 ^ 287792)] |=
-				((774133 ^ 773898) &
-					n[
-						'\u0063\u0068\u0061\u0072\u0043\u006F\u0064\u0065\u0041\u0074'
-					](e / (510838 ^ 510846))) <<
-				e % (556650 ^ 556618)
+			t[e >> (287797 ^ 287792)] |= ((774133 ^ 773898) & n['\u0063\u0068\u0061\u0072\u0043\u006F\u0064\u0065\u0041\u0074'](e / (510838 ^ 510846))) << e % (556650 ^ 556618)
 		return t
 	}
 	function e(n) {
 		for (
 			var t,
-				r =
-					'\u0030\u0031\u0032\u0033\u0034\u0035\u0036\u0037\u0038\u0039\u0061\u0062\u0063\u0064\u0065\u0066',
+				r = '\u0030\u0031\u0032\u0033\u0034\u0035\u0036\u0037\u0038\u0039\u0061\u0062\u0063\u0064\u0065\u0066',
 				e = '',
 				o = 591987 ^ 591987;
 			o < n['\u006C\u0065\u006E\u0067\u0074\u0068'];
 			o += 704728 ^ 704729
 		)
-			(t =
-				n[
-					'\u0063\u0068\u0061\u0072\u0043\u006F\u0064\u0065\u0041\u0074'
-				](o)),
-				(e +=
-					r['\u0063\u0068\u0061\u0072\u0041\u0074'](
-						(t >>> (156221 ^ 156217)) & (768092 ^ 768083)
-					) +
-					r['\u0063\u0068\u0061\u0072\u0041\u0074'](
-						(489029 ^ 489034) & t
-					))
+			(t = n['\u0063\u0068\u0061\u0072\u0043\u006F\u0064\u0065\u0041\u0074'](o)),
+			(e += r['\u0063\u0068\u0061\u0072\u0041\u0074']((t >>> (156221 ^ 156217)) & (768092 ^ 768083)) + r['\u0063\u0068\u0061\u0072\u0041\u0074']((489029 ^ 489034) & t))
 		return e
 	}
-	function _0xddd4fg(n) {
-		return unescape(encodeURIComponent(n))
-	}
-	function _0x04461d(n) {
-		return _0x77f8c(
-			c(
-				_0x4cbe4f((n = _0xddd4fg(n))),
-				(969332 ^ 969340) * n['\u006C\u0065\u006E\u0067\u0074\u0068']
-			)
-		)
-	}
+	function _0xddd4fg(n) { return unescape(encodeURIComponent(n)) }
+	function _0x04461d(n) { return _0x77f8c(c(_0x4cbe4f((n = _0xddd4fg(n))), (969332 ^ 969340) * n['\u006C\u0065\u006E\u0067\u0074\u0068'])) }
 	function _0xa7cfg(n, t) {
 		return (function (n, t) {
-			var r,
-				e = _0x4cbe4f(n),
-				o = [],
-				u = []
-			for (
-				o[938141 ^ 938130] = u[132587 ^ 132580] =
-					void (698490 ^ 698490),
-					(478722 ^ 478738) <
-						e['\u006C\u0065\u006E\u0067\u0074\u0068'] &&
-						(e = c(
-							e,
-							(448963 ^ 448971) *
-								n['\u006C\u0065\u006E\u0067\u0074\u0068']
-						)),
-					r = 354231 ^ 354231;
-				r < (547489 ^ 547505);
-				r += 113715 ^ 113714
-			)
+			var r, e = _0x4cbe4f(n), o = [], u = []
+			for (o[938141 ^ 938130] = u[132587 ^ 132580] = void (698490 ^ 698490), (478722 ^ 478738) < e['\u006C\u0065\u006E\u0067\u0074\u0068'] && (e = c(e, (448963 ^ 448971) * n['\u006C\u0065\u006E\u0067\u0074\u0068'])), r = 354231 ^ 354231; r < (547489 ^ 547505); r += 113715 ^ 113714)
 				(o[r] = 909522486 ^ e[r]), (u[r] = 1549556828 ^ e[r])
-			return (
-				(t = c(
-					o['\u0063\u006F\u006E\u0063\u0061\u0074'](_0x4cbe4f(t)),
-					(437550 ^ 438062) +
-						(406556 ^ 406548) *
-							t['\u006C\u0065\u006E\u0067\u0074\u0068']
-				)),
-				_0x77f8c(
-					c(
-						u['\u0063\u006F\u006E\u0063\u0061\u0074'](t),
-						784180 ^ 783796
-					)
-				)
-			)
+			return ((t = c(o['\u0063\u006F\u006E\u0063\u0061\u0074'](_0x4cbe4f(t)), (437550 ^ 438062) + (406556 ^ 406548) * t['\u006C\u0065\u006E\u0067\u0074\u0068'])), _0x77f8c(c(u['\u0063\u006F\u006E\u0063\u0061\u0074'](t), 784180 ^ 783796)))
 		})(_0xddd4fg(n), _0xddd4fg(t))
 	}
-	function t(n, t, r) {
-		return t
-			? r
-				? _0xa7cfg(t, n)
-				: e(_0xa7cfg(t, n))
-			: r
-			? _0x04461d(n)
-			: e(_0x04461d(n))
-	}
-	'\u0066\u0075\u006E\u0063\u0074\u0069\u006F\u006E' == typeof define &&
-	define['\u0061\u006D\u0064']
-		? define(function () {
-				return t
-		  })
-		: '\u006F\u0062\u006A\u0065\u0063\u0074' == typeof module &&
-		  module['\u0065\u0078\u0070\u006F\u0072\u0074\u0073']
-		? (module['\u0065\u0078\u0070\u006F\u0072\u0074\u0073'] = t)
-		: (n['\u006D\u0064\u0035'] = t)
+	function t(n, t, r) { return t ? r ? _0xa7cfg(t, n) : e(_0xa7cfg(t, n)) : r ? _0x04461d(n) : e(_0x04461d(n)) }
+	'\u0066\u0075\u006E\u0063\u0074\u0069\u006F\u006E' == typeof define && define['\u0061\u006D\u0064'] ? define(function () { return t }) : '\u006F\u0062\u006A\u0065\u0063\u0074' == typeof module && module['\u0065\u0078\u0070\u006F\u0072\u0074\u0073'] ? (module['\u0065\u0078\u0070\u006F\u0072\u0074\u0073'] = t) : (n['\u006D\u0064\u0035'] = t)
 })(this)
 
 function crc32(id) {
 	const mkPlayer = { version: '1.0.0' };
 	if (!id) return '';
 	const hostname = 'music.gdstudio.xyz';
-	const version = mkPlayer.version || '1.0.0';
-	const versionStr = version.split('.').map(part => part.length === 1 ? '0' + part : part).join('');
-	const timestamp = Date.now();
-	const timeStr = timestamp.toString().slice(0, 9);
-	const signStr = hostname + '|' + versionStr + '|' + timeStr + '|' + id;
-	const md5Hash = md5(signStr);
-	return md5Hash.slice(-8).toUpperCase();
+	const versionStr = (mkPlayer.version || '1.0.0').split('.').map(part => part.length === 1 ? '0' + part : part).join('');
+	const timeStr = Date.now().toString().slice(0, 9);
+	return md5(hostname + '|' + versionStr + '|' + timeStr + '|' + id).slice(-8).toUpperCase();
 }
 
 function urlEncode(str) {
@@ -815,55 +223,77 @@ const apis = {
 
 let isOrgUnlocked = false;
 
+// 健壮的降级与解锁机制
 async function fetchWithFallback(url, options) {
 	let opts = options || {};
 	opts.headers = Object.assign({}, headers, opts.headers || {});
-	let res = await $fetch.get(url, opts);
-	if (typeof res.data === 'string' && res.data.trim().startsWith('<')) throw new Error('Node returned HTML Error');
-	let checkData = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
-	if (checkData && checkData.error) throw new Error(checkData.error);
-	return res;
+	
+	let urlsToTry = [url];
+	if (url.includes('.xyz')) {
+		urlsToTry.push(url.replace(/music-api(-[a-z]+)?\.gdstudio\.xyz/, 'music-api.gdstudio.org'));
+	}
+	
+	let lastError = null;
+	for (let i = 0; i < urlsToTry.length; i++) {
+		let currentUrl = urlsToTry[i];
+		
+		if (currentUrl.includes('.org') && !isOrgUnlocked) {
+			try {
+				await $fetch.get(`https://music-api.gdstudio.org/api.php?types=search&source=tencent&name=GDSTUDIO&count=1&pages=1&s=${crc32('GDSTUDIO')}`, opts);
+				isOrgUnlocked = true;
+			} catch (e) {}
+		}
+		
+		try {
+			let res = await $fetch.get(currentUrl, opts);
+			if (typeof res.data === 'string' && res.data.trim().startsWith('<')) throw new Error('Node HTML Error');
+			
+			let checkData = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
+			if (checkData && checkData.error) throw new Error(checkData.error);
+			
+			return res;
+		} catch (error) {
+			lastError = error;
+		}
+	}
+	throw lastError;
 }
 
+// 仅处理剩下的三大平台节点
 function sourceNode(source) {
-	const mapping = {
-		kuwo: 'lo', tencent: 'lo', migu: 'cn', kugou: 'cn', ximalaya: 'cn',
-		joox: 'hk', qobuz: 'us', ytmusic: 'us', tidal: 'us', spotify: 'us', deezer: 'us', apple: 'lo'
-	};
-	source = source.replace('_album', '');
-	return mapping[source] || 'lo';
+	const mapping = { kuwo: 'lo', joox: 'hk', netease: 'lo' };
+	return mapping[source.replace('_album', '')] || 'lo';
 }
 
+// --------------------------------------------------------
+// UI 配置：加入酷我和JOOX的各类榜单热歌，彻底屏蔽QQ、B站、Apple
+// --------------------------------------------------------
 const appConfig = {
 	ver: 1,
 	name: 'GD音乐',
-	desc: '',
+	desc: '精简提速版',
 	tabLibrary: {
 		name: '探索',
 		groups: [
-			{ name: '网易云热门歌曲', type: 'song', ui: 0, showMore: true, ext: { gid: 'hot', source: 'netease', keyword: '热门歌曲' } },
-			{ name: '网易云新歌推荐', type: 'song', ui: 0, showMore: true, ext: { gid: 'new', source: 'netease', keyword: '新歌' } },
-			{ name: '网易云华语流行', type: 'song', ui: 0, showMore: true, ext: { gid: 'chinese', source: 'netease', keyword: '华语流行' } },
-			{ name: 'QQ音乐排行榜', type: 'playlist', ui: 1, showMore: true, ext: { gid: 'qq_toplist' } },
-			{ name: 'QQ音乐创作者', type: 'artist', ui: 0, showMore: true, ext: { gid: 'artists', source: 'tencent' } },
-			{ name: '音乐综合', type: 'song', ui: 0, showMore: true, ext: { gid: 'bilibili_130', rid: 130 } }
+			{ name: '网易云·热歌榜', type: 'song', ui: 0, showMore: true, ext: { source: 'netease', keyword: '热歌榜' } },
+			{ name: '网易云·新歌榜', type: 'song', ui: 0, showMore: true, ext: { source: 'netease', keyword: '新歌榜' } },
+			{ name: '网易云·华语流行', type: 'song', ui: 0, showMore: true, ext: { source: 'netease', keyword: '华语流行' } },
+			{ name: '酷我·热歌榜', type: 'song', ui: 0, showMore: true, ext: { source: 'kuwo', keyword: '热歌榜' } },
+			{ name: '酷我·新歌榜', type: 'song', ui: 0, showMore: true, ext: { source: 'kuwo', keyword: '新歌榜' } },
+			{ name: '酷我·抖音热歌', type: 'song', ui: 0, showMore: true, ext: { source: 'kuwo', keyword: '抖音热歌' } },
+			{ name: 'JOOX·Top 50', type: 'song', ui: 0, showMore: true, ext: { source: 'joox', keyword: 'Top 50' } },
+			{ name: 'JOOX·最新发行', type: 'song', ui: 0, showMore: true, ext: { source: 'joox', keyword: '最新发行' } }
 		],
 	},
 	tabMe: {
 		name: '我的',
-		groups: [{ name: '红心', type: 'song' }, { name: '歌单', type: 'playlist' }, { name: '创作者', type: 'artist' }]
+		groups: [{ name: '红心', type: 'song' }, { name: '歌单', type: 'playlist' }]
 	},
 	tabSearch: {
 		name: '搜索',
-		groups: [
-			{ name: 'QQ', type: 'song', ext: { type: 'song' } },
-			{ name: 'b站', type: 'song', ext: { type: 'song', source: 'bilibili' } },
-			{ name: 'Apple Music', type: 'song', ext: { type: 'song', source: 'apple' } }
-		].concat(ALL_SOURCES.filter(source => 
-			source.id !== 'tencent' && source.id !== 'bilibili' && source.id !== 'apple'
-		).map(source => ({
+		groups: ALL_SOURCES.map(source => ({
 			name: source.name, type: 'song', ext: { type: 'song', source: source.id },
-		})))
+		}))
 	}
 }
 
@@ -872,9 +302,8 @@ async function getConfig() { return jsonify(appConfig) }
 async function getCoverUrl(pic_id, source = 'netease') {
 	if (!pic_id) return 'https://music.gdstudio.xyz/favicon.ico';
 	try {
-		const signature = crc32(urlEncode(pic_id));
 		const node = sourceNode(source);
-		const coverApiUrl = `${apis[node]}?types=pic&source=${source}&id=${pic_id}&size=300&s=${signature}`;
+		const coverApiUrl = `${apis[node]}?types=pic&source=${source}&id=${pic_id}&size=300&s=${crc32(urlEncode(pic_id))}`;
 		const { data } = await fetchWithFallback(coverApiUrl, { headers });
 		let result = typeof data === 'string' ? JSON.parse(data) : data;
 		if (result && result.url) return result.url;
@@ -882,217 +311,154 @@ async function getCoverUrl(pic_id, source = 'netease') {
 	return 'https://music.gdstudio.xyz/favicon.ico';
 }
 
-async function getArtists(ext) { return jsonify({ list: [] }); }
-
+// 统一泛用搜索解析引擎，彻底删除了针对特定平台的硬编码分支
 async function searchSource(text, source, page = 1, count = 20) {
-	let songs = []
-	if (source === 'tencent') {
-		try {
-			const searchUrl = `http://c.y.qq.com/soso/fcgi-bin/client_search_cp?new_json=1&t=0&aggr=1&cr=1&catZhida=1&lossless=0&flag_qc=0&p=${page}&n=${count}&w=${encodeURIComponent(text)}&needNewCode=0`
-			const { data } = await $fetch.get(searchUrl, { headers })
-			let result = typeof data === 'string' ? JSON.parse(data.slice(9, -1)) : data;
-			if (result?.data?.song?.list) {
-				result.data.song.list.forEach((each, i) => {
-					if (i < count) {
-						songs.push({
-							id: `${each.mid}`,
-							name: each.name,
-							cover: `https://y.gtimg.cn/music/photo_new/T002R800x800M000${each.album.mid}.jpg`,
-							duration: each.interval || 0,
-							artist: { id: `${each.singer[0]?.id}`, name: each.singer[0]?.name || '未知歌手', cover: '' },
-							ext: { qid: each.mid, source: 'tencent' }
-						})
-					}
-				})
-			}
-		} catch (error) {}
-	} else if (source === 'bilibili') {
-		// B站搜索逻辑省略，按原先不变
-	} else {
-		try {
-			const signature = crc32(text);
-			const node = sourceNode(source);
-			let searchResults = [];
-			let rawData = null;
+	let songs = [];
+	try {
+		const signature = crc32(text);
+		const node = sourceNode(source);
+		let searchResults = [];
+		let rawData = null;
 
+		// 策略 1: 尝试带签名
+		try {
+			let res1 = await fetchWithFallback(`${apis[node]}?types=search&source=${source}&name=${encodeURIComponent(text)}&count=${count}&pages=${page}&s=${signature}`, { headers });
+			rawData = typeof res1.data === 'string' ? JSON.parse(res1.data) : res1.data;
+		} catch(e) {}
+
+		// 策略 2: 尝试无签名
+		if (!rawData || (Array.isArray(rawData) && rawData.length === 0) || rawData.error) {
 			try {
-				const url1 = `${apis[node]}?types=search&source=${source}&name=${encodeURIComponent(text)}&count=${count}&pages=${page}&s=${signature}`;
-				let res1 = await fetchWithFallback(url1, { headers });
-				rawData = typeof res1.data === 'string' ? JSON.parse(res1.data) : res1.data;
+				let res2 = await fetchWithFallback(`${apis[node]}?types=search&source=${source}&name=${encodeURIComponent(text)}&count=${count}&pages=${page}`, { headers });
+				rawData = typeof res2.data === 'string' ? JSON.parse(res2.data) : res2.data;
 			} catch(e) {}
+		}
 
-			if (!rawData || (Array.isArray(rawData) && rawData.length === 0) || rawData.error) {
-				try {
-					const url2 = `${apis[node]}?types=search&source=${source}&name=${encodeURIComponent(text)}&count=${count}&pages=${page}`;
-					let res2 = await fetchWithFallback(url2, { headers });
-					rawData = typeof res2.data === 'string' ? JSON.parse(res2.data) : res2.data;
-				} catch(e) {}
+		// 万能数组扫描
+		if (Array.isArray(rawData)) searchResults = rawData;
+		else if (rawData && typeof rawData === 'object') {
+			if (Array.isArray(rawData.data)) searchResults = rawData.data;
+			else if (Array.isArray(rawData.list)) searchResults = rawData.list;
+			else if (Array.isArray(rawData.result)) searchResults = rawData.result;
+			else {
+				for (let key in rawData) {
+					if (Array.isArray(rawData[key])) { searchResults = rawData[key]; break; }
+				}
 			}
-
-			if (!rawData || (Array.isArray(rawData) && rawData.length === 0) || rawData.error) {
-				try {
-					if (!isOrgUnlocked) {
-						await $fetch.get(`https://music-api.gdstudio.org/api.php?types=search&source=tencent&name=GDSTUDIO&count=1&pages=1&s=${crc32('GDSTUDIO')}`, { headers });
-						isOrgUnlocked = true;
-					}
-					const url3 = `https://music-api.gdstudio.org/api.php?types=search&source=${source}&name=${encodeURIComponent(text)}&count=${count}&pages=${page}`;
-					let res3 = await fetchWithFallback(url3, { headers });
-					rawData = typeof res3.data === 'string' ? JSON.parse(res3.data) : res3.data;
-				} catch(e) {}
-			}
-
-			if (Array.isArray(rawData)) searchResults = rawData;
-			else if (rawData && typeof rawData === 'object') {
-				if (Array.isArray(rawData.data)) searchResults = rawData.data;
-				else if (Array.isArray(rawData.list)) searchResults = rawData.list;
-				else if (Array.isArray(rawData.result)) searchResults = rawData.result;
-				else {
-					for (let key in rawData) {
-						if (Array.isArray(rawData[key])) { searchResults = rawData[key]; break; }
-					}
+		}
+		
+		searchResults = searchResults.slice(0, count);
+		
+		for (let i = 0; i < searchResults.length; i++) {
+			const item = searchResults[i];
+			let songId = item.id || item.songid || item.song_id || item.track_id || i;
+			let songName = item.name || item.title || item.songname || '未知歌曲';
+			
+			let artistName = '未知歌手';
+			let artistId = 'unknown';
+			let artistData = item.artist || item.singer || item.author || item.singername;
+			if (artistData) {
+				if (Array.isArray(artistData)) {
+					artistName = artistData.map(a => a.name || a).join(' / ');
+					artistId = artistData[0]?.id || artistData[0] || 'unknown';
+				} else if (typeof artistData === 'object') {
+					artistName = artistData.name || '未知歌手';
+					artistId = artistData.id || 'unknown';
+				} else {
+					artistName = artistData;
+					artistId = artistData;
 				}
 			}
 			
-			searchResults = searchResults.slice(0, count);
+			let picId = item.pic_id || item.cover || item.pic || item.album_pic || '';
+			let finalCover = 'https://music.gdstudio.xyz/favicon.ico';
 			
-			for (let i = 0; i < searchResults.length; i++) {
-				const item = searchResults[i];
-				let songId = item.id || item.songid || item.song_id || item.track_id || i;
-				let songName = item.name || item.title || item.songname || '未知歌曲';
-				let artistName = '未知歌手';
-				let artistId = 'unknown';
-				
-				let artistData = item.artist || item.singer || item.author || item.singername;
-				if (artistData) {
-					if (Array.isArray(artistData)) {
-						artistName = artistData.map(a => a.name || a).join(' / ');
-						artistId = artistData[0]?.id || artistData[0] || 'unknown';
-					} else if (typeof artistData === 'object') {
-						artistName = artistData.name || '未知歌手';
-						artistId = artistData.id || 'unknown';
-					} else {
-						artistName = artistData;
-						artistId = artistData;
-					}
-				}
-				
-				let picId = item.pic_id || item.cover || item.pic || item.album_pic || '';
-				let finalCover = 'https://music.gdstudio.xyz/favicon.ico';
-				
-				if (picId.startsWith('http')) finalCover = picId;
-				else if (picId) finalCover = await getCoverUrl(picId, item.source || source);
-				
-				songs.push({
-					id: `${item.source || source}_${songId}`,
-					name: songName,
-					cover: finalCover,
-					duration: item.duration || 0,
-					artist: { id: artistId, name: artistName },
-					ext: { track_id: String(songId), source: item.source || source, pic_id: picId }
-				})
-			}
-		} catch (error) {}
-	}
-	return songs
+			if (picId.startsWith('http')) finalCover = picId;
+			else if (picId) finalCover = await getCoverUrl(picId, item.source || source);
+			
+			songs.push({
+				id: `${item.source || source}_${songId}`,
+				name: songName,
+				cover: finalCover,
+				duration: item.duration || 0,
+				artist: { id: artistId, name: artistName },
+				ext: { track_id: String(songId), source: item.source || source, pic_id: picId }
+			})
+		}
+	} catch (error) {}
+	
+	return songs;
 }
 
 async function getSongs(ext) {
-	const { page = 1, gid, text, keyword, source = 'netease', count = 20, artist_name, rid, id, period } = argsify(ext)
+	const { page = 1, text, keyword, source = 'netease', count = 20, artist_name } = argsify(ext)
 	let searchText = text || keyword || '热门歌曲'
-	if (gid === 'artist_songs' && artist_name) searchText = artist_name
+	if (ext.gid === 'artist_songs' && artist_name) searchText = artist_name
 	let songs = await searchSource(searchText, source, page, count)
 	return jsonify({ list: songs })
 }
 
-async function getPlaylists(ext) { return jsonify({ list: [] }) }
-async function getAlbums(ext) { return jsonify({ list: [] }) }
 async function search(ext) {
 	const { text, page = 1, type, source } = argsify(ext)
-	if (type === 'song') return jsonify({ list: await searchSource(text, source || 'tencent', page, 20) })
+	if (type === 'song') return jsonify({ list: await searchSource(text, source || 'netease', page, 20) })
 	return jsonify({ list: [] })
 }
 
 async function getSongInfo(ext) {
-	const { track_id, source = 'netease', pic_id, qid, aid, cid, bvid } = argsify(ext)
-	const qqMusicId = qid || track_id
+	const { track_id, source = 'netease', pic_id } = argsify(ext)
+	if (!track_id) return jsonify({ urls: [] })
 	
-	if (source === 'tencent' && qqMusicId) {
-		try {
-			const apiUrl = `https://lxmusicapi.onrender.com/url/tx/${qqMusicId}/320k`
-			const { data } = await $fetch.get(apiUrl, { headers: { 'X-Request-Key': 'share-v2', 'User-Agent': UA } })
-			let result = typeof data === 'string' ? JSON.parse(data) : data;
-			return jsonify({ urls: result?.url ? [result.url] : [], headers: [{ 'User-Agent': UA, 'Referer': 'https://y.qq.com/' }], cover: pic_id ? await getCoverUrl(pic_id, source) : '' })
-		} catch (error) {}
-	} else if (source === 'bilibili') {
-		return jsonify({ urls: [] })
-	} else {
-		if (!track_id) return jsonify({ urls: [] })
+	try {
+		const node = sourceNode(source);
+		const apiUrl = `${apis[node]}?types=url&source=${source}&id=${track_id}&br=999&s=${crc32(urlEncode(track_id))}`
 		
+		let playUrl = '';
 		try {
-			const signature = crc32(urlEncode(track_id));
-			const node = sourceNode(source);
-			const apiUrl = `${apis[node]}?types=url&source=${source}&id=${track_id}&br=999&s=${signature}`
-			
-			let playUrl = '';
-			try {
-				const { data } = await fetchWithFallback(apiUrl, { headers }) 
-				let result = typeof data === 'string' ? JSON.parse(data) : data;
-				if (result && result.url) playUrl = result.url;
-			} catch(e) {}
-			
-			// API 降级检测
-			if (!playUrl && (source === 'kuwo' || source === 'apple')) {
-				const brList = source === 'apple' ? [256, 320, 192, 128] : [320, 128];
-				for (let br of brList) {
-					try {
-						const fallbackUrl = `${apis[node]}?types=url&source=${source}&id=${track_id}&br=${br}`;
-						const res = await fetchWithFallback(fallbackUrl, { headers });
-						let tempResult = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
-						if (tempResult && tempResult.url) { playUrl = tempResult.url; break; }
-					} catch(e) {}
-				}
-			}
-			
-			let urlsArray = [];
-			if (playUrl) urlsArray.push(playUrl);
-			
-			// ==============================================================
-			// 【终极绝杀点】：Apple 平台官方缓存目录无视 API 强行拼接！
-			// 既然官方页面用的是 /cache/ID.256.m4a，我们直接在这里生成这条直链！
-			// ==============================================================
-			if (source === 'apple') {
-				urlsArray.push(`https://music.gdstudio.org/cache/${track_id}.256.m4a`);
-				urlsArray.push(`https://music.gdstudio.xyz/cache/${track_id}.256.m4a`);
-				urlsArray.push(`https://music-api.gdstudio.org/cache/${track_id}.256.m4a`);
-			}
-			
-			// injahow 备用库保底
-			if (urlsArray.length === 0) {
+			const { data } = await fetchWithFallback(apiUrl, { headers }) 
+			let result = typeof data === 'string' ? JSON.parse(data) : data;
+			if (result && result.url) playUrl = result.url;
+		} catch(e) {}
+		
+		// 酷我降级探测
+		if (!playUrl && source === 'kuwo') {
+			for (let br of [320, 128]) {
 				try {
-					const { data: fallbackData } = await $fetch.get(`https://api.injahow.cn/meting/?type=url&id=${track_id}&source=${source}`, { headers: { 'User-Agent': UA } })
-					let finalData = typeof fallbackData === 'string' ? JSON.parse(fallbackData) : fallbackData;
-					if (finalData && finalData.url) urlsArray.push(finalData.url)
+					const res = await fetchWithFallback(`${apis[node]}?types=url&source=${source}&id=${track_id}&br=${br}`, { headers });
+					let tempResult = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
+					if (tempResult && tempResult.url) { playUrl = tempResult.url; break; }
 				} catch(e) {}
 			}
-			
-			// 请求头伪装
-			let reqHeaders = { 'User-Agent': UA };
-			if (source === 'netease') reqHeaders['Referer'] = 'https://music.163.com/';
-			else if (source === 'kuwo') reqHeaders['Referer'] = 'http://www.kuwo.cn/';
-			else if (source === 'tencent') reqHeaders['Referer'] = 'https://y.qq.com/';
-			else reqHeaders['Referer'] = 'https://music.gdstudio.xyz/';
-
-			return jsonify({
-				urls: urlsArray, // 直接输出包含我们暴力拼凑的 m4a 列表
-				headers: [reqHeaders],
-				cover: pic_id ? await getCoverUrl(pic_id, source) : 'https://music.gdstudio.xyz/favicon.ico'
-			})
-			
-		} catch (error) {
-			return jsonify({ urls: [] })
 		}
+		
+		// Injahow 备用接口
+		if (!playUrl) {
+			try {
+				const { data: fbData } = await $fetch.get(`https://api.injahow.cn/meting/?type=url&id=${track_id}&source=${source}`, { headers: { 'User-Agent': UA } })
+				let finalData = typeof fbData === 'string' ? JSON.parse(fbData) : fbData;
+				if (finalData && finalData.url) playUrl = finalData.url
+			} catch(e) {}
+		}
+		
+		// 平台防盗链动态伪造
+		let reqHeaders = { 'User-Agent': UA };
+		if (source === 'netease') reqHeaders['Referer'] = 'https://music.163.com/';
+		else if (source === 'kuwo') reqHeaders['Referer'] = 'http://www.kuwo.cn/';
+		else reqHeaders['Referer'] = 'https://music.gdstudio.xyz/';
+
+		return jsonify({
+			urls: playUrl ? [playUrl] : [],
+			headers: [reqHeaders],
+			cover: pic_id ? await getCoverUrl(pic_id, source) : 'https://music.gdstudio.xyz/favicon.ico'
+		})
+		
+	} catch (error) {
+		return jsonify({ urls: [] })
 	}
 }
 
+// 占位废弃接口（软件需要该函数存在但不再返回数据）
+async function getPlaylists(ext) { return jsonify({ list: [] }) }
 async function getPlaylistInfo(ext) { return jsonify({}) }
+async function getAlbums(ext) { return jsonify({ list: [] }) }
 async function getAlbumInfo(ext) { return jsonify({ list: [] }) }
+async function getArtists(ext) { return jsonify({ list: [] }) }
