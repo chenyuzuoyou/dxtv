@@ -1,9 +1,9 @@
 /*!
- * @name GADMusic
- * @description 聚合音乐 (完美布局提速版)
- * @version v2.4
+ * @name GDMusic
+ * @description 聚合音乐 (全平台并发直连版)
+ * @version v2.5
  * @author kobe (Modified)
- * @key csp_GAD_music
+ * @key csp_GD_music
  */
 
 const $config = argsify($config_str)
@@ -261,24 +261,21 @@ function sourceNode(source) {
 	return mapping[source.replace('_album', '')] || 'lo';
 }
 
-// --------------------------------------------------------
-// 【优化点 3：消除导致 2 列大间隙的 ui 参数，注入紧凑样式】
-// --------------------------------------------------------
 const appConfig = {
 	ver: 1,
 	name: 'GD音乐',
-	desc: '完美布局提速版',
+	desc: '全平台极速完整版',
 	tabLibrary: {
 		name: '探索',
 		groups: [
-			{ name: '网易云·热门歌曲', type: 'song', showMore: true, style: { layout: 'list' }, ext: { source: 'netease', keyword: '热门歌曲' } },
-			{ name: '网易云·新歌推荐', type: 'song', showMore: true, style: { layout: 'list' }, ext: { source: 'netease', keyword: '新歌' } },
-			{ name: '网易云·华语流行', type: 'song', showMore: true, style: { layout: 'list' }, ext: { source: 'netease', keyword: '华语流行' } },
-			{ name: '酷我·热歌榜', type: 'song', showMore: true, style: { layout: 'list' }, ext: { source: 'kuwo', keyword: '热歌榜' } },
-			{ name: '酷我·新歌榜', type: 'song', showMore: true, style: { layout: 'list' }, ext: { source: 'kuwo', keyword: '新歌榜' } },
-			{ name: '酷我·抖音热歌', type: 'song', showMore: true, style: { layout: 'list' }, ext: { source: 'kuwo', keyword: '抖音热歌' } },
-			{ name: 'JOOX·Top 50', type: 'song', showMore: true, style: { layout: 'list' }, ext: { source: 'joox', keyword: 'Top 50' } },
-			{ name: 'JOOX·最新发行', type: 'song', showMore: true, style: { layout: 'list' }, ext: { source: 'joox', keyword: '最新发行' } }
+			{ name: '网易云·热门歌曲', type: 'song', showMore: true, style: { layout: 'list' }, ext: { gid: 'ne_hot', source: 'netease', keyword: '热门歌曲' } },
+			{ name: '网易云·新歌推荐', type: 'song', showMore: true, style: { layout: 'list' }, ext: { gid: 'ne_new', source: 'netease', keyword: '新歌' } },
+			{ name: '网易云·华语流行', type: 'song', showMore: true, style: { layout: 'list' }, ext: { gid: 'ne_cn', source: 'netease', keyword: '华语流行' } },
+			{ name: '酷我·热歌榜', type: 'song', showMore: true, style: { layout: 'list' }, ext: { gid: 'kw_hot', source: 'kuwo', keyword: '热歌榜' } },
+			{ name: '酷我·新歌榜', type: 'song', showMore: true, style: { layout: 'list' }, ext: { gid: 'kw_new', source: 'kuwo', keyword: '新歌榜' } },
+			{ name: '酷我·抖音热歌', type: 'song', showMore: true, style: { layout: 'list' }, ext: { gid: 'kw_dy', source: 'kuwo', keyword: '抖音热歌' } },
+			{ name: 'JOOX·Top 50', type: 'song', showMore: true, style: { layout: 'list' }, ext: { gid: 'jx_top', source: 'joox', keyword: 'Top 50' } },
+			{ name: 'JOOX·最新发行', type: 'song', showMore: true, style: { layout: 'list' }, ext: { gid: 'jx_new', source: 'joox', keyword: '最新发行' } }
 		],
 	},
 	tabMe: {
@@ -302,7 +299,7 @@ async function getCoverUrl(pic_id, source = 'netease') {
 		const coverApiUrl = `${apis[node]}?types=pic&source=${source}&id=${pic_id}&size=300&s=${crc32(urlEncode(pic_id))}`;
 		const { data } = await fetchWithFallback(coverApiUrl, { headers });
 		let result = typeof data === 'string' ? JSON.parse(data) : data;
-		if (result && result.url) return result.url;
+		if (result && result.url) return result.url.replace(/^http:/, 'https:');
 	} catch (error) {}
 	return 'https://music.gdstudio.xyz/favicon.ico';
 }
@@ -341,7 +338,7 @@ async function searchSource(text, source, page = 1, count = 20) {
 		
 		searchResults = searchResults.slice(0, count);
 
-		// 网易云：官方底层合批接口 (保护额度)
+		// 【1. 网易云：官方底层合批获取】
 		let neteaseCoverMap = {};
 		let neteaseIds = [];
 		searchResults.forEach(item => {
@@ -357,18 +354,63 @@ async function searchSource(text, source, page = 1, count = 20) {
 				let neJson = typeof neData === 'string' ? JSON.parse(neData) : neData;
 				if (neJson && neJson.songs) {
 					neJson.songs.forEach(s => {
-						if (s.al && s.al.picUrl) neteaseCoverMap[s.id] = s.al.picUrl;
-						else if (s.album && s.album.picUrl) neteaseCoverMap[s.id] = s.album.picUrl;
+						if (s.al && s.al.picUrl) neteaseCoverMap[s.id] = s.al.picUrl.replace(/^http:/, 'https:');
+						else if (s.album && s.album.picUrl) neteaseCoverMap[s.id] = s.album.picUrl.replace(/^http:/, 'https:');
 					});
 				}
 			} catch(e) {}
 		}
 
-		// 组装并处理最终结果 (串行降压处理，保护 API 限流)
+		// 【2. 酷我/JOOX：官方底层接口 + 全面多线程并发获取】
+		const coverPromises = searchResults.map(async (item, index) => {
+			let s = item.source || source;
+			let songId = item.id || item.songid || item.song_id || item.track_id || index;
+			
+			if (s === 'netease' && neteaseCoverMap[songId]) return { index, url: neteaseCoverMap[songId] };
+
+			let picId = item.pic_id || item.cover || item.pic || item.album_pic || '';
+			if (picId && picId.toString().startsWith('http')) return { index, url: picId.toString().replace(/^http:/, 'https:') };
+
+			// 酷我官方原生 API
+			if (s === 'kuwo') {
+				try {
+					let { data } = await $fetch.get(`http://m.kuwo.cn/newh5/app/api/song/info?m=songinfo&v=2.0.0&t=web&songid=${songId}`, { headers: { 'User-Agent': UA, 'Referer': 'http://m.kuwo.cn/' } });
+					let res = typeof data === 'string' ? JSON.parse(data) : data;
+					// 强制转为 HTTPS 协议，防止 APP 底层拦截明文 HTTP 请求导致图片白屏
+					if (res && res.data && res.data.pic) return { index, url: res.data.pic.replace(/^http:/, 'https:') };
+				} catch(e) {}
+			}
+			
+			// JOOX 官方原生 API
+			if (s === 'joox') {
+				try {
+					let { data } = await $fetch.get(`https://api.joox.com/web-fcgi-bin/web_get_songinfo?songid=${songId}&lang=zh_cn&country=hk`, { headers: { 'User-Agent': UA } });
+					let res = typeof data === 'string' ? JSON.parse(data) : data;
+					if (res && res.imgSrc) return { index, url: res.imgSrc.replace(/^http:/, 'https:') };
+				} catch(e) {}
+			}
+
+			// 终极兜底（基本不会走到这一步，保护了 GD API）
+			if (picId) {
+				let fetchedUrl = await getCoverUrl(picId, s);
+				return { index, url: fetchedUrl.replace(/^http:/, 'https:') };
+			}
+			return { index, url: 'https://music.gdstudio.xyz/favicon.ico' };
+		});
+
+		// 极其关键：全并发执行！20个封面在 1 秒内同时获取完毕！
+		const coverResults = await Promise.allSettled(coverPromises);
+		const coverMap = {};
+		coverResults.forEach(res => {
+			if (res.status === 'fulfilled') {
+				coverMap[res.value.index] = res.value.url;
+			}
+		});
+		
+		// 组装最终歌单
 		for (let i = 0; i < searchResults.length; i++) {
 			const item = searchResults[i];
 			let songId = item.id || item.songid || item.song_id || item.track_id || i;
-			let s = item.source || source;
 			let songName = item.name || item.title || item.songname || '未知歌曲';
 			
 			let artistName = '未知歌手';
@@ -387,31 +429,13 @@ async function searchSource(text, source, page = 1, count = 20) {
 				}
 			}
 			
-			let picId = item.pic_id || item.cover || item.pic || item.album_pic || '';
-			let finalCover = 'https://music.gdstudio.xyz/favicon.ico';
-			
-			// ==============================================================
-			// 【优化点 1 & 2：封面解析完全剥离 GD API 依赖】
-			// ==============================================================
-			if (picId && picId.toString().startsWith('http')) {
-				finalCover = picId;
-			} else if (s === 'netease' && neteaseCoverMap[songId]) {
-				finalCover = neteaseCoverMap[songId];
-			} else if (s === 'kuwo') {
-				// Meting 接口，自带 302 跳转给客户端的图片加载器，完全零耗时！
-				finalCover = `https://api.injahow.cn/meting/?type=pic&id=${songId}&source=kuwo`;
-			} else if (s === 'joox' && picId) {
-				// 为了防止封禁，JOOX采用串行请求。虽然慢半秒，但是保证百分百出图且不封号！
-				finalCover = await getCoverUrl(picId, 'joox');
-			}
-			
 			songs.push({
 				id: `${item.source || source}_${songId}`,
 				name: songName,
-				cover: finalCover,
+				cover: coverMap[i] || 'https://music.gdstudio.xyz/favicon.ico',
 				artist: { id: artistId, name: artistName },
-				// 【优化点 3】：去除 duration 参数、添加 style，竭尽所能抹除三角形，紧凑列表！
-				style: { type: 'list', rightIcon: '', layout: 'list' }, 
+				// 强制紧凑型列表，去除 duration，消除右侧空出的大三角形
+				style: { type: 'list', rightIcon: '', layout: 'list' },
 				ext: { track_id: String(songId), source: item.source || source, pic_id: item.pic_id || '' }
 			})
 		}
