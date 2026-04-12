@@ -1,7 +1,7 @@
 /*!
  * @name GADMusic
  * @description 聚合音乐
- * @version v1.5
+ * @version v1.6
  * @author kobe (Modified)
  * @key csp_GAD_music
  */
@@ -11,9 +11,13 @@ const cheerio = createCheerio()
 const CryptoJS = createCryptoJS()
 
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
+// 【修复点 1】：全面增强头部伪装，模拟最真实的网页端 AJAX 请求，穿透 Apple 等严格源的 WAF 防火墙
 const headers = {
 	'User-Agent': UA,
-	'Referer': 'https://music.gdstudio.xyz/' // 全局追加官方伪装 Referer，解决 Apple 等接口搜索被 WAF 拦截的问题
+	'Referer': 'https://music.gdstudio.xyz/',
+	'Origin': 'https://music.gdstudio.xyz',
+	'X-Requested-With': 'XMLHttpRequest',
+	'Accept': 'application/json, text/javascript, */*; q=0.01'
 }
 
 const ALL_SOURCES = [
@@ -821,13 +825,20 @@ const apis = {
 }
 
 // -------------------------------------------------------------
-// 【V1.5：修复网易解析与 Apple 伪装版】
+// 【修复点 2：三级故障路由机制】
 // -------------------------------------------------------------
 let isOrgUnlocked = false;
 
 async function fetchWithFallback(url, options) {
 	let urlsToTry = [url];
+	
 	if (url.includes('.xyz')) {
+		// 如果当前节点是专用的子节点（比如 -us），先把主节点加入候补池
+		let mainNodeUrl = url.replace(/music-api(-[a-z]+)?\.gdstudio\.xyz/, 'music-api.gdstudio.xyz');
+		if (mainNodeUrl !== url) {
+			urlsToTry.push(mainNodeUrl);
+		}
+		// 最终把 .org 备用节点加入池底
 		urlsToTry.push(url.replace(/music-api(-[a-z]+)?\.gdstudio\.xyz/, 'music-api.gdstudio.org'));
 	}
 	
@@ -835,7 +846,6 @@ async function fetchWithFallback(url, options) {
 	for (let i = 0; i < urlsToTry.length; i++) {
 		let currentUrl = urlsToTry[i];
 		
-		// 自动解锁 .org 节点
 		if (currentUrl.includes('.org') && !isOrgUnlocked) {
 			try {
 				const unlockSig = crc32('GDSTUDIO');
@@ -846,18 +856,22 @@ async function fetchWithFallback(url, options) {
 		}
 		
 		try {
-			// 确保证全局 headers 中含有防盗链与伪装属性
 			let opts = options || {};
 			opts.headers = Object.assign({}, headers, opts.headers || {});
 			
 			let res = await $fetch.get(currentUrl, opts);
 			
-			// 防御性校验，只拦截明显非 JSON 格式的恶意网关错误。不对 res 对象做重新赋值，保护只读环境
 			if (typeof res.data === 'string' && res.data.trim().startsWith('<')) {
 				throw new Error('Node returned HTML Error');
 			}
 			
-			return res; // 原封不动将 res 吐出，交由 searchSource 本地解析
+			// 如果 API 明文返回了包含 error 的 JSON 也算失败，触发下一级 URL
+			let checkData = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
+			if (checkData && checkData.error) {
+				throw new Error(checkData.error);
+			}
+			
+			return res;
 		} catch (error) {
 			lastError = error;
 		}
@@ -879,7 +893,8 @@ function sourceNode(source) {
 		tidal: 'us',
 		spotify: 'us',
 		deezer: 'us',
-		apple: 'lo' // 重新对齐主节点，因为有了上面的全局 Referer，主节点即可正常使用
+		// 将 Apple 先对齐到 us，如果不通，上面的 fallback 会自动转到 lo 和 org
+		apple: 'us' 
 	};
 	
 	source = source.replace('_album', '');
@@ -1364,7 +1379,6 @@ async function searchSource(text, source, page = 1, count = 20) {
 			
 			const { data } = await fetchWithFallback(searchUrl, { headers }) 
 			
-			// 【修复】把 JSON Parsing 放回作用域内执行，不污染顶层数据流
 			let result;
 			if (typeof data === 'string') {
 				try {
@@ -1376,13 +1390,31 @@ async function searchSource(text, source, page = 1, count = 20) {
 				result = data
 			}
 			
-			let searchResults = []
+			let searchResults = [];
 			
+			// 【修复点 3：模糊数组提取（Deep Extraction）】
+			// Apple API 如果返回的数据没有包在 .data 里，而是在别的地方，这招能硬扒出来
 			if (Array.isArray(result)) {
-				searchResults = result.slice(0, count)
-			} else if (result && result.data && Array.isArray(result.data)) {
-				searchResults = result.data.slice(0, count)
+				searchResults = result;
+			} else if (result && typeof result === 'object') {
+				if (Array.isArray(result.data)) {
+					searchResults = result.data;
+				} else if (Array.isArray(result.list)) {
+					searchResults = result.list;
+				} else if (Array.isArray(result.result)) {
+					searchResults = result.result;
+				} else {
+					// 暴力扫描对象内的数组
+					for (let key in result) {
+						if (Array.isArray(result[key])) {
+							searchResults = result[key];
+							break;
+						}
+					}
+				}
 			}
+			
+			searchResults = searchResults.slice(0, count);
 			
 			const coverPromises = searchResults.map(async (item, index) => {
 				try {
