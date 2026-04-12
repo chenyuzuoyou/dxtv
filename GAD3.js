@@ -1,7 +1,7 @@
 /*!
  * @name GADMusic
  * @description 聚合音乐
- * @version v1.4
+ * @version v1.5
  * @author kobe (Modified)
  * @key csp_GAD_music
  */
@@ -13,6 +13,7 @@ const CryptoJS = createCryptoJS()
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
 const headers = {
 	'User-Agent': UA,
+	'Referer': 'https://music.gdstudio.xyz/' // 全局追加官方伪装 Referer，解决 Apple 等接口搜索被 WAF 拦截的问题
 }
 
 const ALL_SOURCES = [
@@ -820,13 +821,12 @@ const apis = {
 }
 
 // -------------------------------------------------------------
-// 【核心修改部分：强化版故障拦截与重路由机制】
+// 【V1.5：修复网易解析与 Apple 伪装版】
 // -------------------------------------------------------------
 let isOrgUnlocked = false;
 
 async function fetchWithFallback(url, options) {
 	let urlsToTry = [url];
-	// 自动生成备用节点 URL (将所有后缀如 -us 的域名强行兜底到官方的 .org 统一入口)
 	if (url.includes('.xyz')) {
 		urlsToTry.push(url.replace(/music-api(-[a-z]+)?\.gdstudio\.xyz/, 'music-api.gdstudio.org'));
 	}
@@ -835,45 +835,33 @@ async function fetchWithFallback(url, options) {
 	for (let i = 0; i < urlsToTry.length; i++) {
 		let currentUrl = urlsToTry[i];
 		
-		// 备用节点前置解锁机制（如果域名带有 .org 且还没解锁，强制搜一次 QQ 触发后台授权）
+		// 自动解锁 .org 节点
 		if (currentUrl.includes('.org') && !isOrgUnlocked) {
 			try {
 				const unlockSig = crc32('GDSTUDIO');
 				const unlockUrl = `https://music-api.gdstudio.org/api.php?types=search&source=tencent&name=GDSTUDIO&count=1&pages=1&s=${unlockSig}`;
 				await $fetch.get(unlockUrl, options);
 				isOrgUnlocked = true;
-			} catch (e) {
-				// 忽略解锁错误，继续重试
-			}
+			} catch (e) {}
 		}
 		
 		try {
-			let res = await $fetch.get(currentUrl, options);
-			let parsed;
+			// 确保证全局 headers 中含有防盗链与伪装属性
+			let opts = options || {};
+			opts.headers = Object.assign({}, headers, opts.headers || {});
 			
-			// 拦截非 JSON 数据 (如被 WAF 拦截、Cloudflare 502 等 HTML 网关报错)
-			if (typeof res.data === 'string') {
-				if (res.data.trim().startsWith('<')) {
-					throw new Error('Node returned HTML error page instead of JSON');
-				}
-				parsed = JSON.parse(res.data);
-			} else {
-				parsed = res.data;
+			let res = await $fetch.get(currentUrl, opts);
+			
+			// 防御性校验，只拦截明显非 JSON 格式的恶意网关错误。不对 res 对象做重新赋值，保护只读环境
+			if (typeof res.data === 'string' && res.data.trim().startsWith('<')) {
+				throw new Error('Node returned HTML Error');
 			}
 			
-			// 如果 API 明文返回了 error 字段也将其视作失败，从而触发下一次循环寻找备用节点
-			if (parsed && parsed.error) {
-				throw new Error(parsed.error);
-			}
-			
-			// 标准化数据输出，防止外部再手动 JSON.parse
-			res.data = parsed;
-			return res;
+			return res; // 原封不动将 res 吐出，交由 searchSource 本地解析
 		} catch (error) {
 			lastError = error;
 		}
 	}
-	// 所有的节点都试完了还是失败，抛出最后的报错
 	throw lastError;
 }
 // -------------------------------------------------------------
@@ -891,7 +879,7 @@ function sourceNode(source) {
 		tidal: 'us',
 		spotify: 'us',
 		deezer: 'us',
-		apple: 'us' // <--- 【修复】：必须用 us 节点（或者 hk），恢复原样，否则国内节点墙外 API 无权限搜不出来
+		apple: 'lo' // 重新对齐主节点，因为有了上面的全局 Referer，主节点即可正常使用
 	};
 	
 	source = source.replace('_album', '');
@@ -1089,7 +1077,17 @@ async function getCoverUrl(pic_id, source = 'netease') {
 		const coverApiUrl = `${apis[node]}?types=pic&source=${source}&id=${pic_id}&size=300&s=${signature}`
 		
 		const { data } = await fetchWithFallback(coverApiUrl, { headers }) 
-		let result = data; // fetchWithFallback 已经内化了 JSON.parse
+		
+		let result
+		if (typeof data === 'string') {
+			try {
+				result = JSON.parse(data)
+			} catch(e) {
+				return 'https://music.gdstudio.xyz/favicon.ico'
+			}
+		} else {
+			result = data
+		}
 		
 		if (result && result.url) {
 			return result.url
@@ -1365,7 +1363,18 @@ async function searchSource(text, source, page = 1, count = 20) {
 			const searchUrl = `${apis[node]}?types=search&source=${source}&name=${encodeURIComponent(text)}&count=${count}&pages=${page}&s=${signature}`
 			
 			const { data } = await fetchWithFallback(searchUrl, { headers }) 
-			let result = data;
+			
+			// 【修复】把 JSON Parsing 放回作用域内执行，不污染顶层数据流
+			let result;
+			if (typeof data === 'string') {
+				try {
+					result = JSON.parse(data)
+				} catch(e) {
+					return songs
+				}
+			} else {
+				result = data
+			}
 			
 			let searchResults = []
 			
@@ -1390,9 +1399,9 @@ async function searchSource(text, source, page = 1, count = 20) {
 			const coverResults = await Promise.allSettled(coverPromises)
 			const coverMap = {}
 			
-			coverResults.forEach(result => {
-				if (result.status === 'fulfilled') {
-					const { index, coverUrl } = result.value
+			coverResults.forEach(res => {
+				if (res.status === 'fulfilled') {
+					const { index, coverUrl } = res.value
 					coverMap[index] = coverUrl
 				}
 			})
@@ -1847,21 +1856,32 @@ async function getSongInfo(ext) {
 			const apiUrl = `${apis[node]}?types=url&source=${source}&id=${track_id}&br=999&s=${signature}`
 			
 			const { data } = await fetchWithFallback(apiUrl, { headers }) 
-			let result = data;
+			
+			let result;
+			if (typeof data === 'string') {
+				try {
+					result = JSON.parse(data)
+				} catch(e) {
+					result = null
+				}
+			} else {
+				result = data
+			}
+			
 			let playUrl = '';
 			
 			if (result && result.url) {
 				playUrl = result.url;
 			} else if (source === 'kuwo') {
-				// 【修复】酷我的 VIP 限制：如果 999 级别无损因权限原因返回空串，自动静默降级尝试抓取 320k 和 128k
 				const brList = [320, 128];
 				for (let br of brList) {
 					const fallbackSig = crc32(urlEncode(track_id));
 					const fallbackUrl = `${apis[node]}?types=url&source=${source}&id=${track_id}&br=${br}&s=${fallbackSig}`;
 					try {
 						const res = await fetchWithFallback(fallbackUrl, { headers });
-						if (res.data && res.data.url) {
-							playUrl = res.data.url;
+						let tempResult = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
+						if (tempResult && tempResult.url) {
+							playUrl = tempResult.url;
 							break;
 						}
 					} catch(e) {}
@@ -1889,7 +1909,6 @@ async function getSongInfo(ext) {
 				coverUrl = await getCoverUrl(pic_id, source)
 			}
 			
-			// 【修复】防盗链伪造：动态下发对应源的 Referer 欺骗流媒体服务器（特别是酷我极其敏感）
 			let reqHeaders = { 'User-Agent': UA };
 			if (source === 'netease') {
 				reqHeaders['Referer'] = 'https://music.163.com/';
@@ -2060,7 +2079,17 @@ async function getBackupSongInfo(source, track_id, pic_id) {
 		const apiUrl = `${apis[node]}?types=url&source=${source}&id=${track_id}&br=999&s=${signature}`
 		
 		const { data } = await fetchWithFallback(apiUrl, { headers }) 
-		let result = data;
+		
+		let result;
+		if (typeof data === 'string') {
+			try {
+				result = JSON.parse(data)
+			} catch(e) {
+				result = null
+			}
+		} else {
+			result = data
+		}
 		
 		let playUrl = ''
 		if (result && result.url) {
@@ -2086,7 +2115,6 @@ async function getBackupSongInfo(source, track_id, pic_id) {
 			coverUrl = await getCoverUrl(pic_id, source)
 		}
 		
-		// 备用播放方案同样加上动态反盗链 Referer
 		let reqHeaders = { 'User-Agent': UA };
 		if (source === 'netease') {
 			reqHeaders['Referer'] = 'https://music.163.com/';
