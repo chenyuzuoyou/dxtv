@@ -1,9 +1,9 @@
 /*!
- * @name GD3Music
+ * @name GADMusic
  * @description 聚合音乐
- * @version v1.2
+ * @version v1.3
  * @author kobe (Modified)
- * @key csp_GD_music
+ * @key csp_GAD_music
  */
 
 const $config = argsify($config_str)
@@ -820,49 +820,45 @@ const apis = {
 }
 
 // -------------------------------------------------------------
-// 【核心修改部分】
-// 添加备用节点（.org）的故障转移与QQ搜索解锁逻辑
+// 【核心修改部分：强化版故障拦截与重路由】
 // -------------------------------------------------------------
 let isOrgUnlocked = false;
 
 async function fetchWithFallback(url, options) {
 	try {
-		// 优先尝试原始请求 (通常是 .xyz)
 		let res = await $fetch.get(url, options);
-		// 若返回内容为网关错误则抛出异常，触发降级
-		if (res && typeof res.data === 'string' && (res.data.includes('502 Bad Gateway') || res.data.includes('404 Not Found'))) {
-			throw new Error('Node Error');
+		
+		// 【关键修复】拦截网关 HTML 错误页面！
+		// 如果接口挂了返回了 Cloudflare 等网关报错页面，这里会强行报错抛出，防止下文 JSON.parse 吞并错误导致空数组
+		if (res && typeof res.data === 'string' && res.data.trim().startsWith('<')) {
+			throw new Error('Node HTML Error');
 		}
+		
 		return res;
 	} catch (error) {
-		// 如果是请求 xyz 节点挂了，自动切换到 org 备用节点
+		// 如果域名带有 xyz，一律进行备用节点拯救
 		if (url.includes('.xyz')) {
-			let backupUrl = url.replace('.xyz', '.org');
+			// 将任何可能的子节点（-us, -cn 等）全部重定向到官方已确定的统一备用主节点
+			let backupUrl = url.replace(/music-api(-[a-z]+)?\.gdstudio\.xyz/, 'music-api.gdstudio.org');
 			
-			// 如果还未通过 QQ 搜索解锁 GDSTUDIO，先去解锁
 			if (!isOrgUnlocked) {
 				try {
-					const unlockStr = 'GDSTUDIO';
-					const unlockSig = crc32(unlockStr);
-					// 提取备用节点的 baseUrl 比如 https://music-api.gdstudio.org/api.php
-					const backupBase = url.split('?')[0].replace('.xyz', '.org'); 
-					const unlockUrl = `${backupBase}?types=search&source=tencent&name=${unlockStr}&count=1&pages=1&s=${unlockSig}`;
-					
-					// 静默请求一次 QQ 搜索以解锁
+					const unlockSig = crc32('GDSTUDIO');
+					// 解锁也必须发送给稳定的备用主节点
+					const unlockUrl = `https://music-api.gdstudio.org/api.php?types=search&source=tencent&name=GDSTUDIO&count=1&pages=1&s=${unlockSig}`;
 					await $fetch.get(unlockUrl, options);
-					isOrgUnlocked = true; // 解锁成功
+					isOrgUnlocked = true;
 				} catch (unlockErr) {
-					// 解锁失败（可能 org 节点也异常了），继续向下执行由原生错误处理接管
+					// 忽略异常，继续尝试备用地址
 				}
 			}
 			
-			// 使用 org 备用节点重新请求用户需要的数据
 			return await $fetch.get(backupUrl, options);
 		}
-		// 如果不是 xyz 的请求错误，直接原样抛出
 		throw error;
 	}
 }
+
 // -------------------------------------------------------------
 
 function sourceNode(source) {
@@ -878,7 +874,7 @@ function sourceNode(source) {
 		tidal: 'us',
 		spotify: 'us',
 		deezer: 'us',
-		apple: 'us'
+		apple: 'lo' // <--- 关键修改：Apple 已经被官方统一合入了主接口 lo，抛弃了容易失效的 us 节点
 	};
 	
 	source = source.replace('_album', '');
@@ -1033,23 +1029,23 @@ const appConfig = {
 				}
 			},
 			{
-				name: 'Apple Music', // 这里就是在搜索栏显示的名称
-				type: 'song',
-				ext: {
-					type: 'song',
-					source: 'apple' // 对应 GD API 的 source
-				}
-			},
-			{
 				name: 'b站',
 				type: 'song',
 				ext: {
 					type: 'song',
 					source: 'bilibili'
 				}
+			},
+			{
+				name: 'Apple', // 添加到顶部的 Apple Music 选项
+				type: 'song',
+				ext: {
+					type: 'song',
+					source: 'apple'
+				}
 			}
 		].concat(ALL_SOURCES.filter(source => 
-			source.id !== 'tencent' && source.id !== 'bilibili'
+			source.id !== 'tencent' && source.id !== 'bilibili' && source.id !== 'apple' // 防重复
 		).map(source => ({
 			name: source.name,
 			type: 'song',
@@ -1075,7 +1071,7 @@ async function getCoverUrl(pic_id, source = 'netease') {
 		const node = sourceNode(source);
 		const coverApiUrl = `${apis[node]}?types=pic&source=${source}&id=${pic_id}&size=300&s=${signature}`
 		
-		const { data } = await fetchWithFallback(coverApiUrl, { headers }) // 接入 Fallback
+		const { data } = await fetchWithFallback(coverApiUrl, { headers }) 
 		
 		let result
 		if (typeof data === 'string') {
@@ -1360,7 +1356,7 @@ async function searchSource(text, source, page = 1, count = 20) {
 			const signature = crc32(text);
 			const node = sourceNode(source);
 			const searchUrl = `${apis[node]}?types=search&source=${source}&name=${encodeURIComponent(text)}&count=${count}&pages=${page}&s=${signature}`
-			const { data } = await fetchWithFallback(searchUrl, { headers }) // 接入 Fallback
+			const { data } = await fetchWithFallback(searchUrl, { headers }) 
 			
 			let result
 			if (typeof data === 'string') {
@@ -1852,7 +1848,7 @@ async function getSongInfo(ext) {
 			const node = sourceNode(source);
 			const apiUrl = `${apis[node]}?types=url&source=${source}&id=${track_id}&br=999&s=${signature}`
 			
-			const { data } = await fetchWithFallback(apiUrl, { headers }) // 接入 Fallback
+			const { data } = await fetchWithFallback(apiUrl, { headers }) 
 			
 			let result
 			if (typeof data === 'string') {
@@ -2048,7 +2044,7 @@ async function getBackupSongInfo(source, track_id, pic_id) {
 		const node = sourceNode(source);
 		const apiUrl = `${apis[node]}?types=url&source=${source}&id=${track_id}&br=999&s=${signature}`
 		
-		const { data } = await fetchWithFallback(apiUrl, { headers }) // 接入 Fallback
+		const { data } = await fetchWithFallback(apiUrl, { headers }) 
 		
 		let result
 		if (typeof data === 'string') {
