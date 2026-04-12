@@ -1,7 +1,7 @@
 /*!
  * @name GaDMusic
- * @description 聚合音乐 (极速满血版)
- * @version v2.2
+ * @description 聚合音乐 (全平台直连满血版)
+ * @version v2.3
  * @author kobe (Modified)
  * @key csp_GaD_music
  */
@@ -221,7 +221,6 @@ const apis = {
 
 let isOrgUnlocked = false;
 
-// 故障转移网关（只处理一次请求，避免阻塞）
 async function fetchWithFallback(url, options) {
 	let opts = options || {};
 	opts.headers = Object.assign({}, headers, opts.headers || {});
@@ -262,13 +261,10 @@ function sourceNode(source) {
 	return mapping[source.replace('_album', '')] || 'lo';
 }
 
-// --------------------------------------------------------
-// 修复点 1：恢复 UI 配置中的 gid（保证部分软件正常渲染首页列表）
-// --------------------------------------------------------
 const appConfig = {
 	ver: 1,
 	name: 'GD音乐',
-	desc: '极速精简版',
+	desc: '极速满血版',
 	tabLibrary: {
 		name: '探索',
 		groups: [
@@ -309,7 +305,8 @@ async function getCoverUrl(pic_id, source = 'netease') {
 }
 
 // --------------------------------------------------------
-// 修复点 2：网易云封面极速批处理接口 (防封禁 + 速度提升 10 倍)
+// 提速黑科技：网易云走批处理直连，酷我/JOOX走原生 API 直连
+// 零消耗 GD API 图片接口额度，彻底绕过 50次/5分钟 防刷限制
 // --------------------------------------------------------
 async function searchSource(text, source, page = 1, count = 20) {
 	let songs = [];
@@ -345,9 +342,7 @@ async function searchSource(text, source, page = 1, count = 20) {
 		
 		searchResults = searchResults.slice(0, count);
 
-		// ==================== 黑科技：网易云封面合批获取 ====================
-		// GD API 有 5分钟50次 的限制，首页 3 个网易云分类会导致瞬间发送 60 次 API 请求被拉黑。
-		// 这里直接提取所有网易歌曲ID，通过网易云官方底层 API，1 个请求直接拿到 20 首歌的封面！
+		// 【1. 网易云：官方底层合批接口】
 		let neteaseCoverMap = {};
 		let neteaseIds = [];
 		searchResults.forEach(item => {
@@ -369,18 +364,36 @@ async function searchSource(text, source, page = 1, count = 20) {
 				}
 			} catch(e) {}
 		}
-		// ====================================================================
 
-		// 对于剩下的（比如酷我、JOOX），继续采用 Promise.allSettled 并发加载，但负担已减轻了90%
+		// 【2. 酷我/JOOX：官方底层原生并发接口】
 		const coverPromises = searchResults.map(async (item, index) => {
 			let s = item.source || source;
 			let songId = item.id || item.songid || item.song_id || item.track_id || index;
 			
-			// 网易云直接走刚刚打包获取的图库（0 耗时，0 GD API占用）
 			if (s === 'netease' && neteaseCoverMap[songId]) return { index, url: neteaseCoverMap[songId] };
 
 			let picId = item.pic_id || item.cover || item.pic || item.album_pic || '';
-			if (picId.startsWith('http')) return { index, url: picId };
+			if (picId && picId.toString().startsWith('http')) return { index, url: picId };
+
+			// 酷我官方原生接口提取高清封面
+			if (s === 'kuwo') {
+				try {
+					let { data } = await $fetch.get(`http://m.kuwo.cn/newh5/app/api/song/info?m=songinfo&v=2.0.0&t=web&songid=${songId}`, { headers: { 'User-Agent': UA } });
+					let res = typeof data === 'string' ? JSON.parse(data) : data;
+					if (res && res.data && res.data.pic) return { index, url: res.data.pic };
+				} catch(e) {}
+			}
+			
+			// JOOX 官方原生接口提取高清封面
+			if (s === 'joox') {
+				try {
+					let { data } = await $fetch.get(`https://api.joox.com/web-fcgi-bin/web_get_songinfo?songid=${songId}&lang=zh_cn&country=hk`, { headers: { 'User-Agent': UA } });
+					let res = typeof data === 'string' ? JSON.parse(data) : data;
+					if (res && res.imgSrc) return { index, url: res.imgSrc };
+				} catch(e) {}
+			}
+
+			// 最终兜底才去触碰 GD API
 			if (picId) {
 				let fetchedUrl = await getCoverUrl(picId, s);
 				return { index, url: fetchedUrl };
@@ -388,7 +401,7 @@ async function searchSource(text, source, page = 1, count = 20) {
 			return { index, url: 'https://music.gdstudio.xyz/favicon.ico' };
 		});
 
-		// 并行发射所有的封面请求请求（瞬间完成）
+		// 并行执行所有的封面直连请求
 		const coverResults = await Promise.allSettled(coverPromises);
 		const coverMap = {};
 		coverResults.forEach(res => {
@@ -397,7 +410,7 @@ async function searchSource(text, source, page = 1, count = 20) {
 			}
 		});
 		
-		// 组装最终歌单
+		// 组装最终结果
 		for (let i = 0; i < searchResults.length; i++) {
 			const item = searchResults[i];
 			let songId = item.id || item.songid || item.song_id || item.track_id || i;
