@@ -13,15 +13,15 @@ const ALL_SOURCES = [
 	{ id: 'joox', name: 'JOOX' },
 	{ id: 'tencent', name: 'QQ' },
 	{ id: 'bilibili', name: 'b站' },
-	//{ id: 'tidal', name: 'Tidal' },
-	//{ id: 'spotify', name: 'Spotify' },
-	//{ id: 'ytmusic', name: 'YouTube' },
-	//{ id: 'qobuz', name: 'Qobuz' },
-	//{ id: 'deezer', name: 'Deezer' },
-	//{ id: 'migu', name: '咪咕' },
-	//{ id: 'kugou', name: '酷狗' },
-	//{ id: 'ximalaya', name: '喜马拉雅' },
-	//{ id: 'apple', name: 'Apple' }
+	{ id: 'tidal', name: 'Tidal' },
+	{ id: 'spotify', name: 'Spotify' },
+	{ id: 'ytmusic', name: 'YouTube' },
+	{ id: 'qobuz', name: 'Qobuz' },
+	{ id: 'deezer', name: 'Deezer' },
+	{ id: 'migu', name: '咪咕' },
+	{ id: 'kugou', name: '酷狗' },
+	{ id: 'ximalaya', name: '喜马拉雅' },
+	{ id: 'apple', name: 'Apple' }
 ]
 
 !(function (n) {
@@ -843,14 +843,13 @@ function sourceNode(source) {
 const appConfig = {
 	ver: 1,
 	name: 'GD音乐',
-	message: '基于GD Studio音乐API',
-	warning: '基于GD音乐台API(music.gdstudio.xyz)制作\n⚠️仅供学习参考，请勿商用',
+	//message: '基于GD Studio音乐API',
 	desc: '',
 	tabLibrary: {
 		name: '探索',
 		groups: [
 			{
-				name: '热门歌曲',
+				name: '网易云热门歌曲',
 				type: 'song',
 				ui: 0,
 				showMore: true,
@@ -861,7 +860,7 @@ const appConfig = {
 				},
 			},
 			{
-				name: '新歌推荐',
+				name: '网易云新歌推荐',
 				type: 'song',
 				ui: 0,
 				showMore: true,
@@ -872,7 +871,7 @@ const appConfig = {
 				},
 			},
 			{
-				name: '华语流行',
+				name: '网易云华语流行',
 				type: 'song',
 				ui: 0,
 				showMore: true,
@@ -883,7 +882,7 @@ const appConfig = {
 				},
 			},
 			{
-				name: '欧美音乐',
+				name: '网易云欧美音乐',
 				type: 'song',
 				ui: 0,
 				showMore: true,
@@ -894,7 +893,7 @@ const appConfig = {
 				},
 			},
 			{
-				name: 'J-pop',
+				name: '网易云J-pop',
 				type: 'song',
 				ui: 0,
 				showMore: true,
@@ -905,7 +904,7 @@ const appConfig = {
 				},
 			},
 			{
-				name: '排行榜',
+				name: 'QQ音乐排行榜',
 				type: 'playlist',
 				ui: 1,
 				showMore: true,
@@ -914,7 +913,7 @@ const appConfig = {
 				}
 			},
 			{
-				name: '创作者',
+				name: 'QQ音乐创作者',
 				type: 'artist',
 				ui: 0,
 				showMore: true,
