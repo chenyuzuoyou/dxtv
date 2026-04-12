@@ -1,34 +1,29 @@
 /*!
- * @name GD2Music
+ * @name GD3Music
  * @description 聚合音乐
- * @version v1.1
- * @author kobe 
- * @key csp_GD2_music
+ * @version v1.2
+ * @author kobe (Modified)
+ * @key csp_GD_music
  */
+
 const $config = argsify($config_str)
 const cheerio = createCheerio()
 const CryptoJS = createCryptoJS()
+
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
 const headers = {
 	'User-Agent': UA,
 }
-// 全平台启用（解开所有注释）
+
 const ALL_SOURCES = [
 	{ id: 'netease', name: '网易' },
 	{ id: 'kuwo', name: '酷我' },
 	{ id: 'joox', name: 'JOOX' },
 	{ id: 'tencent', name: 'QQ' },
 	{ id: 'bilibili', name: 'b站' },
-	{ id: 'tidal', name: 'Tidal' },
-	{ id: 'spotify', name: 'Spotify' },
-	{ id: 'ytmusic', name: 'YouTube' },
-	{ id: 'qobuz', name: 'Qobuz' },
-	{ id: 'deezer', name: 'Deezer' },
-	{ id: 'migu', name: '咪咕' },
-	{ id: 'kugou', name: '酷狗' },
-	{ id: 'ximalaya', name: '喜马拉雅' },
 	{ id: 'apple', name: 'Apple' }
 ]
+
 !(function (n) {
 	'use strict'
 	function _0x116c6g(n, t) {
@@ -77,7 +72,7 @@ const ALL_SOURCES = [
 				i = -1732584194,
 				a = 271733878,
 				h = 358662 ^ 358662;
-			h < n['length'];
+			h < n['\u006C\u0065\u006E\u0067\u0074\u0068'];
 			h += 556107 ^ 556123
 		)
 			(c = _0x1c64f(
@@ -656,13 +651,13 @@ const ALL_SOURCES = [
 			var t = '',
 				r =
 					(788838 ^ 788806) *
-					n['length'],
+					n['\u006C\u0065\u006E\u0067\u0074\u0068'],
 				e = 897385 ^ 897385;
 			e < r;
 			e += 823433 ^ 823425
 		)
 			t += String[
-				'fromCharCode'
+				'\u0066\u0072\u006F\u006D\u0043\u0068\u0061\u0072\u0043\u006F\u0064\u0065'
 			](
 				(n[e >> (276380 ^ 276377)] >>> e % (477668 ^ 477636)) &
 					(116135 ^ 116056)
@@ -675,19 +670,19 @@ const ALL_SOURCES = [
 		_0x_0x9c8 = 243631 ^ 243624
 		for (
 			t[
-				(n['length'] >>
+				(n['\u006C\u0065\u006E\u0067\u0074\u0068'] >>
 					(431982 ^ 431980)) -
 					(502514 ^ 502515)
 			] = void (398355 ^ 398355),
 				e = 987172 ^ 987172;
-			e < t['length'];
+			e < t['\u006C\u0065\u006E\u0067\u0074\u0068'];
 			e += 549036 ^ 549037
 		)
 			t[e] = 194263 ^ 194263
 		for (
 			var r =
 					(442162 ^ 442170) *
-					n['length'],
+					n['\u006C\u0065\u006E\u0067\u0074\u0068'],
 				e = 281249 ^ 281249;
 			e < r;
 			e += 321446 ^ 321454
@@ -695,7 +690,7 @@ const ALL_SOURCES = [
 			t[e >> (287797 ^ 287792)] |=
 				((774133 ^ 773898) &
 					n[
-						'charCodeAt'
+						'\u0063\u0068\u0061\u0072\u0043\u006F\u0064\u0065\u0041\u0074'
 					](e / (510838 ^ 510846))) <<
 				e % (556650 ^ 556618)
 		return t
@@ -704,21 +699,21 @@ const ALL_SOURCES = [
 		for (
 			var t,
 				r =
-					'0123456789abcdef',
+					'\u0030\u0031\u0032\u0033\u0034\u0035\u0036\u0037\u0038\u0039\u0061\u0062\u0063\u0064\u0065\u0066',
 				e = '',
 				o = 591987 ^ 591987;
-			o < n['length'];
+			o < n['\u006C\u0065\u006E\u0067\u0074\u0068'];
 			o += 704728 ^ 704729
 		)
 			(t =
 				n[
-					'charCodeAt'
-				](sslocal://flow/file_open?url=o&flow_extra=eyJsaW5rX3R5cGUiOiJjb2RlX2ludGVycHJldGVyIn0=)),
+					'\u0063\u0068\u0061\u0072\u0043\u006F\u0064\u0065\u0041\u0074'
+				](o)),
 				(e +=
-					r['charAt'](
+					r['\u0063\u0068\u0061\u0072\u0041\u0074'](
 						(t >>> (156221 ^ 156217)) & (768092 ^ 768083)
 					) +
-					r['charAt'](
+					r['\u0063\u0068\u0061\u0072\u0041\u0074'](
 						(489029 ^ 489034) & t
 					))
 		return e
@@ -730,7 +725,7 @@ const ALL_SOURCES = [
 		return _0x77f8c(
 			c(
 				_0x4cbe4f((n = _0xddd4fg(n))),
-				(969332 ^ 969340) * n['length']
+				(969332 ^ 969340) * n['\u006C\u0065\u006E\u0067\u0074\u0068']
 			)
 		)
 	}
@@ -744,11 +739,11 @@ const ALL_SOURCES = [
 				o[938141 ^ 938130] = u[132587 ^ 132580] =
 					void (698490 ^ 698490),
 					(478722 ^ 478738) <
-						e['length'] &&
+						e['\u006C\u0065\u006E\u0067\u0074\u0068'] &&
 						(e = c(
 							e,
 							(448963 ^ 448971) *
-								n['length']
+								n['\u006C\u0065\u006E\u0067\u0074\u0068']
 						)),
 					r = 354231 ^ 354231;
 				r < (547489 ^ 547505);
@@ -757,14 +752,14 @@ const ALL_SOURCES = [
 				(o[r] = 909522486 ^ e[r]), (u[r] = 1549556828 ^ e[r])
 			return (
 				(t = c(
-					o['concat'](_0x4cbe4f(t)),
+					o['\u0063\u006F\u006E\u0063\u0061\u0074'](_0x4cbe4f(t)),
 					(437550 ^ 438062) +
 						(406556 ^ 406548) *
-							t['length']
+							t['\u006C\u0065\u006E\u0067\u0074\u0068']
 				)),
 				_0x77f8c(
 					c(
-						u['concat'](sslocal://flow/file_open?url=t&flow_extra=eyJsaW5rX3R5cGUiOiJjb2RlX2ludGVycHJldGVyIn0=),
+						u['\u0063\u006F\u006E\u0063\u0061\u0074'](t),
 						784180 ^ 783796
 					)
 				)
@@ -780,16 +775,17 @@ const ALL_SOURCES = [
 			? _0x04461d(n)
 			: e(_0x04461d(n))
 	}
-	'function' == typeof define &&
-	define['amd']
+	'\u0066\u0075\u006E\u0063\u0074\u0069\u006F\u006E' == typeof define &&
+	define['\u0061\u006D\u0064']
 		? define(function () {
 				return t
 		  })
-		: 'object' == typeof module &&
-		  module['exports']
-		? (module['exports'] = t)
-		: (n['md5'] = t)
+		: '\u006F\u0062\u006A\u0065\u0063\u0074' == typeof module &&
+		  module['\u0065\u0078\u0070\u006F\u0072\u0074\u0073']
+		? (module['\u0065\u0078\u0070\u006F\u0072\u0074\u0073'] = t)
+		: (n['\u006D\u0064\u0035'] = t)
 })(this)
+
 function crc32(id) {
 	const mkPlayer = {
 		version: '1.0.0'
@@ -811,15 +807,64 @@ function crc32(id) {
 	
 	return md5Hash.slice(-8).toUpperCase();
 }
+
 function urlEncode(str) {
 	return encodeURIComponent(str).replace(/%20/g, '+');
 }
+
 const apis = {
 	lo: 'https://music-api.gdstudio.xyz/api.php',
 	cn: 'https://music-api-cn.gdstudio.xyz/api.php',
 	hk: 'https://music-api-hk.gdstudio.xyz/api.php',
 	us: 'https://music-api-us.gdstudio.xyz/api.php',
 }
+
+// -------------------------------------------------------------
+// 【核心修改部分】
+// 添加备用节点（.org）的故障转移与QQ搜索解锁逻辑
+// -------------------------------------------------------------
+let isOrgUnlocked = false;
+
+async function fetchWithFallback(url, options) {
+	try {
+		// 优先尝试原始请求 (通常是 .xyz)
+		let res = await $fetch.get(url, options);
+		// 若返回内容为网关错误则抛出异常，触发降级
+		if (res && typeof res.data === 'string' && (res.data.includes('502 Bad Gateway') || res.data.includes('404 Not Found'))) {
+			throw new Error('Node Error');
+		}
+		return res;
+	} catch (error) {
+		// 如果是请求 xyz 节点挂了，自动切换到 org 备用节点
+		if (url.includes('.xyz')) {
+			let backupUrl = url.replace('.xyz', '.org');
+			
+			// 如果还未通过 QQ 搜索解锁 GDSTUDIO，先去解锁
+			if (!isOrgUnlocked) {
+				try {
+					const unlockStr = 'GDSTUDIO';
+					const unlockSig = crc32(unlockStr);
+					// 提取备用节点的 baseUrl 比如 https://music-api.gdstudio.org/api.php
+					const backupBase = url.split('?')[0].replace('.xyz', '.org'); 
+					const unlockUrl = `${backupBase}?types=search&source=tencent&name=${unlockStr}&count=1&pages=1&s=${unlockSig}`;
+					
+					// 静默请求一次 QQ 搜索以解锁
+					await $fetch.get(unlockUrl, options);
+					isOrgUnlocked = true; // 解锁成功
+				} catch (unlockErr) {
+					// 解锁失败（可能 org 节点也异常了），继续向下执行由原生错误处理接管
+				}
+			}
+			
+			// 使用 org 备用节点重新请求用户需要的数据
+			return await $fetch.get(backupUrl, options);
+		}
+		// 如果不是 xyz 的请求错误，直接原样抛出
+		throw error;
+	}
+}
+// -------------------------------------------------------------
+
 function sourceNode(source) {
 	const mapping = {
 		kuwo: 'lo',
@@ -840,6 +885,7 @@ function sourceNode(source) {
 	const node = mapping[source] || 'lo';
 	return node;
 }
+
 const appConfig = {
 	ver: 1,
 	name: 'GD音乐',
@@ -1006,9 +1052,11 @@ const appConfig = {
 		})))
 	}
 }
+
 async function getConfig() {
 	return jsonify(appConfig)
 }
+
 async function getCoverUrl(pic_id, source = 'netease') {
 	if (!pic_id) {
 		return 'https://music.gdstudio.xyz/favicon.ico'
@@ -1019,7 +1067,7 @@ async function getCoverUrl(pic_id, source = 'netease') {
 		const node = sourceNode(source);
 		const coverApiUrl = `${apis[node]}?types=pic&source=${source}&id=${pic_id}&size=300&s=${signature}`
 		
-		const { data } = await $fetch.get(coverApiUrl, { headers })
+		const { data } = await fetchWithFallback(coverApiUrl, { headers }) // 接入 Fallback
 		
 		let result
 		if (typeof data === 'string') {
@@ -1040,6 +1088,7 @@ async function getCoverUrl(pic_id, source = 'netease') {
 	
 	return 'https://music.gdstudio.xyz/favicon.ico'
 }
+
 async function getArtists(ext) {
 	const { page = 1, gid, source = 'tencent', from } = argsify(ext)
 	let artists = []
@@ -1148,6 +1197,7 @@ async function getArtists(ext) {
 		})
 	}
 }
+
 async function searchSource(text, source, page = 1, count = 20) {
 	let songs = []
 	
@@ -1302,455 +1352,7 @@ async function searchSource(text, source, page = 1, count = 20) {
 			const signature = crc32(text);
 			const node = sourceNode(source);
 			const searchUrl = `${apis[node]}?types=search&source=${source}&name=${encodeURIComponent(text)}&count=${count}&pages=${page}&s=${signature}`
-			const { data } = await $fetch.get(searchUrl, { headers })
-			
-			let result
-			if (typeof data === 'string') {
-				try {
-					result = JSON.parse(data)
-				} catch(e) {
-					return songs
-				}
-			} else {
-				result = data
-			}
-			
-			let searchResults = []
-			
-			if (Array.isArray(result)) {
-				searchResults = result.slice(0, count)
-			} else if (result && result.data && Array.isArray(result.data)) {
-				searchResults = result.data.slice(0, count)
-			}
-			
-			const coverPromises = searchResults.map(async (item, index) => {
-				try {
-					let coverUrl = 'https://music.gdstudio.xyz/favicon.ico'
-					if (item.pic_id) {
-						coverUrl = await getCoverUrl(item.pic_id, item.source || source)
-					}
-					return { index, coverUrl, success: true }
-				} catch (error) {
-					return { index, coverUrl: 'https://music.gdstudio.xyz/favicon.ico', success: false }
-				}
-			})
-			
-			const coverResults = await Promise.allSettled(coverPromises)
-			const coverMap = {}
-			
-			coverResults.forEach(result => {
-				if (result.status === 'fulfilled') {
-					const { index, coverUrl } = result.value
-					coverMap[index] = coverUrl
-				}
-			})
-			
-			for (let i = 0; i < searchResults.length; i++) {
-				const item = searchResults[i]
-				
-				let artistName = '未知歌手'
-				let artistId = 'unknown'
-				
-				if (item.artist) {
-					if (Array.isArray(item.artist)) {
-						artistName = item.artist.join(' / ')
-						artistId = item.artist[0] || 'unknown'
-					} else {
-						artistName = item.artist
-						artistId = item.artist
-					}
-				}
-				
-				const coverUrl = coverMap[i] || 'https://music.gdstudio.xyz/favicon.ico'
-				
-				songs.push({
-					id: `${item.source || source}_${item.id || i}`,
-					name: item.name || '未知歌曲',
-					cover: coverUrl,
-					duration: item.duration || 0,
-					artist: {
-						id: artistId,
-						name: artistName
-					},
-					ext: {
-						track_id: item.id ? String(item.id) : '',
-						source: item.source || source,
-						pic_id: item.pic_id || ''
-					}
-				})
-			}
-		} catch (error) {
-		}
-	}
-	
-	return songs
-}
-async function getSongs(ext) {
-	const { page = 1, gid, text, keyword, source = 'netease', count = 20, artist_name, rid, id, period } = argsify(ext)
-	let songs = []
-	
-	if (gid && gid.startsWith('bilibili_')) {
-		const bilibiliRid = rid || parseInt(gid.split('_')[1])
-		const { data } = await $fetch.get(`https://api.bilibili.com/x/web-interface/dynamic/region?ps=${count}&pn=${page}&rid=${bilibiliRid}`, {
-			headers: {
-				...headers,
-				'Referer': 'https://www.bilibili.com/',
-				'Origin': 'https://www.bilibili.com'
-			}
-		})
-		
-		let result
-		if (typeof data === 'string') {
-			try {
-				result = JSON.parse(data)
-			} catch(e) {
-				return jsonify({ list: songs })
-			}
-		} else {
-			result = data
-		}
-		
-		if (result && result.data && result.data.archives) {
-			result.data.archives.forEach(each => {
-				songs.push({
-					id: `${each.aid}`,
-					name: each.title,
-					cover: each.pic || 'https://music.gdstudio.xyz/favicon.ico',
-					duration: each.duration,
-					artist: {
-						id: `${each.owner.mid}`,
-						name: each.owner.name,
-						cover: each.owner.face,
-					},
-					ext: {
-						aid: each.aid,
-						cid: each.cid,
-						bvid: each.bvid,
-						source: 'bilibili'
-					}
-				})
-			})
-		}
-		
-		return jsonify({
-			list: songs,
-		})
-	}
-	
-	if (gid === 'qq_toplist' && id) {
-		if (page > 1) {
-			return jsonify({
-				list: [],
-			})
-		}
-		
-		try {
-			const url = `https://u.y.qq.com/cgi-bin/musicu.fcg?g_tk=5381&data=%7B%22detail%22%3A%7B%22module%22%3A%22musicToplist.ToplistInfoServer%22%2C%22method%22%3A%22GetDetail%22%2C%22param%22%3A%7B%22topId%22%3A${id}%2C%22offset%22%3A0%2C%22num%22%3A100%2C%22period%22%3A%22${period || ''}%22%7D%7D%2C%22comm%22%3A%7B%22ct%22%3A24%2C%22cv%22%3A0%7D%7D`
-			const { data } = await $fetch.get(url, {
-				headers: {
-					...headers,
-					Cookie: 'uin=',
-				}
-			})
-			
-			let result
-			if (typeof data === 'string') {
-				try {
-					result = JSON.parse(data)
-				} catch(e) {
-					return jsonify({ list: songs })
-				}
-			} else {
-				result = data
-			}
-			
-			if (result && result.detail && result.detail.data && result.detail.data.songInfoList) {
-				result.detail.data.songInfoList.forEach((e) => {
-					songs.push({
-						id: e.mid,
-						name: e.name,
-						cover: e?.album?.mid ? `https://y.gtimg.cn/music/photo_new/T002R800x800M000${e.album.mid}.jpg` : '',
-						duration: e.interval || 0,
-						artist: {
-							id: e.singer[0]?.mid || '',
-							name: e.singer[0]?.name || '未知歌手',
-							cover: '',
-						},
-						ext: {
-							qid: e.mid,
-							source: 'tencent'
-						}
-					})
-				})
-			}
-		} catch (error) {
-		}
-		
-		return jsonify({
-			list: songs,
-		})
-	}
-	
-	let searchText = text || keyword || '热门歌曲'
-	
-	if (gid === 'artist_songs' && artist_name) {
-		searchText = artist_name
-	}
-	
-	songs = await searchSource(searchText, source, page, count)
-	
-	return jsonify({
-		list: songs,
-	})
-}
-async function getPlaylists(ext) {
-	const { page, gid, from } = argsify(ext)
-	if (page > 1) {
-		return jsonify({
-			list: [],
-		})
-	}
-	
-	let cards = []
-	
-	if (gid == 'qq_toplist') {
-		try {
-			const { data } = await $fetch.get(
-				'https://u.y.qq.com/cgi-bin/musicu.fcg?_=1577086820633&data=%7B%22comm%22%3A%7B%22g_tk%22%3A5381%2C%22uin%22%3A123456%2C%22format%22%3A%22json%22%2C%22inCharset%22%3A%22utf-8%22%2C%22outCharset%22%3A%22utf-8%22%2C%22notice%22%3A0%2C%22platform%22%3A%22h5%22%2C%22needNewCode%22%3A1%2C%22ct%22%3A23%2C%22cv%22%3A0%7D%2C%22topList%22%3A%7B%22module%22%3A%22musicToplist.ToplistInfoServer%22%2C%22method%22%3A%22GetAll%22%2C%22param%22%3A%7B%7D%7D%7D',
-				{
-					headers: {
-						...headers,
-						Cookie: 'uin=',
-					}
-				}
-			)
-			
-			let result
-			if (typeof data === 'string') {
-				try {
-					result = JSON.parse(data)
-				} catch(e) {
-					return jsonify({ list: cards })
-				}
-			} else {
-				result = data
-			}
-			
-			if (result && result.topList && result.topList.data && result.topList.data.group) {
-				result.topList.data.group.forEach((each) => {
-					each.toplist.forEach((e) => {
-						if (e.title === 'MV榜') {
-							return
-						}
-						cards.push({
-							id: `${e.topId}`,
-							name: e.title,
-							cover: e.headPicUrl || e.frontPicUrl,
-							artist: {
-								id: 'qq',
-								name: 'QQ音乐',
-							},
-							ext: {
-								gid: 'qq_toplist',
-								id: `${e.topId}`,
-								type: 'toplist',
-								period: e.period,
-							},
-						})
-					})
-				})
-			}
-		} catch (error) {
-		}
-	}
-	
-	return jsonify({
-		list: cards
-	})
-}
-async function getAlbums(ext) {
-	return jsonify({ list: [] })
-}
-async function search(ext) {
-	const { text, page = 1, type, source } = argsify(ext)
-	
-	if (!text) {
-		return jsonify({ list: [] })
-	}
-	
-	if (type === 'song') {
-		const songs = await searchSource(text, source || 'tencent', page, 20)
-		return jsonify({
-			list: songs,
-		})
-	}
-	
-	return jsonify({ list: [] })
-}
-async function getSongInfo(ext) {
-	const { track_id, source = 'netease', pic_id, qid, aid, cid, bvid } = argsify(ext)
-	
-	const qqMusicId = qid || track_id
-	
-	if (source === 'tencent' && qqMusicId) {
-		try {
-			const apiUrl = `https://lxmusicapi.onrender.com/url/tx/${qqMusicId}/320k`
-			const { data } = await $fetch.get(apiUrl, {
-				headers: {
-					'X-Request-Key': 'share-v2',
-					'User-Agent': UA
-				}
-			})
-			
-			let result
-			if (typeof data === 'string') {
-				try {
-					result = JSON.parse(data)
-				} catch(e) {
-					result = null
-				}
-			} else {
-				result = data
-			}
-			
-			let playUrl = ''
-			if (result && result.url) {
-				playUrl = result.url
-			}
-			
-			let coverUrl = 'https://music.gdstudio.xyz/favicon.ico'
-			if (pic_id) {
-				coverUrl = await getCoverUrl(pic_id, source)
-			} else if (qqMusicId) {
-				coverUrl = `https://y.gtimg.cn/music/photo_new/T002R800x800M000${qqMusicId}.jpg`
-			}
-			
-			return jsonify({
-				urls: playUrl ? [playUrl] : [],
-				headers: [{
-					'User-Agent': UA,
-					'Referer': 'https://y.qq.com/'
-				}],
-				cover: coverUrl
-			})
-			
-		} catch (error) {
-			return await getBackupSongInfo(source, qqMusicId, pic_id)
-		}
-	} else if (source === 'bilibili') {
-		let bilibiliAid = aid
-		let bilibiliCid = cid
-		let bilibiliBvid = bvid
-		
-		if (!bilibiliCid && !bilibiliBvid && !bilibiliAid) {
-			return jsonify({ urls: [] })
-		}
-		
-		try {
-			let coverUrl = 'https://music.gdstudio.xyz/favicon.ico'
-			let videoInfo = null
-			
-			if (bilibiliBvid) {
-				videoInfo = await getBilibiliVideoInfo(null, bilibiliBvid)
-			} else if (bilibiliAid) {
-				videoInfo = await getBilibiliVideoInfo(bilibiliAid, null)
-			}
-			
-			if (videoInfo) {
-				coverUrl = videoInfo.pic || 'https://music.gdstudio.xyz/favicon.ico'
-				
-				if (!bilibiliCid) {
-					bilibiliCid = videoInfo.cid || videoInfo.pages?.[0]?.cid
-				}
-				if (!bilibiliAid) {
-					bilibiliAid = videoInfo.aid
-				}
-				if (!bilibiliBvid && videoInfo.bvid) {
-					bilibiliBvid = videoInfo.bvid
-				}
-			}
-			
-			if (!bilibiliCid) {
-				return jsonify({ urls: [] })
-			}
-			
-			try {
-				const { img_key, sub_key } = await getWbiKeys()
-				const params = {
-					avid: bilibiliAid,
-					cid: bilibiliCid,
-					qn: 16,
-					fnval: 16,
-					fnver: 0,
-					fourk: 0
-				}
-				
-				const query = encWbi(params, img_key, sub_key)
-				const { data } = await $fetch.get(`https://api.bilibili.com/x/player/wbi/playurl?${query}`, {
-					headers: {
-						...headers,
-						'Referer': 'https://www.bilibili.com/',
-						'Origin': 'https://www.bilibili.com'
-					}
-				})
-let result
-				if (typeof data === 'string') {
-					try {
-						result = JSON.parse(data)
-					} catch(e) {
-						return songs
-					}
-				} else {
-					result = data
-				}
-				
-				if (result && result.code === 0 && result.data && result.data.result) {
-					result.data.result.forEach((each) => {
-						if (each?.result_type === 'video') {
-							each?.data.forEach((item) => {
-								if (songs.length < count) {
-									let duration = 0
-									if (item.duration) {
-										const timeParts = item.duration.split(':')
-										if (timeParts.length === 2) {
-											duration = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1])
-										} else if (timeParts.length === 3) {
-											duration = parseInt(timeParts[0]) * 3600 + parseInt(timeParts[1]) * 60 + parseInt(timeParts[2])
-										}
-									}
-									
-									const cover = item.pic ? (item.pic.startsWith('http') ? item.pic : 'https:' + item.pic) : 'https://music.gdstudio.xyz/favicon.ico'
-									
-									songs.push({
-										id: `${item.aid}`,
-										name: item.title.replace(/<[^>]*>/g, ''),
-										cover: cover,
-										duration: duration,
-										artist: {
-											id: `${item.mid}`,
-											name: item.author,
-											cover: item.upic || ''
-										},
-										ext: {
-											aid: item.aid,
-											bvid: item.bvid,
-											source: 'bilibili'
-										}
-									})
-								}
-							})
-						}
-					})
-				}
-			} catch (error) {
-			}
-		}
-	} else {
-		try {
-			const signature = crc32(text);
-			const node = sourceNode(source);
-			const searchUrl = `${apis[node]}?types=search&source=${source}&name=${encodeURIComponent(text)}&count=${count}&pages=${page}&s=${signature}`
-			const { data } = await $fetch.get(searchUrl, { headers })
+			const { data } = await fetchWithFallback(searchUrl, { headers }) // 接入 Fallback
 			
 			let result
 			if (typeof data === 'string') {
@@ -2242,7 +1844,7 @@ async function getSongInfo(ext) {
 			const node = sourceNode(source);
 			const apiUrl = `${apis[node]}?types=url&source=${source}&id=${track_id}&br=999&s=${signature}`
 			
-			const { data } = await $fetch.get(apiUrl, { headers })
+			const { data } = await fetchWithFallback(apiUrl, { headers }) // 接入 Fallback
 			
 			let result
 			if (typeof data === 'string') {
@@ -2438,7 +2040,7 @@ async function getBackupSongInfo(source, track_id, pic_id) {
 		const node = sourceNode(source);
 		const apiUrl = `${apis[node]}?types=url&source=${source}&id=${track_id}&br=999&s=${signature}`
 		
-		const { data } = await $fetch.get(apiUrl, { headers })
+		const { data } = await fetchWithFallback(apiUrl, { headers }) // 接入 Fallback
 		
 		let result
 		if (typeof data === 'string') {
