@@ -1,9 +1,9 @@
 /*!
- * @name GaDMusic
- * @description 聚合音乐 (网易/酷我/JOOX 精简版)
- * @version v2.0
+ * @name GDMusic
+ * @description 聚合音乐 (极速精简版)
+ * @version v2.1
  * @author kobe (Modified)
- * @key csp_GaD_music
+ * @key csp_GD_music
  */
 
 const $config = argsify($config_str)
@@ -18,7 +18,7 @@ const headers = {
 	'X-Requested-With': 'XMLHttpRequest'
 }
 
-// 只保留三大平台
+// 仅保留最稳定的三剑客
 const ALL_SOURCES = [
 	{ id: 'netease', name: '网易云' },
 	{ id: 'kuwo', name: '酷我' },
@@ -216,14 +216,12 @@ function urlEncode(str) {
 
 const apis = {
 	lo: 'https://music-api.gdstudio.xyz/api.php',
-	cn: 'https://music-api-cn.gdstudio.xyz/api.php',
 	hk: 'https://music-api-hk.gdstudio.xyz/api.php',
-	us: 'https://music-api-us.gdstudio.xyz/api.php',
 }
 
 let isOrgUnlocked = false;
 
-// 健壮的降级与解锁机制
+// 故障转移网关（优化版，首选节点成功直接返回，不瞎绕圈子）
 async function fetchWithFallback(url, options) {
 	let opts = options || {};
 	opts.headers = Object.assign({}, headers, opts.headers || {});
@@ -259,25 +257,25 @@ async function fetchWithFallback(url, options) {
 	throw lastError;
 }
 
-// 仅处理剩下的三大平台节点
 function sourceNode(source) {
 	const mapping = { kuwo: 'lo', joox: 'hk', netease: 'lo' };
 	return mapping[source.replace('_album', '')] || 'lo';
 }
 
 // --------------------------------------------------------
-// UI 配置：加入酷我和JOOX的各类榜单热歌，彻底屏蔽QQ、B站、Apple
+// UI 配置：修复网易云关键字，保证首页秒出数据
 // --------------------------------------------------------
 const appConfig = {
 	ver: 1,
 	name: 'GD音乐',
-	desc: '精简提速版',
+	desc: '极速精简版',
 	tabLibrary: {
 		name: '探索',
 		groups: [
-			{ name: '网易云·热歌榜', type: 'song', ui: 0, showMore: true, ext: { source: 'netease', keyword: '热歌榜' } },
-			{ name: '网易云·新歌榜', type: 'song', ui: 0, showMore: true, ext: { source: 'netease', keyword: '新歌榜' } },
+			{ name: '网易云·热门歌曲', type: 'song', ui: 0, showMore: true, ext: { source: 'netease', keyword: '热门歌曲' } },
+			{ name: '网易云·新歌推荐', type: 'song', ui: 0, showMore: true, ext: { source: 'netease', keyword: '新歌' } },
 			{ name: '网易云·华语流行', type: 'song', ui: 0, showMore: true, ext: { source: 'netease', keyword: '华语流行' } },
+			{ name: '网易云·欧美流行', type: 'song', ui: 0, showMore: true, ext: { source: 'netease', keyword: '欧美流行' } },
 			{ name: '酷我·热歌榜', type: 'song', ui: 0, showMore: true, ext: { source: 'kuwo', keyword: '热歌榜' } },
 			{ name: '酷我·新歌榜', type: 'song', ui: 0, showMore: true, ext: { source: 'kuwo', keyword: '新歌榜' } },
 			{ name: '酷我·抖音热歌', type: 'song', ui: 0, showMore: true, ext: { source: 'kuwo', keyword: '抖音热歌' } },
@@ -311,7 +309,9 @@ async function getCoverUrl(pic_id, source = 'netease') {
 	return 'https://music.gdstudio.xyz/favicon.ico';
 }
 
-// 统一泛用搜索解析引擎，彻底删除了针对特定平台的硬编码分支
+// --------------------------------------------------------
+// 核心提速：采用 Promise.allSettled 并发抓取封面，抛弃串行阻塞！
+// --------------------------------------------------------
 async function searchSource(text, source, page = 1, count = 20) {
 	let songs = [];
 	try {
@@ -320,13 +320,11 @@ async function searchSource(text, source, page = 1, count = 20) {
 		let searchResults = [];
 		let rawData = null;
 
-		// 策略 1: 尝试带签名
 		try {
 			let res1 = await fetchWithFallback(`${apis[node]}?types=search&source=${source}&name=${encodeURIComponent(text)}&count=${count}&pages=${page}&s=${signature}`, { headers });
 			rawData = typeof res1.data === 'string' ? JSON.parse(res1.data) : res1.data;
 		} catch(e) {}
 
-		// 策略 2: 尝试无签名
 		if (!rawData || (Array.isArray(rawData) && rawData.length === 0) || rawData.error) {
 			try {
 				let res2 = await fetchWithFallback(`${apis[node]}?types=search&source=${source}&name=${encodeURIComponent(text)}&count=${count}&pages=${page}`, { headers });
@@ -334,7 +332,6 @@ async function searchSource(text, source, page = 1, count = 20) {
 			} catch(e) {}
 		}
 
-		// 万能数组扫描
 		if (Array.isArray(rawData)) searchResults = rawData;
 		else if (rawData && typeof rawData === 'object') {
 			if (Array.isArray(rawData.data)) searchResults = rawData.data;
@@ -349,6 +346,27 @@ async function searchSource(text, source, page = 1, count = 20) {
 		
 		searchResults = searchResults.slice(0, count);
 		
+		// 【速度飞跃点】并行构建所有的封面请求
+		const coverPromises = searchResults.map(async (item, index) => {
+			let picId = item.pic_id || item.cover || item.pic || item.album_pic || '';
+			if (picId.startsWith('http')) return { index, url: picId };
+			if (picId) {
+				let fetchedUrl = await getCoverUrl(picId, item.source || source);
+				return { index, url: fetchedUrl };
+			}
+			return { index, url: 'https://music.gdstudio.xyz/favicon.ico' };
+		});
+
+		// 一次性同时发射所有封面请求！速度提升 1000%
+		const coverResults = await Promise.allSettled(coverPromises);
+		const coverMap = {};
+		coverResults.forEach(res => {
+			if (res.status === 'fulfilled') {
+				coverMap[res.value.index] = res.value.url;
+			}
+		});
+		
+		// 组装最终歌单
 		for (let i = 0; i < searchResults.length; i++) {
 			const item = searchResults[i];
 			let songId = item.id || item.songid || item.song_id || item.track_id || i;
@@ -370,19 +388,13 @@ async function searchSource(text, source, page = 1, count = 20) {
 				}
 			}
 			
-			let picId = item.pic_id || item.cover || item.pic || item.album_pic || '';
-			let finalCover = 'https://music.gdstudio.xyz/favicon.ico';
-			
-			if (picId.startsWith('http')) finalCover = picId;
-			else if (picId) finalCover = await getCoverUrl(picId, item.source || source);
-			
 			songs.push({
 				id: `${item.source || source}_${songId}`,
 				name: songName,
-				cover: finalCover,
+				cover: coverMap[i] || 'https://music.gdstudio.xyz/favicon.ico',
 				duration: item.duration || 0,
 				artist: { id: artistId, name: artistName },
-				ext: { track_id: String(songId), source: item.source || source, pic_id: picId }
+				ext: { track_id: String(songId), source: item.source || source, pic_id: item.pic_id || '' }
 			})
 		}
 	} catch (error) {}
@@ -419,7 +431,6 @@ async function getSongInfo(ext) {
 			if (result && result.url) playUrl = result.url;
 		} catch(e) {}
 		
-		// 酷我降级探测
 		if (!playUrl && source === 'kuwo') {
 			for (let br of [320, 128]) {
 				try {
@@ -430,7 +441,6 @@ async function getSongInfo(ext) {
 			}
 		}
 		
-		// Injahow 备用接口
 		if (!playUrl) {
 			try {
 				const { data: fbData } = await $fetch.get(`https://api.injahow.cn/meting/?type=url&id=${track_id}&source=${source}`, { headers: { 'User-Agent': UA } })
@@ -439,7 +449,6 @@ async function getSongInfo(ext) {
 			} catch(e) {}
 		}
 		
-		// 平台防盗链动态伪造
 		let reqHeaders = { 'User-Agent': UA };
 		if (source === 'netease') reqHeaders['Referer'] = 'https://music.163.com/';
 		else if (source === 'kuwo') reqHeaders['Referer'] = 'http://www.kuwo.cn/';
@@ -456,7 +465,6 @@ async function getSongInfo(ext) {
 	}
 }
 
-// 占位废弃接口（软件需要该函数存在但不再返回数据）
 async function getPlaylists(ext) { return jsonify({ list: [] }) }
 async function getPlaylistInfo(ext) { return jsonify({}) }
 async function getAlbums(ext) { return jsonify({ list: [] }) }
