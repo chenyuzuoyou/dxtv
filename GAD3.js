@@ -1,7 +1,7 @@
 /*!
  * @name GADMusic
  * @description 聚合音乐
- * @version v1.7
+ * @version v1.8   1.6正常搜索，1.7搜索慢但是带封面
  * @author kobe (Modified)
  * @key csp_GAD_music
  */
@@ -11,7 +11,6 @@ const cheerio = createCheerio()
 const CryptoJS = createCryptoJS()
 
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
-// 全局强化伪装，防止被防火墙识别为爬虫
 const headers = {
 	'User-Agent': UA,
 	'Referer': 'https://music.gdstudio.xyz/',
@@ -791,24 +790,15 @@ const ALL_SOURCES = [
 })(this)
 
 function crc32(id) {
-	const mkPlayer = {
-		version: '1.0.0'
-	};
-	
+	const mkPlayer = { version: '1.0.0' };
 	if (!id) return '';
-	
 	const hostname = 'music.gdstudio.xyz';
 	const version = mkPlayer.version || '1.0.0';
-	const versionStr = version.split('.').map(part => {
-		return part.length === 1 ? '0' + part : part;
-	}).join('');
-	
+	const versionStr = version.split('.').map(part => part.length === 1 ? '0' + part : part).join('');
 	const timestamp = Date.now();
 	const timeStr = timestamp.toString().slice(0, 9);
-	
 	const signStr = hostname + '|' + versionStr + '|' + timeStr + '|' + id;
 	const md5Hash = md5(signStr);
-	
 	return md5Hash.slice(-8).toUpperCase();
 }
 
@@ -828,26 +818,17 @@ let isOrgUnlocked = false;
 async function fetchWithFallback(url, options) {
 	let opts = options || {};
 	opts.headers = Object.assign({}, headers, opts.headers || {});
-	
 	let res = await $fetch.get(url, opts);
-	
-	if (typeof res.data === 'string' && res.data.trim().startsWith('<')) {
-		throw new Error('Node returned HTML Error');
-	}
-	
+	if (typeof res.data === 'string' && res.data.trim().startsWith('<')) throw new Error('Node returned HTML Error');
 	let checkData = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
-	if (checkData && checkData.error) {
-		throw new Error(checkData.error);
-	}
-	
+	if (checkData && checkData.error) throw new Error(checkData.error);
 	return res;
 }
 
 function sourceNode(source) {
 	const mapping = {
 		kuwo: 'lo', tencent: 'lo', migu: 'cn', kugou: 'cn', ximalaya: 'cn',
-		joox: 'hk', qobuz: 'us', ytmusic: 'us', tidal: 'us', spotify: 'us', deezer: 'us',
-		apple: 'lo' // 统一采用和网页端完全一致的 lo 节点，抛弃不稳定的 us
+		joox: 'hk', qobuz: 'us', ytmusic: 'us', tidal: 'us', spotify: 'us', deezer: 'us', apple: 'lo'
 	};
 	source = source.replace('_album', '');
 	return mapping[source] || 'lo';
@@ -903,12 +884,8 @@ async function getCoverUrl(pic_id, source = 'netease') {
 
 async function getArtists(ext) { return jsonify({ list: [] }); }
 
-// ==========================================
-// 【终极重构核心】：暴力重试与万能提取引擎
-// ==========================================
 async function searchSource(text, source, page = 1, count = 20) {
 	let songs = []
-	
 	if (source === 'tencent') {
 		try {
 			const searchUrl = `http://c.y.qq.com/soso/fcgi-bin/client_search_cp?new_json=1&t=0&aggr=1&cr=1&catZhida=1&lossless=0&flag_qc=0&p=${page}&n=${count}&w=${encodeURIComponent(text)}&needNewCode=0`
@@ -930,7 +907,7 @@ async function searchSource(text, source, page = 1, count = 20) {
 			}
 		} catch (error) {}
 	} else if (source === 'bilibili') {
-		// B站逻辑保持原样
+		// B站搜索逻辑省略，按原先不变
 	} else {
 		try {
 			const signature = crc32(text);
@@ -938,14 +915,12 @@ async function searchSource(text, source, page = 1, count = 20) {
 			let searchResults = [];
 			let rawData = null;
 
-			// 【策略1】：带签名的标准请求 (网易、酷我通常需要)
 			try {
 				const url1 = `${apis[node]}?types=search&source=${source}&name=${encodeURIComponent(text)}&count=${count}&pages=${page}&s=${signature}`;
 				let res1 = await fetchWithFallback(url1, { headers });
 				rawData = typeof res1.data === 'string' ? JSON.parse(res1.data) : res1.data;
 			} catch(e) {}
 
-			// 【策略2】：如果不给数据，说明被签名拦截了（Apple典型情况），强行去掉签名重试！
 			if (!rawData || (Array.isArray(rawData) && rawData.length === 0) || rawData.error) {
 				try {
 					const url2 = `${apis[node]}?types=search&source=${source}&name=${encodeURIComponent(text)}&count=${count}&pages=${page}`;
@@ -954,7 +929,6 @@ async function searchSource(text, source, page = 1, count = 20) {
 				} catch(e) {}
 			}
 
-			// 【策略3】：如果还不行，直接请求 org 备用节点！
 			if (!rawData || (Array.isArray(rawData) && rawData.length === 0) || rawData.error) {
 				try {
 					if (!isOrgUnlocked) {
@@ -967,10 +941,8 @@ async function searchSource(text, source, page = 1, count = 20) {
 				} catch(e) {}
 			}
 
-			// 万能数组扫描（无视字段叫什么，只要是个数组就抓出来）
-			if (Array.isArray(rawData)) {
-				searchResults = rawData;
-			} else if (rawData && typeof rawData === 'object') {
+			if (Array.isArray(rawData)) searchResults = rawData;
+			else if (rawData && typeof rawData === 'object') {
 				if (Array.isArray(rawData.data)) searchResults = rawData.data;
 				else if (Array.isArray(rawData.list)) searchResults = rawData.list;
 				else if (Array.isArray(rawData.result)) searchResults = rawData.result;
@@ -985,11 +957,8 @@ async function searchSource(text, source, page = 1, count = 20) {
 			
 			for (let i = 0; i < searchResults.length; i++) {
 				const item = searchResults[i];
-				
-				// 兼容 Apple/境外源的奇葩字段命名
 				let songId = item.id || item.songid || item.song_id || item.track_id || i;
 				let songName = item.name || item.title || item.songname || '未知歌曲';
-				
 				let artistName = '未知歌手';
 				let artistId = 'unknown';
 				
@@ -1010,12 +979,8 @@ async function searchSource(text, source, page = 1, count = 20) {
 				let picId = item.pic_id || item.cover || item.pic || item.album_pic || '';
 				let finalCover = 'https://music.gdstudio.xyz/favicon.ico';
 				
-				// 如果直接给了直链图片就用直链，否则再去调接口
-				if (picId.startsWith('http')) {
-					finalCover = picId;
-				} else if (picId) {
-					finalCover = await getCoverUrl(picId, item.source || source);
-				}
+				if (picId.startsWith('http')) finalCover = picId;
+				else if (picId) finalCover = await getCoverUrl(picId, item.source || source);
 				
 				songs.push({
 					id: `${item.source || source}_${songId}`,
@@ -1028,7 +993,6 @@ async function searchSource(text, source, page = 1, count = 20) {
 			}
 		} catch (error) {}
 	}
-	
 	return songs
 }
 
@@ -1060,7 +1024,6 @@ async function getSongInfo(ext) {
 			return jsonify({ urls: result?.url ? [result.url] : [], headers: [{ 'User-Agent': UA, 'Referer': 'https://y.qq.com/' }], cover: pic_id ? await getCoverUrl(pic_id, source) : '' })
 		} catch (error) {}
 	} else if (source === 'bilibili') {
-		// B站解析略
 		return jsonify({ urls: [] })
 	} else {
 		if (!track_id) return jsonify({ urls: [] })
@@ -1077,10 +1040,9 @@ async function getSongInfo(ext) {
 				if (result && result.url) playUrl = result.url;
 			} catch(e) {}
 			
-			// 【核心修复】：Apple/Kuwo 无损降级机制
+			// API 降级检测
 			if (!playUrl && (source === 'kuwo' || source === 'apple')) {
-				// Apple 最高只有 320k(部分) 和 128k(AAC)，强制请求 999 会失败
-				const brList = source === 'apple' ? [320, 192, 128] : [320, 128];
+				const brList = source === 'apple' ? [256, 320, 192, 128] : [320, 128];
 				for (let br of brList) {
 					try {
 						const fallbackUrl = `${apis[node]}?types=url&source=${source}&id=${track_id}&br=${br}`;
@@ -1091,14 +1053,29 @@ async function getSongInfo(ext) {
 				}
 			}
 			
-			if (!playUrl) {
+			let urlsArray = [];
+			if (playUrl) urlsArray.push(playUrl);
+			
+			// ==============================================================
+			// 【终极绝杀点】：Apple 平台官方缓存目录无视 API 强行拼接！
+			// 既然官方页面用的是 /cache/ID.256.m4a，我们直接在这里生成这条直链！
+			// ==============================================================
+			if (source === 'apple') {
+				urlsArray.push(`https://music.gdstudio.org/cache/${track_id}.256.m4a`);
+				urlsArray.push(`https://music.gdstudio.xyz/cache/${track_id}.256.m4a`);
+				urlsArray.push(`https://music-api.gdstudio.org/cache/${track_id}.256.m4a`);
+			}
+			
+			// injahow 备用库保底
+			if (urlsArray.length === 0) {
 				try {
 					const { data: fallbackData } = await $fetch.get(`https://api.injahow.cn/meting/?type=url&id=${track_id}&source=${source}`, { headers: { 'User-Agent': UA } })
 					let finalData = typeof fallbackData === 'string' ? JSON.parse(fallbackData) : fallbackData;
-					if (finalData && finalData.url) playUrl = finalData.url
+					if (finalData && finalData.url) urlsArray.push(finalData.url)
 				} catch(e) {}
 			}
 			
+			// 请求头伪装
 			let reqHeaders = { 'User-Agent': UA };
 			if (source === 'netease') reqHeaders['Referer'] = 'https://music.163.com/';
 			else if (source === 'kuwo') reqHeaders['Referer'] = 'http://www.kuwo.cn/';
@@ -1106,7 +1083,7 @@ async function getSongInfo(ext) {
 			else reqHeaders['Referer'] = 'https://music.gdstudio.xyz/';
 
 			return jsonify({
-				urls: playUrl ? [playUrl] : [],
+				urls: urlsArray, // 直接输出包含我们暴力拼凑的 m4a 列表
 				headers: [reqHeaders],
 				cover: pic_id ? await getCoverUrl(pic_id, source) : 'https://music.gdstudio.xyz/favicon.ico'
 			})
