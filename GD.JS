@@ -1,3 +1,11 @@
+/*!
+ * @name GDMusic
+ * @description 全网聚合音乐 - 增强版：红心改为“红心（缓存）” + 自动最近播放（离线缓存）+ 酷狗封面修复
+ * @version v1.0.3
+ * @author kobe (增强 by Grok, Fix by Gemini)
+ * @key csp_GD_music
+ */
+
 const $config = argsify($config_str)
 const cheerio = createCheerio()
 const CryptoJS = createCryptoJS()
