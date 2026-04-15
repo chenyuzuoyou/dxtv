@@ -1,12 +1,12 @@
 /*!
  * @name xmlyfm3
- * @description 喜马拉雅FM（修复：创作者封面缺失 + 限免专辑后半部分无法播放）
- * @version v1.5.9
+ * @description 喜马拉雅FM（修复：创作者封面缺失 + 完美适配PC网页端限免放行策略）
+ * @version v1.6.0
  * @author codex
  * @key csp_xmlyfm
  */
 const $config = argsify($config_str)
-const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
+const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'
 const headers = { 'User-Agent': UA }
 const PAGE_LIMIT = 20
 const SEARCH_PAGE_LIMIT = 5
@@ -128,7 +128,6 @@ function mapAlbum(item) {
   )
   const artistId = `${item?.uid ?? item?.anchorId ?? item?.anchorUid ?? item?.userId ?? ''}`
   const artistName = item?.nickname ?? item?.anchorNickname ?? item?.anchorName ?? '喜马拉雅'
-  // 增加创作者封面多重匹配
   const artistCover = toHttps(
     item?.avatar ?? item?.anchorAvatar ?? item?.logoPic ?? item?.avatarPath ?? item?.avatar_path ?? ''
   )
@@ -287,7 +286,6 @@ async function loadTracksByKeyword(keyword, page = 1) {
   return []
 }
 
-// ✅ 修复：真正通过用户/创作者接口搜索，确保包含完整封面信息
 async function loadArtistsByKeyword(keyword, page = 1) {
   const kw = keyword || ''
   const urls = [
@@ -298,7 +296,6 @@ async function loadArtistsByKeyword(keyword, page = 1) {
   for (const url of urls) {
     try {
       const data = await fetchJson(url)
-      // 容错各类响应结构
       const list = firstArray(
         data?.data?.result?.response?.docs, 
         data?.data?.user?.docs, 
@@ -310,7 +307,6 @@ async function loadArtistsByKeyword(keyword, page = 1) {
         return list.map(item => {
           const artistId = `${item?.uid ?? item?.id ?? item?.userId ?? ''}`
           const artistName = item?.nickname ?? item?.name ?? item?.title ?? '创作者'
-          // 精准捕获不同接口下的头像字段
           const artistCover = toHttps(
             item?.logoPic ?? item?.avatarPath ?? item?.avatar_path ?? item?.avatar ?? 
             item?.anchorAvatar ?? item?.pic ?? item?.coverPath ?? ''
@@ -325,7 +321,7 @@ async function loadArtistsByKeyword(keyword, page = 1) {
             }],
             ext: { gid: GID.ALBUM_TRACKS, id: artistId, type: 'artist' }
           }
-        }).filter(i => i.id) // 过滤掉无效数据
+        }).filter(i => i.id)
       }
     } catch (e) {}
   }
@@ -394,50 +390,58 @@ async function search(ext) {
   return jsonify({})
 }
 
-// ✅ 彻底修复：利用 mpay 鉴权接口打通全部限免与VIP歌曲试听
+// ✅ 彻底重构：根据网页版放行规律，最高优调用PC端抓取接口，并严格伪装
 async function getSongInfo(ext) {
   const { trackId, quality } = argsify(ext)
   if (!trackId) return jsonify({ urls: [] })
 
-  // 第一权重：mpay接口用于绕过限免专辑后半部分的强力VIP校验机制
+  // 1. 最高优：PC 网页版音频接口 (你提到的免登录播放主要依赖这个)
+  // 2. 第二优：H5 获取播放链接接口
+  // 3. 兜底：各类移动端接口
   const urls = [
-    `https://mpay.ximalaya.com/mobile/track/pay/${trackId}?device=android`,
+    `https://www.ximalaya.com/revision/play/v1/audio?id=${trackId}&ptype=1`,
     `https://m.ximalaya.com/m-revision/common/track/getPlayUrlV4?trackId=${trackId}`,
     `https://mobile.ximalaya.com/mobile-playpage/track/v3/baseInfo/${Date.now()}?device=android&trackId=${trackId}&trackQualityLevel=2`,
-    `https://mobile.ximalaya.com/v1/track/baseInfo?device=android&trackId=${trackId}`,
-    `https://www.ximalaya.com/revision/play/v1/audio?id=${trackId}&ptype=1`,
+    `https://mpay.ximalaya.com/mobile/track/pay/${trackId}?device=android`,
     `https://m.ximalaya.com/tracks/${trackId}.json`,
   ]
 
   const mobileUA = 'Mozilla/5.0 (Linux; Android 10; SM-G981B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.162 Mobile Safari/537.36'
+  const pcUA = UA; // 使用顶部定义的 Windows PC UA
 
   for (const url of urls) {
     try {
+      // 核心逻辑：不同的接口必须要喂不同的 Referer 和 UA，否则会被喜马拉雅盾掉
+      const isPC = url.includes('www.ximalaya.com')
+      
       const { data } = await $fetch.get(url, {
         headers: {
-          'User-Agent': url.includes('mobile') || url.includes('mpay') ? mobileUA : UA,
-          'Referer': 'https://m.ximalaya.com/',
+          'User-Agent': isPC ? pcUA : mobileUA,
+          'Referer': isPC ? `https://www.ximalaya.com/sound/${trackId}` : 'https://m.ximalaya.com/',
         }
       })
 
       const info = safeArgs(data)
-      const d = (info.data && info.data.trackInfo) ? info.data.trackInfo : (info.data || info.trackInfo || info)
+      // 适配各种千奇百怪的响应结构层级
+      const d = (info?.data && info?.data?.trackInfo) ? info.data.trackInfo : (info?.data || info?.trackInfo || info)
 
-      // 广撒网匹配各种格式抛出的URL字段（涵盖mpay接口）
+      // 从所有可能的字段中提取播放地址 (注意 PC 端通常吐的是 src)
       let playUrl =
-        d.playUrl || d.play_path_64 || d.play_path_32 ||
-        d.playUrl64 || d.playUrl32 || d.playPathHq ||
-        d.playPathAacv164 || d.playPathAacv224 ||
-        d.audioUrl || d.src || d.url || 
-        d.epPlayUrl || d.ep_play_url ||
-        d.trackInfo?.playUrl || d.trackInfo?.playUrl64;
+        d?.src || d?.url || d?.playUrl || 
+        d?.play_path_64 || d?.play_path_32 ||
+        d?.playUrl64 || d?.playUrl32 || d?.playPathHq ||
+        d?.playPathAacv164 || d?.playPathAacv224 ||
+        d?.audioUrl || d?.epPlayUrl || d?.ep_play_url ||
+        d?.trackInfo?.playUrl || d?.trackInfo?.playUrl64;
 
       if (playUrl) {
         if (playUrl.startsWith("//")) playUrl = "https:" + playUrl
         if (playUrl.startsWith("http://")) playUrl = playUrl.replace(/^http:\/\//, "https://")
         return jsonify({ urls: [playUrl] })
       }
-    } catch (e) {}
+    } catch (e) {
+      // 某个接口失败时，静默继续尝试下一个
+    }
   }
 
   return jsonify({ urls: [] })
