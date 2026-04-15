@@ -1,7 +1,7 @@
 /*!
  * @name xmlyfm3
  * @description 喜马拉雅FM（仅修复：限免专辑点进列表为空）
- * @version v1.5
+ * @version v1.5.1
  * @author codex
  * @key csp_xmlyfm
  */
@@ -345,36 +345,37 @@ async function search(ext) {
 async function getSongInfo(ext) {
   const { trackId, quality } = argsify(ext)
   if (!trackId) return jsonify({ urls: [] })
-  
+
   const urls = [
-    `https://m.ximalaya.com/tracks/${trackId}.json`,
     `https://www.ximalaya.com/revision/play/v1/audio?id=${trackId}&ptype=1`,
+    `https://mobile.ximalaya.com/mobile-playpage/track/v3/baseInfo/${Date.now()}?device=www2&trackId=${trackId}&trackQualityLevel=2`,
   ]
-  
+
   for (const url of urls) {
     try {
       const { data } = await $fetch.get(url, {
         headers: {
           'User-Agent': UA,
-          Referer: `https://www.ximalaya.com/sound/${trackId}`
+          'Referer': 'https://www.ximalaya.com/',
         }
       })
-      const info = safeArgs(data)
+      const d = safeArgs(data)?.data || safeArgs(data)
 
-      // ✅ 关键修复：只要能拿到播放地址，就直接返回，不拦截限免
-      const playUrl =
-        (quality == '32k'
-          ? (info?.play_path_32 || info?.data?.play_path_32 || info?.src)
-          : (info?.play_path_64 || info?.data?.play_path_64 || info?.src || info?.play_path_32)) ||
-        info?.data?.src ||
-        info?.data?.playUrl64 || info?.data?.playUrl32 || info?.data?.playUrl ||
-        info?.playUrl64 || info?.playUrl32 || info?.playUrl || info?.audioUrl || info?.audio_url
+      // 取可播放的免费/限免音频地址（跳过付费加密域）
+      let playUrl =
+        d?.playUrl ||
+        d?.playUrl64 ||
+        d?.playUrl32 ||
+        d?.audioUrl ||
+        d?.url ||
+        d?.src
 
-      if (playUrl) {
+      // 关键：只保留非付费域名的正常音频（a.xmcdn.com）
+      if (playUrl && playUrl.includes('a.xmcdn.com')) {
         return jsonify({ urls: [playUrl] })
       }
     } catch (e) {}
   }
-  
+
   return jsonify({ urls: [] })
 }
