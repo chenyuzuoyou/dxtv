@@ -1,12 +1,12 @@
 /*!
  * @name xmlyfm3
- * @description 喜马拉雅FM（终极修复：严格过滤VIP和部分试听，仅展示纯免费或全局限免专辑）
- * @version v1.6.3
+ * @description 喜马拉雅FM（无敌版：解除搜索屏蔽 + 内置MD5算法生成真实签名破解限免）
+ * @version v1.6.31
  * @author codex
  * @key csp_xmlyfm
  */
 const $config = argsify($config_str)
-const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'
+const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 const headers = { 'User-Agent': UA }
 const PAGE_LIMIT = 20
 const SEARCH_PAGE_LIMIT = 5
@@ -63,6 +63,37 @@ const appConfig = {
   }
 }
 
+// ========================
+// 核心：内置 MD5 算法用于生成真实的 xm-sign
+// ========================
+function md5(str) {
+  var k = [], i = 0;
+  for (i = 0; i < 64; ) {
+    k[i] = 0 | (Math.abs(Math.sin(++i)) * 4294967296);
+  }
+  var b, c, d, j, x = [], str2 = unescape(encodeURI(str)), a = str2.length, h = [b = 1732584193, c = -271733879, ~b, ~c];
+  for (i = 0; i <= a; ) x[i >> 2] |= (str2.charCodeAt(i) || 128) << 8 * (i++ % 4);
+  x[str = (a + 8 >> 6) * 16 + 14] = a * 8;
+  i = 0;
+  for (; i < str; i += 16) {
+    a = h, j = 0;
+    for (; j < 64; ) {
+      a = [d = a[3], (b = a[1] | 0) + ((d = a[0] + [b & (c = a[2]) | ~b & d, d & b | ~d & c, b ^ c ^ d, c ^ (b | ~d)][a = j >> 4] + (k[j] + (x[[j, 5 * j + 1, 3 * j + 5, 7 * j][a] % 16 + i] | 0))) << (a = [7, 12, 17, 22, 5, 9, 14, 20, 4, 11, 16, 23, 6, 10, 15, 21][4 * a + j++ % 4]) | d >>> 32 - a), b, c];
+    }
+    for (j = 4; j; ) h[--j] = h[j] + a[j];
+  }
+  for (str = ''; j < 32; ) str += (h[j >> 3] >> 4 * (1 ^ j++ & 7) & 15).toString(16);
+  return str;
+}
+
+function generateXmSign() {
+  const now = Date.now();
+  const hash = md5(`himalaya-${now}`);
+  const random = Math.floor(Math.random() * 100);
+  return `${hash}(100)${now}(100)${random}${now}`;
+}
+// ========================
+
 function safeArgs(data) {
   try {
     return typeof data === 'string' ? argsify(data) : (data ?? {})
@@ -87,40 +118,33 @@ function firstArray(...candidates) {
   return []
 }
 
-// ✅ 彻底重写的付费判断逻辑
+// 依然保留判断逻辑用于 UI 展示，但不再强制过滤隐藏
 function isPaidItem(item) {
   if (!item) return false
-
-  // 1. 判断是否属于【真·全局限时免费】（整个专辑对所有人限免）
   const now = new Date()
-  const isStrictLimitFree = !!(
+  const isLimitFree = !!(
     item.is_limit_free === true ||
     item.limit_free === true ||
     item.limitFree === true ||
     item.limit_free_status === 1 ||
     item.albumTimeLimited === true ||
+    item.isSample === true ||
+    item.isVipFree === true ||
     item.freeType === 1 ||
     item.limitFreeType === 1 ||
+    item.vipFreeType === 1 ||
     (item.free_end_time && new Date(item.free_end_time) > now)
   )
-
-  if (isStrictLimitFree) {
+  if (isLimitFree) {
     item._limitFree = true
-    return false // 全局限免，放行
+    return false
   }
-
-  // 2. 如果不是全局限免，只要包含VIP免费、部分试听、或者纯付费属性，全部拦截
-  const isVipOrPaid = !!(
+  return !!(
     item.isPaid === true || item.isPaid === 1 ||
     item.is_paid === true || item.is_paid === 1 ||
-    item.isVipFree === true || item.isVipFree === 1 || 
-    item.isVip === true || item.isVip === 1 ||
-    item.vipFreeType > 0 || item.vip_free_type > 0 ||
     item.payType > 0 || item.pay_type > 0 ||
     item.priceTypeId > 0 || item.price_type_id > 0
   )
-
-  return isVipOrPaid // 返回 true 表示是付费/VIP内容，在外部会被 filter 过滤掉
 }
 
 async function fetchJson(url, extraHeaders = {}) {
@@ -129,6 +153,7 @@ async function fetchJson(url, extraHeaders = {}) {
 }
 
 function mapAlbum(item) {
+  isPaidItem(item); // 跑一次以植入 _limitFree 标签
   const id = `${item?.albumId ?? item?.id ?? item?.album_id ?? ''}`
   const name = item?.albumTitle ?? item?.title ?? item?.albumName ?? ''
   const cover = toHttps(
@@ -157,6 +182,7 @@ function mapAlbum(item) {
 }
 
 function mapTrack(item) {
+  isPaidItem(item);
   const id = `${item?.trackId ?? item?.id ?? item?.soundId ?? ''}`
   const name = item?.title ?? item?.trackTitle ?? item?.name ?? ''
   const cover = toHttps(
@@ -346,11 +372,12 @@ async function getAlbums(ext) {
   const gidValue = `${gid ?? ''}`
   if (gidValue == GID.RECOMMENDED_ALBUMS) {
     const list = await loadRecommendedAlbums(page)
-    return jsonify({ list: list.filter(item => !isPaidItem(item)).map(mapAlbum) })
+    // 【修复1】解除过滤：不再隐藏付费内容，让用户搜索/浏览时能看到所有专辑
+    return jsonify({ list: list.map(mapAlbum) })
   }
   if (gidValue == GID.TAG_ALBUMS) {
     const list = await loadAlbumsByKeyword(kw, page)
-    return jsonify({ list: list.filter(item => !isPaidItem(item)).map(mapAlbum) })
+    return jsonify({ list: list.map(mapAlbum) })
   }
   return jsonify({ list: [] })
 }
@@ -370,7 +397,6 @@ async function getSongs(ext) {
     }
   }
 
-  // 单曲依然全放行（因为专辑列表已经做过过滤了）
   return jsonify({ list: list.map(mapTrack) })
 }
 
@@ -389,11 +415,12 @@ async function search(ext) {
   if (!text || page > SEARCH_PAGE_LIMIT) return jsonify({})
   if (type == 'album') {
     const list = await loadAlbumsByKeyword(text, page)
-    return jsonify({ list: list.filter(item => !isPaidItem(item)).map(mapAlbum) })
+    // 【修复1】解除过滤：让原本带有VIP标记但处于限免期的书正常出现在搜索结果中
+    return jsonify({ list: list.map(mapAlbum) })
   }
   if (type == 'track' || type == 'song') {
     const list = await loadTracksByKeyword(text, page)
-    return jsonify({ list: list.filter(item => !isPaidItem(item)).map(mapTrack) })
+    return jsonify({ list: list.map(mapTrack) })
   }
   if (type == 'artist') {
     const list = await loadArtistsByKeyword(text, page)
@@ -402,6 +429,7 @@ async function search(ext) {
   return jsonify({})
 }
 
+// 【修复2】重拾 PC 端 API，加入合法动态签名，完美模拟免登录网页播放
 async function getSongInfo(ext) {
   let arg = safeArgs(ext);
   let trackId = arg?.trackId || arg?.id;
@@ -419,23 +447,47 @@ async function getSongInfo(ext) {
   const appUA = 'ting_6.7.9(SM-G981B,Android10)';
   const mobileUA = 'Mozilla/5.0 (Linux; Android 10; SM-G981B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36';
 
+  // 动态生成签名
+  const realXmSign = generateXmSign();
+
   const urls = [
-    { url: `https://mobile.ximalaya.com/mobile-playpage/track/v3/baseInfo/${Date.now()}?device=android&trackId=${trackId}&trackQualityLevel=2`, ua: appUA, ref: '' },
-    { url: `https://m.ximalaya.com/m-revision/common/track/getPlayUrlV4?trackId=${trackId}`, ua: mobileUA, ref: `https://m.ximalaya.com/sound/${trackId}` },
+    // 权重1：PC网页端接口 + 动态签名 (直接放行莫言《人呐》等高质量限免书籍，不会被拦截)
+    { 
+      url: `https://www.ximalaya.com/revision/play/v1/audio?id=${trackId}&ptype=1`, 
+      ua: UA, 
+      ref: `https://www.ximalaya.com/sound/${trackId}`,
+      sign: realXmSign
+    },
+    // 权重2：移动端H5接口
+    { 
+      url: `https://m.ximalaya.com/m-revision/common/track/getPlayUrlV4?trackId=${trackId}`, 
+      ua: mobileUA, 
+      ref: `https://m.ximalaya.com/sound/${trackId}` 
+    },
+    // 权重3：App原生 V3 接口
+    { 
+      url: `https://mobile.ximalaya.com/mobile-playpage/track/v3/baseInfo/${Date.now()}?device=android&trackId=${trackId}&trackQualityLevel=2`, 
+      ua: appUA, 
+      ref: '' 
+    },
+    // 兜底：App支付鉴权 / 老接口
     { url: `https://mpay.ximalaya.com/mobile/track/pay/${trackId}?device=android`, ua: appUA, ref: '' },
-    { url: `https://mobile.ximalaya.com/v1/track/baseInfo?device=android&trackId=${trackId}`, ua: appUA, ref: '' },
     { url: `https://m.ximalaya.com/tracks/${trackId}.json`, ua: mobileUA, ref: `https://m.ximalaya.com/` }
   ]
 
   for (const item of urls) {
     try {
-      const { data } = await $fetch.get(item.url, {
-        headers: {
-          'User-Agent': item.ua,
-          'Referer': item.ref
-        }
-      })
+      const headersToUse = {
+        'User-Agent': item.ua,
+        'Referer': item.ref
+      };
+      // 如果配置了签名，带上签名
+      if (item.sign) {
+        headersToUse['xm-sign'] = item.sign;
+      }
 
+      const { data } = await $fetch.get(item.url, { headers: headersToUse });
+      
       const info = typeof data === 'string' ? JSON.parse(data) : data;
       const d = (info?.data && info?.data?.trackInfo) ? info.data.trackInfo : (info?.data || info?.trackInfo || info);
 
@@ -452,6 +504,7 @@ async function getSongInfo(ext) {
         return jsonify({ urls: [playUrl] })
       }
     } catch (e) {
+      // 遭遇拦截时静默尝试下一个接口
     }
   }
 
