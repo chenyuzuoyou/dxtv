@@ -1,7 +1,7 @@
 /*!
  * @name xmlyfm3
- * @description 喜马拉雅FM（纯净版：彻底屏蔽限免/VIP + 极速解析免费接口）
- * @version v1.6.4
+ * @description 喜马拉雅FM（纯净提速版：恢复标准下拉分页加载，点开秒进）
+ * @version v1.6.5
  * @author codex
  * @key csp_xmlyfm
  */
@@ -113,7 +113,7 @@ function isPaidItem(item) {
     item.priceTypeId > 0 || item.price_type_id > 0
   )
 
-  // 只要涉及限免或付费，通通返回 true（需要过滤掉）
+  // 只要涉及限免或付费，通通返回 true（脚本会将其过滤掉）
   return isLimitFree || isPaid
 }
 
@@ -207,38 +207,25 @@ async function loadAlbumsByKeyword(keyword, page = 1) {
   return []
 }
 
+// ✅ 优化机制：摒弃 while 循环，完全依赖软件原生的 page 参数进行懒加载
 async function loadAlbumTracks(albumId, page = 1) {
-  let allTracks = [];
-  let currentPage = 1;
-  const maxPage = 50;
+  const urls = [
+    `https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${albumId}&pageNum=${page}&pageSize=${PAGE_LIMIT}`,
+    `https://mobile.ximalaya.com/mobile/v1/album/track/?albumId=${albumId}&pageSize=${PAGE_LIMIT}&pageId=${page}`
+  ];
 
-  while (currentPage <= maxPage) {
-    const urls = [
-      `https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${albumId}&pageNum=${currentPage}&pageSize=100`,
-      `https://mobile.ximalaya.com/mobile/v1/album/track/?albumId=${albumId}&pageSize=100&pageId=${currentPage}`
-    ];
-
-    let pageTracks = [];
-    for (const url of urls) {
-      try {
-        const data = await fetchJson(url, {
-          Referer: `https://www.ximalaya.com/album/${albumId}`
-        });
-        const list = firstArray(data?.data?.tracks, data?.data?.list, data?.tracks);
-        if (list.length > 0) {
-          pageTracks = list;
-          break;
-        }
-      } catch (e) {}
-    }
-
-    if (pageTracks.length === 0) break;
-    allTracks = allTracks.concat(pageTracks);
-    if (pageTracks.length < 100) break; 
-    currentPage++;
+  for (const url of urls) {
+    try {
+      const data = await fetchJson(url, {
+        Referer: `https://www.ximalaya.com/album/${albumId}`
+      });
+      const list = firstArray(data?.data?.tracks, data?.data?.list, data?.tracks);
+      if (list.length > 0) {
+        return list; // 返回当前请求的20条，软件滑到底部会触发下一页
+      }
+    } catch (e) {}
   }
-
-  return allTracks;
+  return [];
 }
 
 async function loadArtistTracks(artistId, page = 1) {
@@ -350,16 +337,17 @@ async function getAlbums(ext) {
 
 async function getSongs(ext) {
   const { page, gid, id, text, type } = argsify(ext)
+  const pageNum = page || 1; // 捕获软件传递的当前页码
   const gidValue = `${gid ?? ''}`
   let list = []
 
   if (gidValue == GID.ALBUM_TRACKS) {
     if (type === 'artist') {
-      list = await loadArtistTracks(id, page)
+      list = await loadArtistTracks(id, pageNum)
     } else if (text) {
-      list = await loadTracksByKeyword(text, page)
+      list = await loadTracksByKeyword(text, pageNum)
     } else {
-      list = await loadAlbumTracks(id, page)
+      list = await loadAlbumTracks(id, pageNum)
     }
   }
 
