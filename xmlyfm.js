@@ -1,7 +1,7 @@
 /*!
  * @name xmlyfm3
  * @description 喜马拉雅FM（仅修复：限免专辑点进列表为空）
- * @version v1.5.2
+ * @version v1.5.3
  * @author codex
  * @key csp_xmlyfm
  */
@@ -347,8 +347,8 @@ async function getSongInfo(ext) {
   if (!trackId) return jsonify({ urls: [] })
 
   const urls = [
-    `https://www.ximalaya.com/revision/play/v1/audio?id=${trackId}&ptype=1`,
-    `https://m.ximalaya.com/tracks/${trackId}.json`,
+    "https://m.ximalaya.com/tracks/" + trackId + ".json",
+    "https://www.ximalaya.com/revision/play/v1/audio?id=" + trackId + "&ptype=1"
   ]
 
   for (const url of urls) {
@@ -356,26 +356,34 @@ async function getSongInfo(ext) {
       const { data } = await $fetch.get(url, {
         headers: {
           'User-Agent': UA,
-          'Referer': 'https://www.ximalaya.com/',
+          'Referer': 'https://www.ximalaya.com/'
         }
       })
 
       const info = safeArgs(data)
       const d = info.data || info
 
-      // 统一取免费/限免可播放地址（不做任何付费拦截）
+      // 允许：免费 + 限免
+      const isFree = !d.is_paid && !d.isPaid
+      const isLimitFree = !!(
+        d.is_free || d.is_free_for_vip || d.is_limit_free ||
+        d.limit_free || d.isSample || d.isVipFree
+      )
+
+      // 纯付费直接跳过
+      if (!isFree && !isLimitFree) {
+        continue
+      }
+
       let playUrl =
-        d?.play_path_64 ||
-        d?.play_path_32 ||
-        d?.playUrl64 ||
-        d?.playUrl32 ||
-        d?.playUrl ||
-        d?.audioUrl ||
-        d?.src
+        d.play_path_64 || d.play_path_32 ||
+        d.playUrl64 || d.playUrl32 || d.playUrl ||
+        d.audioUrl || d.src
 
       if (playUrl) {
-        // 自动补全 https
-        if (playUrl.startsWith("//")) playUrl = "https:" + playUrl
+        if (playUrl.startsWith("//")) {
+          playUrl = "https:" + playUrl
+        }
         return jsonify({ urls: [playUrl] })
       }
     } catch (e) {}
