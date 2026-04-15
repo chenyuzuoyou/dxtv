@@ -1,14 +1,14 @@
 /*!
  * @name xmlyfm3
- * @description 喜马拉雅FM（修复：彻底解决列表上滑不加载新页的问题）
- * @version v1.6.4
+ * @description 喜马拉雅FM（无敌版：彻底解决只加载50条/上滑不翻页问题 + 升序排序）
+ * @version v1.6.5
  * @author codex
  * @key csp_xmlyfm
  */
 const $config = argsify($config_str)
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 const headers = { 'User-Agent': UA }
-const PAGE_LIMIT = 20
+const PAGE_LIMIT = 30 // 标准化单页数量为 30
 const SEARCH_PAGE_LIMIT = 5
 const XM_SOURCE = 'xmly'
 const GID = {
@@ -240,12 +240,12 @@ async function loadAlbumsByKeyword(keyword, page = 1) {
   return []
 }
 
-// ✅ 彻底废弃导致只有20条的死循环，采用正常分页+每次50条拉取（完美匹配原生上滑加载）
+// 强制引入 sort=1 和 isAsc=true 保障分页的连续升序
 async function loadAlbumTracks(albumId, page = 1) {
-  const pageSize = 50; 
+  const pageSize = PAGE_LIMIT; 
   const urls = [
-    `https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${albumId}&pageNum=${page}&pageSize=${pageSize}`,
-    `https://mobile.ximalaya.com/mobile/v1/album/track/?albumId=${albumId}&pageSize=${pageSize}&pageId=${page}`
+    `https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${albumId}&pageNum=${page}&sort=1&pageSize=${pageSize}`,
+    `https://mobile.ximalaya.com/mobile/v1/album/track/?albumId=${albumId}&isAsc=true&pageSize=${pageSize}&pageId=${page}`
   ];
 
   for (const url of urls) {
@@ -260,9 +260,8 @@ async function loadAlbumTracks(albumId, page = 1) {
   return [];
 }
 
-// 创作者列表页也加大了加载量
 async function loadArtistTracks(artistId, page = 1) {
-  const pageSize = 50;
+  const pageSize = PAGE_LIMIT;
   const urls = [
     `https://www.ximalaya.com/revision/user/track?page=${page}&pageSize=${pageSize}&uid=${artistId}`,
     `https://m.ximalaya.com/m-revision/common/user/track/page?uid=${artistId}&page=${page}&pageSize=${pageSize}`,
@@ -354,28 +353,33 @@ async function loadArtistsByKeyword(keyword, page = 1) {
 
 async function getConfig() { return jsonify(appConfig) }
 
-// ✅ 精确提取 page 参数，供后续上滑加载使用
-async function getAlbums(ext) {
+// 【修复点】：增加 `pg` 双重抓取保护，并且补全返回结构里的 `page`、`limit` 和 `total`
+async function getAlbums(ext, pg) {
   const args = safeArgs(ext);
-  const page = parseInt(args.page || args.pg || 1);
+  const page = parseInt(pg || args.page || args.pg || 1);
   const gidValue = `${args.gid ?? ''}`;
   const kw = args.kw;
 
+  let list = []
   if (gidValue == GID.RECOMMENDED_ALBUMS) {
-    const list = await loadRecommendedAlbums(page)
-    return jsonify({ list: list.map(mapAlbum) })
+    list = await loadRecommendedAlbums(page)
+  } else if (gidValue == GID.TAG_ALBUMS) {
+    list = await loadAlbumsByKeyword(kw, page)
   }
-  if (gidValue == GID.TAG_ALBUMS) {
-    const list = await loadAlbumsByKeyword(kw, page)
-    return jsonify({ list: list.map(mapAlbum) })
-  }
-  return jsonify({ list: [] })
+  
+  // 强行附加总分页参数，诱导软件执行翻页加载
+  return jsonify({ 
+    list: list.map(mapAlbum),
+    page: page,
+    limit: PAGE_LIMIT,
+    total: 99999
+  })
 }
 
-// ✅ 精确传递 page 到 loadXXTracks 方法中，打通上滑分页链路
-async function getSongs(ext) {
+// 【修复点】：同上，打通歌曲/分集的上滑拦截机制
+async function getSongs(ext, pg) {
   const args = safeArgs(ext);
-  const page = parseInt(args.page || args.pg || 1);
+  const page = parseInt(pg || args.page || args.pg || 1);
   const gidValue = `${args.gid ?? ''}`;
   
   let list = []
@@ -390,38 +394,45 @@ async function getSongs(ext) {
     }
   }
 
-  return jsonify({ list: list.map(mapTrack) })
+  return jsonify({ 
+    list: list.map(mapTrack),
+    page: page,
+    limit: PAGE_LIMIT,
+    total: 99999 
+  })
 }
 
-async function getArtists(ext) {
+async function getArtists(ext, pg) {
   const args = safeArgs(ext);
-  const page = parseInt(args.page || args.pg || 1);
+  const page = parseInt(pg || args.page || args.pg || 1);
   const keyword = args.text || args.kw || '';
   if (!keyword) return jsonify({ list: [] })
   const list = await loadArtistsByKeyword(keyword, page)
-  return jsonify({ list })
+  return jsonify({ list, page, limit: PAGE_LIMIT, total: 99999 })
 }
 
 async function getPlaylists(ext) { return jsonify({ list: [] }) }
 
-async function search(ext) {
+async function search(ext, pg) {
   const args = safeArgs(ext);
-  const page = parseInt(args.page || args.pg || 1);
+  const page = parseInt(pg || args.page || args.pg || 1);
   const text = args.text;
   const type = args.type;
 
   if (!text || page > SEARCH_PAGE_LIMIT) return jsonify({})
+  
+  let list = []
   if (type == 'album') {
-    const list = await loadAlbumsByKeyword(text, page)
-    return jsonify({ list: list.map(mapAlbum) })
+    list = await loadAlbumsByKeyword(text, page)
+    return jsonify({ list: list.map(mapAlbum), page, limit: PAGE_LIMIT, total: 99999 })
   }
   if (type == 'track' || type == 'song') {
-    const list = await loadTracksByKeyword(text, page)
-    return jsonify({ list: list.map(mapTrack) })
+    list = await loadTracksByKeyword(text, page)
+    return jsonify({ list: list.map(mapTrack), page, limit: PAGE_LIMIT, total: 99999 })
   }
   if (type == 'artist') {
-    const list = await loadArtistsByKeyword(text, page)
-    return jsonify({ list })
+    list = await loadArtistsByKeyword(text, page)
+    return jsonify({ list, page, limit: PAGE_LIMIT, total: 99999 })
   }
   return jsonify({})
 }
