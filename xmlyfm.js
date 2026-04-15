@@ -1,7 +1,7 @@
 /*!
  * @name xmlyfm3
  * @description 喜马拉雅FM（仅修复：限免专辑点进列表为空）
- * @version v1.4.2
+ * @version v1.5
  * @author codex
  * @key csp_xmlyfm
  */
@@ -345,32 +345,36 @@ async function search(ext) {
 async function getSongInfo(ext) {
   const { trackId, quality } = argsify(ext)
   if (!trackId) return jsonify({ urls: [] })
+  
   const urls = [
     `https://m.ximalaya.com/tracks/${trackId}.json`,
-    `https://www.ximalaya.com/revision/play/v1/audio?id=${trackId}&ptype=1`
+    `https://www.ximalaya.com/revision/play/v1/audio?id=${trackId}&ptype=1`,
   ]
+  
   for (const url of urls) {
     try {
       const { data } = await $fetch.get(url, {
-        headers: { 'User-Agent': UA, Referer: `https://www.ximalaya.com/sound/${trackId}` }
+        headers: {
+          'User-Agent': UA,
+          Referer: `https://www.ximalaya.com/sound/${trackId}`
+        }
       })
       const info = safeArgs(data)
-      const now = new Date()
-      const isLimitFree = !!(
-        info.is_limit_free || info.limit_free || info.limitFree ||
-        info.albumTimeLimited || info.isSample || info.isVipFree ||
-        info.vipFreeType === 1 ||
-        (info.free_end_time && new Date(info.free_end_time) > now)
-      )
-      if ((info?.is_paid || info?.data?.isPaid) && !isLimitFree) {
-        return jsonify({ urls: [] })
+
+      // ✅ 关键修复：只要能拿到播放地址，就直接返回，不拦截限免
+      const playUrl =
+        (quality == '32k'
+          ? (info?.play_path_32 || info?.data?.play_path_32 || info?.src)
+          : (info?.play_path_64 || info?.data?.play_path_64 || info?.src || info?.play_path_32)) ||
+        info?.data?.src ||
+        info?.data?.playUrl64 || info?.data?.playUrl32 || info?.data?.playUrl ||
+        info?.playUrl64 || info?.playUrl32 || info?.playUrl || info?.audioUrl || info?.audio_url
+
+      if (playUrl) {
+        return jsonify({ urls: [playUrl] })
       }
-      const playUrl = (quality == '32k'
-        ? (info?.play_path_32 || info?.data?.play_path_32 || info?.src)
-        : (info?.play_path_64 || info?.data?.play_path_64 || info?.src || info?.play_path_32)) ||
-        info?.data?.playUrl64 || info?.data?.playUrl32 || info?.playUrl || info?.audioUrl
-      if (playUrl) return jsonify({ urls: [playUrl] })
     } catch (e) {}
   }
+  
   return jsonify({ urls: [] })
 }
