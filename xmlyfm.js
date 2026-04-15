@@ -1,7 +1,7 @@
 /*!
  * @name xmlyfm3
  * @description 喜马拉雅FM (隐藏VIP和付费内容显示限免)
- * @version v1.1
+ * @version v1.11
  * @author codex
  * @key csp_xmlyfm
  */
@@ -723,18 +723,18 @@ async function getSongInfo(ext) {
       })
 
       const info = safeArgs(data)
-      // 新增：判断是否限免中
-      const isLimitFree = info.is_limit_free === true || info.limit_free_status === 1;
-      // 仅当“非限免 + 付费”时，才返回空链接
-      if ((info?.is_paid || info?.data?.isPaid) && !isLimitFree) {
-        return jsonify({ urls: [] });
-      }
-      // 兜底保障：即使获取到了链接，如果接口明确说是付费的，也不返回
-      // 限免内容不拦截
-      const isLimitFree =
-        info.is_limit_free || info.limit_free || info.limitFree ||
-        info.albumTimeLimited || info.isSample || info.isVipFree;
+      // 整合限免判断逻辑，避免重复定义
+      const isLimitFree = 
+        info.is_limit_free === true || 
+        info.limit_free_status === 1 ||
+        info.limit_free || 
+        info.limitFree ||
+        info.albumTimeLimited || 
+        info.isSample || 
+        info.isVipFree ||
+        (info.free_end_time && new Date(info.free_end_time) > new Date());
       
+      // 仅当“非限免 + 付费”时，才返回空链接
       if ((info?.is_paid || info?.data?.isPaid) && !isLimitFree) {
         return jsonify({ urls: [] });
       }
