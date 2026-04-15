@@ -1,7 +1,7 @@
 /*!
  * @name xmlyfm3
- * @description 喜马拉雅FM（仅修复：限免专辑点进列表为空）
- * @version v1.5.6
+ * @description 喜马拉雅FM（修复：限免专辑点进列表为空 + 修复限免无法播放）
+ * @version v1.5.7
  * @author codex
  * @key csp_xmlyfm
  */
@@ -139,7 +139,7 @@ function mapAlbum(item) {
       id: artistId, name: artistName, title: artistName,
       cover: artistCover, artwork: artistCover, pic: artistCover, avatar: artistCover
     },
-    ext: { gid: GID.ALBUM_TRACKS, id, type: 'album', isAlbumLimitFree: item._limitFree } // 关键：传专辑是否限免
+    ext: { gid: GID.ALBUM_TRACKS, id, type: 'album', isAlbumLimitFree: item._limitFree }
   }
 }
 
@@ -219,7 +219,7 @@ async function loadAlbumsByKeyword(keyword, page = 1) {
 async function loadAlbumTracks(albumId, page = 1) {
   let allTracks = [];
   let currentPage = 1;
-  const maxPage = 50; // 最多加载50页，足够覆盖所有专辑
+  const maxPage = 50;
 
   while (currentPage <= maxPage) {
     const urls = [
@@ -243,7 +243,7 @@ async function loadAlbumTracks(albumId, page = 1) {
 
     if (pageTracks.length === 0) break;
     allTracks = allTracks.concat(pageTracks);
-    if (pageTracks.length < 100) break; // 最后一页
+    if (pageTracks.length < 100) break; 
     currentPage++;
   }
 
@@ -312,8 +312,7 @@ async function getAlbums(ext) {
   return jsonify({ list: [] })
 }
 
-// ✅ 核心修复：限免专辑下，不过滤单曲，全部显示（只排除纯付费）
-// 🔥 强制修复：限免专辑曲目 100% 显示
+// 🔥 核心修复：限免专辑下，不过滤单曲，全部显示
 async function getSongs(ext) {
   const { page, gid, id, text, type } = argsify(ext)
   const gidValue = `${gid ?? ''}`
@@ -325,12 +324,10 @@ async function getSongs(ext) {
     } else if (text) {
       list = await loadTracksByKeyword(text, page)
     } else {
-      // 🔥 专辑曲目：直接加载，不过滤！
       list = await loadAlbumTracks(id, page)
     }
   }
 
-  // 🔥 核心：不管是不是限免，全部显示，只在播放时判断
   return jsonify({ list: list.map(mapTrack) })
 }
 
@@ -362,36 +359,44 @@ async function search(ext) {
   return jsonify({})
 }
 
+// ✅ 彻底修复：精准解析多版本接口，找回被隐藏的限免/VIP播放链接
 async function getSongInfo(ext) {
   const { trackId, quality } = argsify(ext)
   if (!trackId) return jsonify({ urls: [] })
 
+  // 增加高优移动端接口，移动端往往放宽了限免/VIP的拉取限制
   const urls = [
-    `https://m.ximalaya.com/tracks/${trackId}.json`,
+    `https://mobile.ximalaya.com/mobile-playpage/track/v3/baseInfo/${Date.now()}?device=android&trackId=${trackId}&trackQualityLevel=2`,
+    `https://mobile.ximalaya.com/v1/track/baseInfo?device=android&trackId=${trackId}`,
     `https://www.ximalaya.com/revision/play/v1/audio?id=${trackId}&ptype=1`,
-    `https://mobile.ximalaya.com/mobile-playpage/track/v3/baseInfo/${Date.now()}?device=www2&trackId=${trackId}&trackQualityLevel=2`,
+    `https://m.ximalaya.com/tracks/${trackId}.json`,
   ]
+
+  const mobileUA = 'Mozilla/5.0 (Linux; Android 10; SM-G981B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.162 Mobile Safari/537.36'
 
   for (const url of urls) {
     try {
       const { data } = await $fetch.get(url, {
         headers: {
-          'User-Agent': UA,
-          'Referer': 'https://www.ximalaya.com/',
+          'User-Agent': url.includes('mobile') ? mobileUA : UA,
+          'Referer': 'https://m.ximalaya.com/',
         }
       })
 
       const info = safeArgs(data)
-      const d = info.data || info
+      
+      // 关键修复：喜马拉雅移动端v3接口数据通常藏在 info.data.trackInfo 里
+      const d = (info.data && info.data.trackInfo) ? info.data.trackInfo : (info.data || info.trackInfo || info)
 
-      // 无条件取地址，不判断任何付费、限免、VIP
       let playUrl =
         d.play_path_64 || d.play_path_32 ||
         d.playUrl64 || d.playUrl32 || d.playUrl ||
+        d.playPathAacv164 || d.playPathAacv224 || d.playPathHq ||
         d.audioUrl || d.src || d.url
 
       if (playUrl) {
         if (playUrl.startsWith("//")) playUrl = "https:" + playUrl
+        if (playUrl.startsWith("http://")) playUrl = playUrl.replace(/^http:\/\//, "https://")
         return jsonify({ urls: [playUrl] })
       }
     } catch (e) {}
