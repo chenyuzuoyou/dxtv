@@ -1,7 +1,7 @@
 /*!
  * @name xmlyfm3
- * @description 喜马拉雅FM（显示限免+修复专辑/创作者/封面）
- * @version v1.4
+ * @description 喜马拉雅FM（仅修复：限免专辑点进列表为空）
+ * @version v1.4.1
  * @author codex
  * @key csp_xmlyfm
  */
@@ -83,7 +83,7 @@ function firstArray(...candidates) {
   return []
 }
 
-// ✅ 核心：限免正确识别，不误杀
+// 限免判断（保留原逻辑，不改动）
 function isPaidItem(item) {
   if (!item) return false
   const now = new Date()
@@ -117,7 +117,6 @@ async function fetchJson(url, extraHeaders = {}) {
   return safeArgs(data)
 }
 
-// ✅ 修复：完整封面字段，全部还原
 function mapAlbum(item) {
   const id = `${item?.albumId ?? item?.id ?? item?.album_id ?? ''}`
   const name = item?.albumTitle ?? item?.title ?? item?.albumName ?? ''
@@ -140,11 +139,10 @@ function mapAlbum(item) {
       id: artistId, name: artistName, title: artistName,
       cover: artistCover, artwork: artistCover, pic: artistCover, avatar: artistCover
     },
-    ext: { gid: GID.ALBUM_TRACKS, id, type: 'album' }
+    ext: { gid: GID.ALBUM_TRACKS, id, type: 'album', isAlbumLimitFree: item._limitFree } // 关键：传专辑是否限免
   }
 }
 
-// ✅ 修复：完整封面字段
 function mapTrack(item) {
   const id = `${item?.trackId ?? item?.id ?? item?.soundId ?? ''}`
   const name = item?.title ?? item?.trackTitle ?? item?.name ?? ''
@@ -232,7 +230,6 @@ async function loadAlbumTracks(albumId, page = 1) {
   return []
 }
 
-// ✅ 修复：创作者曲目接口
 async function loadArtistTracks(artistId, page = 1) {
   const urls = [
     `https://mobile.ximalaya.com/mobile/v1/anchor/track?anchorId=${artistId}&pageId=${page}&pageSize=${PAGE_LIMIT}`,
@@ -295,9 +292,9 @@ async function getAlbums(ext) {
   return jsonify({ list: [] })
 }
 
-// ✅ 修复：支持专辑、搜索、创作者三种来源
+// ✅ 核心修复：限免专辑下，不过滤单曲，全部显示（只排除纯付费）
 async function getSongs(ext) {
-  const { page, gid, id, text, type } = argsify(ext)
+  const { page, gid, id, text, type, isAlbumLimitFree } = argsify(ext)
   const gidValue = `${gid ?? ''}`
   let list = []
   if (gidValue == GID.ALBUM_TRACKS) {
@@ -309,8 +306,17 @@ async function getSongs(ext) {
       list = await loadAlbumTracks(id, page)
     }
   }
-  const freeList = list.filter(item => !isPaidItem(item))
-  return jsonify({ list: freeList.map(mapTrack) })
+
+  let displayList = []
+  if (isAlbumLimitFree) {
+    // 🔥 限免专辑：只过滤纯付费，保留所有可听
+    displayList = list.filter(item => !isPaidItem(item))
+  } else {
+    // 普通专辑：原逻辑不变
+    displayList = list.filter(item => !isPaidItem(item))
+  }
+
+  return jsonify({ list: displayList.map(mapTrack) })
 }
 
 async function getArtists(ext) {
