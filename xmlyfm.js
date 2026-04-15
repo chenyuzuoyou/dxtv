@@ -1,7 +1,7 @@
 /*!
  * @name xmlyfm3
- * @description 喜马拉雅FM（纯净提速版：恢复标准下拉分页加载，点开秒进）
- * @version v1.6.5
+ * @description 喜马拉雅FM（修复：彻底解决列表上滑不加载新页的问题）
+ * @version v1.6.4
  * @author codex
  * @key csp_xmlyfm
  */
@@ -63,6 +63,37 @@ const appConfig = {
   }
 }
 
+// ========================
+// 核心：内置 MD5 算法用于生成真实的 xm-sign
+// ========================
+function md5(str) {
+  var k = [], i = 0;
+  for (i = 0; i < 64; ) {
+    k[i] = 0 | (Math.abs(Math.sin(++i)) * 4294967296);
+  }
+  var b, c, d, j, x = [], str2 = unescape(encodeURI(str)), a = str2.length, h = [b = 1732584193, c = -271733879, ~b, ~c];
+  for (i = 0; i <= a; ) x[i >> 2] |= (str2.charCodeAt(i) || 128) << 8 * (i++ % 4);
+  x[str = (a + 8 >> 6) * 16 + 14] = a * 8;
+  i = 0;
+  for (; i < str; i += 16) {
+    a = h, j = 0;
+    for (; j < 64; ) {
+      a = [d = a[3], (b = a[1] | 0) + ((d = a[0] + [b & (c = a[2]) | ~b & d, d & b | ~d & c, b ^ c ^ d, c ^ (b | ~d)][a = j >> 4] + (k[j] + (x[[j, 5 * j + 1, 3 * j + 5, 7 * j][a] % 16 + i] | 0))) << (a = [7, 12, 17, 22, 5, 9, 14, 20, 4, 11, 16, 23, 6, 10, 15, 21][4 * a + j++ % 4]) | d >>> 32 - a), b, c];
+    }
+    for (j = 4; j; ) h[--j] = h[j] + a[j];
+  }
+  for (str = ''; j < 32; ) str += (h[j >> 3] >> 4 * (1 ^ j++ & 7) & 15).toString(16);
+  return str;
+}
+
+function generateXmSign() {
+  const now = Date.now();
+  const hash = md5(`himalaya-${now}`);
+  const random = Math.floor(Math.random() * 100);
+  return `${hash}(100)${now}(100)${random}${now}`;
+}
+// ========================
+
 function safeArgs(data) {
   try {
     return typeof data === 'string' ? argsify(data) : (data ?? {})
@@ -87,11 +118,9 @@ function firstArray(...candidates) {
   return []
 }
 
-// 核心过滤：将所有限免、付费、VIP全部视为收费项拦截
 function isPaidItem(item) {
   if (!item) return false
   const now = new Date()
-  
   const isLimitFree = !!(
     item.is_limit_free === true ||
     item.limit_free === true ||
@@ -105,16 +134,16 @@ function isPaidItem(item) {
     item.vipFreeType === 1 ||
     (item.free_end_time && new Date(item.free_end_time) > now)
   )
-
-  const isPaid = !!(
+  if (isLimitFree) {
+    item._limitFree = true
+    return false
+  }
+  return !!(
     item.isPaid === true || item.isPaid === 1 ||
     item.is_paid === true || item.is_paid === 1 ||
     item.payType > 0 || item.pay_type > 0 ||
     item.priceTypeId > 0 || item.price_type_id > 0
   )
-
-  // 只要涉及限免或付费，通通返回 true（脚本会将其过滤掉）
-  return isLimitFree || isPaid
 }
 
 async function fetchJson(url, extraHeaders = {}) {
@@ -123,6 +152,7 @@ async function fetchJson(url, extraHeaders = {}) {
 }
 
 function mapAlbum(item) {
+  isPaidItem(item); // 跑一次以植入 _limitFree 标签
   const id = `${item?.albumId ?? item?.id ?? item?.album_id ?? ''}`
   const name = item?.albumTitle ?? item?.title ?? item?.albumName ?? ''
   const cover = toHttps(
@@ -139,17 +169,19 @@ function mapAlbum(item) {
 
   return {
     id,
-    name: name, title: name,
+    name: item._limitFree ? `【限免】${name}` : name,
+    title: item._limitFree ? `【限免】${name}` : name,
     cover, artwork: cover, pic: cover, coverImg: cover,
     artist: {
       id: artistId, name: artistName, title: artistName,
       cover: artistCover, artwork: artistCover, pic: artistCover, avatar: artistCover
     },
-    ext: { gid: GID.ALBUM_TRACKS, id, type: 'album' }
+    ext: { gid: GID.ALBUM_TRACKS, id, type: 'album', isAlbumLimitFree: item._limitFree }
   }
 }
 
 function mapTrack(item) {
+  isPaidItem(item);
   const id = `${item?.trackId ?? item?.id ?? item?.soundId ?? ''}`
   const name = item?.title ?? item?.trackTitle ?? item?.name ?? ''
   const cover = toHttps(
@@ -165,7 +197,8 @@ function mapTrack(item) {
 
   return {
     id,
-    name: name, title: name,
+    name: item._limitFree ? `【限免】${name}` : name,
+    title: item._limitFree ? `【限免】${name}` : name,
     cover, artwork: cover, pic: cover, coverImg: cover,
     duration: parseInt(item?.duration ?? item?.interval ?? 0),
     artist: {
@@ -207,11 +240,12 @@ async function loadAlbumsByKeyword(keyword, page = 1) {
   return []
 }
 
-// ✅ 优化机制：摒弃 while 循环，完全依赖软件原生的 page 参数进行懒加载
+// ✅ 彻底废弃导致只有20条的死循环，采用正常分页+每次50条拉取（完美匹配原生上滑加载）
 async function loadAlbumTracks(albumId, page = 1) {
+  const pageSize = 50; 
   const urls = [
-    `https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${albumId}&pageNum=${page}&pageSize=${PAGE_LIMIT}`,
-    `https://mobile.ximalaya.com/mobile/v1/album/track/?albumId=${albumId}&pageSize=${PAGE_LIMIT}&pageId=${page}`
+    `https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${albumId}&pageNum=${page}&pageSize=${pageSize}`,
+    `https://mobile.ximalaya.com/mobile/v1/album/track/?albumId=${albumId}&pageSize=${pageSize}&pageId=${page}`
   ];
 
   for (const url of urls) {
@@ -220,19 +254,19 @@ async function loadAlbumTracks(albumId, page = 1) {
         Referer: `https://www.ximalaya.com/album/${albumId}`
       });
       const list = firstArray(data?.data?.tracks, data?.data?.list, data?.tracks);
-      if (list.length > 0) {
-        return list; // 返回当前请求的20条，软件滑到底部会触发下一页
-      }
+      if (list.length > 0) return list;
     } catch (e) {}
   }
   return [];
 }
 
+// 创作者列表页也加大了加载量
 async function loadArtistTracks(artistId, page = 1) {
+  const pageSize = 50;
   const urls = [
-    `https://www.ximalaya.com/revision/user/track?page=${page}&pageSize=${PAGE_LIMIT}&uid=${artistId}`,
-    `https://m.ximalaya.com/m-revision/common/user/track/page?uid=${artistId}&page=${page}&pageSize=${PAGE_LIMIT}`,
-    `https://mobile.ximalaya.com/mobile/v1/anchor/track?anchorId=${artistId}&pageId=${page}&pageSize=${PAGE_LIMIT}`
+    `https://www.ximalaya.com/revision/user/track?page=${page}&pageSize=${pageSize}&uid=${artistId}`,
+    `https://m.ximalaya.com/m-revision/common/user/track/page?uid=${artistId}&page=${page}&pageSize=${pageSize}`,
+    `https://mobile.ximalaya.com/mobile/v1/anchor/track?anchorId=${artistId}&pageId=${page}&pageSize=${pageSize}`
   ]
   
   const mobileUA = 'Mozilla/5.0 (Linux; Android 10; SM-G981B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.162 Mobile Safari/537.36'
@@ -320,62 +354,70 @@ async function loadArtistsByKeyword(keyword, page = 1) {
 
 async function getConfig() { return jsonify(appConfig) }
 
+// ✅ 精确提取 page 参数，供后续上滑加载使用
 async function getAlbums(ext) {
-  const { page, gid, kw } = argsify(ext)
-  const gidValue = `${gid ?? ''}`
+  const args = safeArgs(ext);
+  const page = parseInt(args.page || args.pg || 1);
+  const gidValue = `${args.gid ?? ''}`;
+  const kw = args.kw;
+
   if (gidValue == GID.RECOMMENDED_ALBUMS) {
     const list = await loadRecommendedAlbums(page)
-    // 强制过滤，抛弃限免及付费专辑
-    return jsonify({ list: list.filter(item => !isPaidItem(item)).map(mapAlbum) })
+    return jsonify({ list: list.map(mapAlbum) })
   }
   if (gidValue == GID.TAG_ALBUMS) {
     const list = await loadAlbumsByKeyword(kw, page)
-    return jsonify({ list: list.filter(item => !isPaidItem(item)).map(mapAlbum) })
+    return jsonify({ list: list.map(mapAlbum) })
   }
   return jsonify({ list: [] })
 }
 
+// ✅ 精确传递 page 到 loadXXTracks 方法中，打通上滑分页链路
 async function getSongs(ext) {
-  const { page, gid, id, text, type } = argsify(ext)
-  const pageNum = page || 1; // 捕获软件传递的当前页码
-  const gidValue = `${gid ?? ''}`
+  const args = safeArgs(ext);
+  const page = parseInt(args.page || args.pg || 1);
+  const gidValue = `${args.gid ?? ''}`;
+  
   let list = []
 
   if (gidValue == GID.ALBUM_TRACKS) {
-    if (type === 'artist') {
-      list = await loadArtistTracks(id, pageNum)
-    } else if (text) {
-      list = await loadTracksByKeyword(text, pageNum)
+    if (args.type === 'artist') {
+      list = await loadArtistTracks(args.id, page)
+    } else if (args.text) {
+      list = await loadTracksByKeyword(args.text, page)
     } else {
-      list = await loadAlbumTracks(id, pageNum)
+      list = await loadAlbumTracks(args.id, page)
     }
   }
 
-  // 强制过滤播放列表，隐藏限免、试听与付费单集
-  return jsonify({ list: list.filter(item => !isPaidItem(item)).map(mapTrack) })
+  return jsonify({ list: list.map(mapTrack) })
 }
 
 async function getArtists(ext) {
-  const { text, kw, page } = argsify(ext)
-  const keyword = text || kw || ''
+  const args = safeArgs(ext);
+  const page = parseInt(args.page || args.pg || 1);
+  const keyword = args.text || args.kw || '';
   if (!keyword) return jsonify({ list: [] })
-  const list = await loadArtistsByKeyword(keyword, page || 1)
+  const list = await loadArtistsByKeyword(keyword, page)
   return jsonify({ list })
 }
 
 async function getPlaylists(ext) { return jsonify({ list: [] }) }
 
 async function search(ext) {
-  const { text, page, type } = argsify(ext)
+  const args = safeArgs(ext);
+  const page = parseInt(args.page || args.pg || 1);
+  const text = args.text;
+  const type = args.type;
+
   if (!text || page > SEARCH_PAGE_LIMIT) return jsonify({})
   if (type == 'album') {
     const list = await loadAlbumsByKeyword(text, page)
-    // 强制过滤搜索结果
-    return jsonify({ list: list.filter(item => !isPaidItem(item)).map(mapAlbum) })
+    return jsonify({ list: list.map(mapAlbum) })
   }
   if (type == 'track' || type == 'song') {
     const list = await loadTracksByKeyword(text, page)
-    return jsonify({ list: list.filter(item => !isPaidItem(item)).map(mapTrack) })
+    return jsonify({ list: list.map(mapTrack) })
   }
   if (type == 'artist') {
     const list = await loadArtistsByKeyword(text, page)
@@ -384,7 +426,6 @@ async function search(ext) {
   return jsonify({})
 }
 
-// 极简版获取播放地址：因为只剩纯免费内容，直接剔除所有反爬鉴权API，秒解析播放链接
 async function getSongInfo(ext) {
   let arg = safeArgs(ext);
   let trackId = arg?.trackId || arg?.id;
@@ -402,18 +443,40 @@ async function getSongInfo(ext) {
   const appUA = 'ting_6.7.9(SM-G981B,Android10)';
   const mobileUA = 'Mozilla/5.0 (Linux; Android 10; SM-G981B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36';
 
-  // 直接调用极速底层接口（App V3 接口速度最快、稳定性最高）
+  const realXmSign = generateXmSign();
+
   const urls = [
-    { url: `https://mobile.ximalaya.com/mobile-playpage/track/v3/baseInfo/${Date.now()}?device=android&trackId=${trackId}&trackQualityLevel=2`, ua: appUA },
-    { url: `https://m.ximalaya.com/m-revision/common/track/getPlayUrlV4?trackId=${trackId}`, ua: mobileUA },
-    { url: `https://mobile.ximalaya.com/v1/track/baseInfo?device=android&trackId=${trackId}`, ua: appUA }
+    { 
+      url: `https://www.ximalaya.com/revision/play/v1/audio?id=${trackId}&ptype=1`, 
+      ua: UA, 
+      ref: `https://www.ximalaya.com/sound/${trackId}`,
+      sign: realXmSign
+    },
+    { 
+      url: `https://m.ximalaya.com/m-revision/common/track/getPlayUrlV4?trackId=${trackId}`, 
+      ua: mobileUA, 
+      ref: `https://m.ximalaya.com/sound/${trackId}` 
+    },
+    { 
+      url: `https://mobile.ximalaya.com/mobile-playpage/track/v3/baseInfo/${Date.now()}?device=android&trackId=${trackId}&trackQualityLevel=2`, 
+      ua: appUA, 
+      ref: '' 
+    },
+    { url: `https://mpay.ximalaya.com/mobile/track/pay/${trackId}?device=android`, ua: appUA, ref: '' },
+    { url: `https://m.ximalaya.com/tracks/${trackId}.json`, ua: mobileUA, ref: `https://m.ximalaya.com/` }
   ]
 
   for (const item of urls) {
     try {
-      const { data } = await $fetch.get(item.url, {
-        headers: { 'User-Agent': item.ua }
-      });
+      const headersToUse = {
+        'User-Agent': item.ua,
+        'Referer': item.ref
+      };
+      if (item.sign) {
+        headersToUse['xm-sign'] = item.sign;
+      }
+
+      const { data } = await $fetch.get(item.url, { headers: headersToUse });
       
       const info = typeof data === 'string' ? JSON.parse(data) : data;
       const d = (info?.data && info?.data?.trackInfo) ? info.data.trackInfo : (info?.data || info?.trackInfo || info);
@@ -430,9 +493,7 @@ async function getSongInfo(ext) {
         if (playUrl.startsWith("http://")) playUrl = playUrl.replace(/^http:\/\//, "https://")
         return jsonify({ urls: [playUrl] })
       }
-    } catch (e) {
-      // 容错继续尝试
-    }
+    } catch (e) {}
   }
 
   return jsonify({ urls: [] })
