@@ -1,7 +1,7 @@
 /*!
  * @name xmlyfm3
  * @description 喜马拉雅FM（仅修复：限免专辑点进列表为空）
- * @version v1.5.5
+ * @version v1.5.6
  * @author codex
  * @key csp_xmlyfm
  */
@@ -215,19 +215,39 @@ async function loadAlbumsByKeyword(keyword, page = 1) {
   return []
 }
 
+// 修复：加载专辑全部曲目（无20条限制）
 async function loadAlbumTracks(albumId, page = 1) {
-  const urls = [
-    `https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${albumId}&pageNum=${page}&pageSize=${PAGE_LIMIT}`,
-    `https://mobile.ximalaya.com/mobile/v1/album/track/?albumId=${albumId}&pageSize=${PAGE_LIMIT}&pageId=${page}`
-  ]
-  for (const url of urls) {
-    try {
-      const data = await fetchJson(url, { Referer: `https://www.ximalaya.com/album/${albumId}` })
-      const list = firstArray(data?.data?.tracks, data?.data?.list, data?.tracks)
-      if (list.length > 0) return list
-    } catch (e) {}
+  let allTracks = [];
+  let currentPage = 1;
+  const maxPage = 50; // 最多加载50页，足够覆盖所有专辑
+
+  while (currentPage <= maxPage) {
+    const urls = [
+      `https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${albumId}&pageNum=${currentPage}&pageSize=100`,
+      `https://mobile.ximalaya.com/mobile/v1/album/track/?albumId=${albumId}&pageSize=100&pageId=${currentPage}`
+    ];
+
+    let pageTracks = [];
+    for (const url of urls) {
+      try {
+        const data = await fetchJson(url, {
+          Referer: `https://www.ximalaya.com/album/${albumId}`
+        });
+        const list = firstArray(data?.data?.tracks, data?.data?.list, data?.tracks);
+        if (list.length > 0) {
+          pageTracks = list;
+          break;
+        }
+      } catch (e) {}
+    }
+
+    if (pageTracks.length === 0) break;
+    allTracks = allTracks.concat(pageTracks);
+    if (pageTracks.length < 100) break; // 最后一页
+    currentPage++;
   }
-  return []
+
+  return allTracks;
 }
 
 async function loadArtistTracks(artistId, page = 1) {
