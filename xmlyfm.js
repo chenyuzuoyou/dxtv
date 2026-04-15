@@ -1,7 +1,7 @@
 /*!
  * @name xmlyfm3
- * @description 喜马拉雅FM（终极修复：蜘蛛协议绕过xm-sign + 官方App底层API防拦截）
- * @version v1.6.1
+ * @description 喜马拉雅FM（终极修复：剥离假签名防WAF拦截 + 纯净底层API解析限免专辑）
+ * @version v1.6.2
  * @author codex
  * @key csp_xmlyfm
  */
@@ -393,11 +393,11 @@ async function search(ext) {
   return jsonify({})
 }
 
-// ✅ 终极防屏蔽播放策略
+// ✅ 彻底净化：剥离容易触发WAF的假头，专攻底层免签名验证API，大幅提升限免播放成功率
 async function getSongInfo(ext) {
-  // 高容错参数解析，防止因入参是字符串而提取不到trackId
   let arg = safeArgs(ext);
   let trackId = arg?.trackId || arg?.id;
+  
   if (!trackId && typeof ext === 'string') {
     try {
       const parsed = JSON.parse(ext);
@@ -408,27 +408,20 @@ async function getSongInfo(ext) {
   }
   if (!trackId) return jsonify({ urls: [] })
 
-  // 伪造 xm-sign 格式兜底，供部分弱校验接口使用
-  const now = Date.now();
-  const fakeSign = `1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d(99)${now}(99)${now}`;
-
-  // 1. 搜索引擎爬虫 UA（极高概率绕过 PC 端的 xm-sign 强校验与要求登录限制）
-  const spiderUA = 'Mozilla/5.0 (compatible; Baiduspider/2.0; +http://www.baidu.com/search/spider.html)';
-  // 2. 喜马拉雅官方 App UA（获取最底层接口的播放地址，无视 H5 网关的各种下载 App 拦截）
+  // 不再发送任何被视为"注入攻击"的字段，使用官方原生 UA
   const appUA = 'ting_6.7.9(SM-G981B,Android10)';
-  // 3. 通用移动端 UA
   const mobileUA = 'Mozilla/5.0 (Linux; Android 10; SM-G981B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36';
 
   const urls = [
-    // 权重1：PC端 API + 蜘蛛协议 (放行免费和限免最宽松)
-    { url: `https://www.ximalaya.com/revision/play/v1/audio?id=${trackId}&ptype=1`, ua: spiderUA, ref: `https://www.ximalaya.com/sound/${trackId}` },
-    // 权重2：移动App底层 API + 官方App UA (突破所有防抓取拦截网页)
-    { url: `https://mobile.ximalaya.com/v1/track/baseInfo?device=android&trackId=${trackId}`, ua: appUA, ref: '' },
-    // 权重3：H5端老牌免签名 API
+    // 权重1：App最底层 V3 API (官方App自身使用的接口，无视网页版下载拦截，限免专辑直出playUrl)
+    { url: `https://mobile.ximalaya.com/mobile-playpage/track/v3/baseInfo/${Date.now()}?device=android&trackId=${trackId}&trackQualityLevel=2`, ua: appUA, ref: '' },
+    // 权重2：H5免签名 API (网页端专门为分享页保留的后门，放行率极高)
     { url: `https://m.ximalaya.com/m-revision/common/track/getPlayUrlV4?trackId=${trackId}`, ua: mobileUA, ref: `https://m.ximalaya.com/sound/${trackId}` },
-    // 权重4：PlayPage API
-    { url: `https://mobile.ximalaya.com/mobile-playpage/track/v3/baseInfo/${now}?device=android&trackId=${trackId}&trackQualityLevel=2`, ua: appUA, ref: '' },
-    // 权重5：老版本 JSON 接口
+    // 权重3：支付鉴权 API (针对VIP和限免内容的专门通道)
+    { url: `https://mpay.ximalaya.com/mobile/track/pay/${trackId}?device=android`, ua: appUA, ref: '' },
+    // 权重4：App旧版基础信息 API
+    { url: `https://mobile.ximalaya.com/v1/track/baseInfo?device=android&trackId=${trackId}`, ua: appUA, ref: '' },
+    // 权重5：古董 JSON API (兜底，几乎没有防爬虫)
     { url: `https://m.ximalaya.com/tracks/${trackId}.json`, ua: mobileUA, ref: `https://m.ximalaya.com/` }
   ]
 
@@ -437,21 +430,18 @@ async function getSongInfo(ext) {
       const { data } = await $fetch.get(item.url, {
         headers: {
           'User-Agent': item.ua,
-          'Referer': item.ref,
-          'xm-sign': fakeSign
+          'Referer': item.ref
         }
       })
 
-      // 解析兼容：如果接口被拦截返回了 HTML，这里JSON解析会报错并跳转 catch，静默重试下一个 URL
+      // 高度宽容的解析结构，防止WAF拦截时解析HTML报错
       const info = typeof data === 'string' ? JSON.parse(data) : data;
-      
-      const d = (info?.data && info?.data?.trackInfo) ? info.data.trackInfo : (info?.data || info?.trackInfo || info)
+      const d = (info?.data && info?.data?.trackInfo) ? info.data.trackInfo : (info?.data || info?.trackInfo || info);
 
       // 全方位覆盖所有可能的播放地址字段
       let playUrl =
-        d?.src || d?.url || d?.playUrl || 
-        d?.play_path_64 || d?.play_path_32 || d?.play_path ||
-        d?.playUrl64 || d?.playUrl32 || d?.playPathHq ||
+        d?.playUrl64 || d?.playUrl32 || d?.playUrl || d?.src || d?.url || 
+        d?.playPathHq || d?.play_path_64 || d?.play_path_32 || d?.play_path ||
         d?.playPathAacv164 || d?.playPathAacv224 ||
         d?.audioUrl || d?.epPlayUrl || d?.ep_play_url ||
         d?.trackInfo?.playUrl || d?.trackInfo?.playUrl64;
@@ -462,7 +452,7 @@ async function getSongInfo(ext) {
         return jsonify({ urls: [playUrl] })
       }
     } catch (e) {
-      // 被反爬策略拦截（如返回验证码页面、下载App引导页）时，忽略报错，继续尝试更高权限的请求链
+      // 遭遇拦截时静默尝试下一个更底层的接口
     }
   }
 
