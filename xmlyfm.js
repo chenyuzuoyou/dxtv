@@ -1,7 +1,7 @@
 /*!
  * @name xmlyfm3
- * @description 喜马拉雅FM (隐藏VIP和付费内容)
- * @version v1.0.5
+ * @description 喜马拉雅FM (隐藏VIP和付费内容显示限免)
+ * @version v1.1
  * @author codex
  * @key csp_xmlyfm
  */
@@ -286,13 +286,25 @@ function firstArray(...candidates) {
 // 核心修复：判断是否为VIP或付费内容
 function isPaidItem(item) {
   if (!item) return false;
-  // 判断各个接口常见的付费字段标识
+
+  // 第一步：判断是否限免中（需替换为实际接口返回的限免字段）
+  const isLimitFree = 
+    item.is_limit_free === true ||  // 是否限免
+    item.limit_free_status === 1 || // 限免状态（1=限免中）
+    (item.free_end_time && new Date(item.free_end_time) > new Date()); // 限免未结束
+
+  if (isLimitFree) {
+    return false; // 限免中，视为非付费内容
+  }
+
+  // 第二步：原有付费/VIP判断逻辑
   if (item.isPaid === true || item.isPaid === 1 || item.isPaid === 'true') return true;
   if (item.is_paid === true || item.is_paid === 1 || item.is_paid === 'true') return true;
   if (item.isVip === true || item.isVip === 1 || item.is_vip === true || item.is_vip === 1) return true;
   if (item.payType > 0 || item.pay_type > 0) return true;
   if (item.priceTypeId > 0 || item.price_type_id > 0) return true;
   if (item.vipFreeType > 0) return true;
+  
   return false;
 }
 
@@ -711,12 +723,20 @@ async function getSongInfo(ext) {
       })
 
       const info = safeArgs(data)
-
+      // 新增：判断是否限免中
+      const isLimitFree = info.is_limit_free === true || info.limit_free_status === 1;
+      // 仅当“非限免 + 付费”时，才返回空链接
+      if ((info?.is_paid || info?.data?.isPaid) && !isLimitFree) {
+        return jsonify({ urls: [] });
+      }
       // 兜底保障：即使获取到了链接，如果接口明确说是付费的，也不返回
-      if (info?.is_paid || info?.data?.isPaid) {
-        return jsonify({
-          urls: [],
-        })
+      // 限免内容不拦截
+      const isLimitFree =
+        info.is_limit_free || info.limit_free || info.limitFree ||
+        info.albumTimeLimited || info.isSample || info.isVipFree;
+      
+      if ((info?.is_paid || info?.data?.isPaid) && !isLimitFree) {
+        return jsonify({ urls: [] });
       }
 
       const playUrl =
