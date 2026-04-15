@@ -1,6 +1,6 @@
 /*!
  * @name xmlyfm3
- * @description 喜马拉雅FM（纯净版：彻底屏蔽限免/VIP + 极速解析免费接口）加载专辑多条目 分页加载优化（原强制循环改为分页），提升加载速度
+ * @description 喜马拉雅FM（纯净版：彻底屏蔽限免/VIP + 极速解析免费接口）加载专辑多条目 一个强制循环（一次性拉取最多 50 页、上千条数据），加载缓慢
  * @version v1.6.4
  * @author codex
  * @key csp_xmlyfm
@@ -29,7 +29,7 @@ const appConfig = {
       {name: '小说', type: 'album', ui:1, showMore:true, ext:{gid:GID.TAG_ALBUMS, kw:'小说'}},
       {name: '相声', type: 'album', ui:1, showMore:true, ext:{gid:GID.TAG_ALBUMS, kw:'相声'}},
       {name: '音乐', type: 'album', ui:1, showMore:true, ext:{gid:GID.TAG_ALBUMS, kw:'音乐'}},
-      {name: '有声书', type: 'album', ui:1, showMore:true, ext:{gid:GID.TAG_ALBUMS, kw:'评书'}},
+      {name: '有声书', type: 'album', ui:1, showMore:true, ext:{gid:GID.TAG_ALBUMS, kw:'有声书'}},
       {name: '评书', type: 'album', ui:1, showMore:true, ext:{gid:GID.TAG_ALBUMS, kw:'评书'}},
       {name: '情感', type: 'album', ui:1, showMore:true, ext:{gid:GID.TAG_ALBUMS, kw:'情感'}},
       {name: '儿童', type: 'album', ui:1, showMore:true, ext:{gid:GID.TAG_ALBUMS, kw:'儿童'}},
@@ -207,29 +207,38 @@ async function loadAlbumsByKeyword(keyword, page = 1) {
   return []
 }
 
-// 修正：参照netcodeS.js歌单分页逻辑，改为分页加载（仅加载当前页数据）
 async function loadAlbumTracks(albumId, page = 1) {
-  const offsetPage = Math.max(page - 1, 0) // 兼容page=0的情况
-  const urls = [
-    `https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${albumId}&pageNum=${offsetPage + 1}&pageSize=${PAGE_LIMIT}`,
-    `https://mobile.ximalaya.com/mobile/v1/album/track/?albumId=${albumId}&pageSize=${PAGE_LIMIT}&pageId=${offsetPage + 1}`
-  ];
+  let allTracks = [];
+  let currentPage = 1;
+  const maxPage = 50;
 
-  let pageTracks = [];
-  for (const url of urls) {
-    try {
-      const data = await fetchJson(url, {
-        Referer: `https://www.ximalaya.com/album/${albumId}`
-      });
-      const list = firstArray(data?.data?.tracks, data?.data?.list, data?.tracks);
-      if (list.length > 0) {
-        pageTracks = list;
-        break;
-      }
-    } catch (e) {}
+  while (currentPage <= maxPage) {
+    const urls = [
+      `https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${albumId}&pageNum=${currentPage}&pageSize=100`,
+      `https://mobile.ximalaya.com/mobile/v1/album/track/?albumId=${albumId}&pageSize=100&pageId=${currentPage}`
+    ];
+
+    let pageTracks = [];
+    for (const url of urls) {
+      try {
+        const data = await fetchJson(url, {
+          Referer: `https://www.ximalaya.com/album/${albumId}`
+        });
+        const list = firstArray(data?.data?.tracks, data?.data?.list, data?.tracks);
+        if (list.length > 0) {
+          pageTracks = list;
+          break;
+        }
+      } catch (e) {}
+    }
+
+    if (pageTracks.length === 0) break;
+    allTracks = allTracks.concat(pageTracks);
+    if (pageTracks.length < 100) break; 
+    currentPage++;
   }
 
-  return pageTracks;
+  return allTracks;
 }
 
 async function loadArtistTracks(artistId, page = 1) {
