@@ -1,7 +1,7 @@
 /*!
  * @name xmlyfm3
- * @description 喜马拉雅FM（修复：创作者封面缺失 + 完美适配PC网页端限免放行策略）
- * @version v1.6.0
+ * @description 喜马拉雅FM（终极修复：蜘蛛协议绕过xm-sign + 官方App底层API防拦截）
+ * @version v1.6.1
  * @author codex
  * @key csp_xmlyfm
  */
@@ -64,7 +64,11 @@ const appConfig = {
 }
 
 function safeArgs(data) {
-  return typeof data === 'string' ? argsify(data) : (data ?? {})
+  try {
+    return typeof data === 'string' ? argsify(data) : (data ?? {})
+  } catch (e) {
+    return typeof data === 'string' ? JSON.parse(data) : {}
+  }
 }
 
 function toHttps(url) {
@@ -83,7 +87,6 @@ function firstArray(...candidates) {
   return []
 }
 
-// 限免判断
 function isPaidItem(item) {
   if (!item) return false
   const now = new Date()
@@ -390,57 +393,76 @@ async function search(ext) {
   return jsonify({})
 }
 
-// ✅ 彻底重构：根据网页版放行规律，最高优调用PC端抓取接口，并严格伪装
+// ✅ 终极防屏蔽播放策略
 async function getSongInfo(ext) {
-  const { trackId, quality } = argsify(ext)
+  // 高容错参数解析，防止因入参是字符串而提取不到trackId
+  let arg = safeArgs(ext);
+  let trackId = arg?.trackId || arg?.id;
+  if (!trackId && typeof ext === 'string') {
+    try {
+      const parsed = JSON.parse(ext);
+      trackId = parsed.trackId || parsed.id;
+    } catch (e) {
+      trackId = ext; 
+    }
+  }
   if (!trackId) return jsonify({ urls: [] })
 
-  // 1. 最高优：PC 网页版音频接口 (你提到的免登录播放主要依赖这个)
-  // 2. 第二优：H5 获取播放链接接口
-  // 3. 兜底：各类移动端接口
+  // 伪造 xm-sign 格式兜底，供部分弱校验接口使用
+  const now = Date.now();
+  const fakeSign = `1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d(99)${now}(99)${now}`;
+
+  // 1. 搜索引擎爬虫 UA（极高概率绕过 PC 端的 xm-sign 强校验与要求登录限制）
+  const spiderUA = 'Mozilla/5.0 (compatible; Baiduspider/2.0; +http://www.baidu.com/search/spider.html)';
+  // 2. 喜马拉雅官方 App UA（获取最底层接口的播放地址，无视 H5 网关的各种下载 App 拦截）
+  const appUA = 'ting_6.7.9(SM-G981B,Android10)';
+  // 3. 通用移动端 UA
+  const mobileUA = 'Mozilla/5.0 (Linux; Android 10; SM-G981B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36';
+
   const urls = [
-    `https://www.ximalaya.com/revision/play/v1/audio?id=${trackId}&ptype=1`,
-    `https://m.ximalaya.com/m-revision/common/track/getPlayUrlV4?trackId=${trackId}`,
-    `https://mobile.ximalaya.com/mobile-playpage/track/v3/baseInfo/${Date.now()}?device=android&trackId=${trackId}&trackQualityLevel=2`,
-    `https://mpay.ximalaya.com/mobile/track/pay/${trackId}?device=android`,
-    `https://m.ximalaya.com/tracks/${trackId}.json`,
+    // 权重1：PC端 API + 蜘蛛协议 (放行免费和限免最宽松)
+    { url: `https://www.ximalaya.com/revision/play/v1/audio?id=${trackId}&ptype=1`, ua: spiderUA, ref: `https://www.ximalaya.com/sound/${trackId}` },
+    // 权重2：移动App底层 API + 官方App UA (突破所有防抓取拦截网页)
+    { url: `https://mobile.ximalaya.com/v1/track/baseInfo?device=android&trackId=${trackId}`, ua: appUA, ref: '' },
+    // 权重3：H5端老牌免签名 API
+    { url: `https://m.ximalaya.com/m-revision/common/track/getPlayUrlV4?trackId=${trackId}`, ua: mobileUA, ref: `https://m.ximalaya.com/sound/${trackId}` },
+    // 权重4：PlayPage API
+    { url: `https://mobile.ximalaya.com/mobile-playpage/track/v3/baseInfo/${now}?device=android&trackId=${trackId}&trackQualityLevel=2`, ua: appUA, ref: '' },
+    // 权重5：老版本 JSON 接口
+    { url: `https://m.ximalaya.com/tracks/${trackId}.json`, ua: mobileUA, ref: `https://m.ximalaya.com/` }
   ]
 
-  const mobileUA = 'Mozilla/5.0 (Linux; Android 10; SM-G981B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.162 Mobile Safari/537.36'
-  const pcUA = UA; // 使用顶部定义的 Windows PC UA
-
-  for (const url of urls) {
+  for (const item of urls) {
     try {
-      // 核心逻辑：不同的接口必须要喂不同的 Referer 和 UA，否则会被喜马拉雅盾掉
-      const isPC = url.includes('www.ximalaya.com')
-      
-      const { data } = await $fetch.get(url, {
+      const { data } = await $fetch.get(item.url, {
         headers: {
-          'User-Agent': isPC ? pcUA : mobileUA,
-          'Referer': isPC ? `https://www.ximalaya.com/sound/${trackId}` : 'https://m.ximalaya.com/',
+          'User-Agent': item.ua,
+          'Referer': item.ref,
+          'xm-sign': fakeSign
         }
       })
 
-      const info = safeArgs(data)
-      // 适配各种千奇百怪的响应结构层级
+      // 解析兼容：如果接口被拦截返回了 HTML，这里JSON解析会报错并跳转 catch，静默重试下一个 URL
+      const info = typeof data === 'string' ? JSON.parse(data) : data;
+      
       const d = (info?.data && info?.data?.trackInfo) ? info.data.trackInfo : (info?.data || info?.trackInfo || info)
 
-      // 从所有可能的字段中提取播放地址 (注意 PC 端通常吐的是 src)
+      // 全方位覆盖所有可能的播放地址字段
       let playUrl =
         d?.src || d?.url || d?.playUrl || 
-        d?.play_path_64 || d?.play_path_32 ||
+        d?.play_path_64 || d?.play_path_32 || d?.play_path ||
         d?.playUrl64 || d?.playUrl32 || d?.playPathHq ||
         d?.playPathAacv164 || d?.playPathAacv224 ||
         d?.audioUrl || d?.epPlayUrl || d?.ep_play_url ||
         d?.trackInfo?.playUrl || d?.trackInfo?.playUrl64;
 
-      if (playUrl) {
+      if (playUrl && playUrl.includes('http')) {
         if (playUrl.startsWith("//")) playUrl = "https:" + playUrl
         if (playUrl.startsWith("http://")) playUrl = playUrl.replace(/^http:\/\//, "https://")
         return jsonify({ urls: [playUrl] })
       }
     } catch (e) {
-      // 某个接口失败时，静默继续尝试下一个
+      // 被反爬策略拦截（如返回验证码页面、下载App引导页）时，忽略报错，继续尝试更高权限的请求链
     }
   }
 
