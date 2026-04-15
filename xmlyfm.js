@@ -1,6 +1,6 @@
 /*!
  * @name xmlyfm3
- * @description 喜马拉雅FM（纯净版：彻底屏蔽限免/VIP + 极速解析免费接口）加载专辑多条目 一个强制循环（一次性拉取最多 50 页、上千条数据），加载缓慢
+ * @description xmlyfm3.4 喜马拉雅FM（纯净版：彻底屏蔽限免/VIP + 极速解析免费接口）加载专辑多条目 一个强制循环（一次性拉取最多 50 页、上千条数据），加载缓慢
  * @version v1.6.4
  * @author codex
  * @key csp_xmlyfm
