@@ -1,7 +1,7 @@
 /*!
  * @name xmlyfm3
  * @description 喜马拉雅FM（仅修复：限免专辑点进列表为空）
- * @version v1.5.1
+ * @version v1.5.2
  * @author codex
  * @key csp_xmlyfm
  */
@@ -348,7 +348,7 @@ async function getSongInfo(ext) {
 
   const urls = [
     `https://www.ximalaya.com/revision/play/v1/audio?id=${trackId}&ptype=1`,
-    `https://mobile.ximalaya.com/mobile-playpage/track/v3/baseInfo/${Date.now()}?device=www2&trackId=${trackId}&trackQualityLevel=2`,
+    `https://m.ximalaya.com/tracks/${trackId}.json`,
   ]
 
   for (const url of urls) {
@@ -359,19 +359,23 @@ async function getSongInfo(ext) {
           'Referer': 'https://www.ximalaya.com/',
         }
       })
-      const d = safeArgs(data)?.data || safeArgs(data)
 
-      // 取可播放的免费/限免音频地址（跳过付费加密域）
+      const info = safeArgs(data)
+      const d = info.data || info
+
+      // 统一取免费/限免可播放地址（不做任何付费拦截）
       let playUrl =
-        d?.playUrl ||
+        d?.play_path_64 ||
+        d?.play_path_32 ||
         d?.playUrl64 ||
         d?.playUrl32 ||
+        d?.playUrl ||
         d?.audioUrl ||
-        d?.url ||
         d?.src
 
-      // 关键：只保留非付费域名的正常音频（a.xmcdn.com）
-      if (playUrl && playUrl.includes('a.xmcdn.com')) {
+      if (playUrl) {
+        // 自动补全 https
+        if (playUrl.startsWith("//")) playUrl = "https:" + playUrl
         return jsonify({ urls: [playUrl] })
       }
     } catch (e) {}
