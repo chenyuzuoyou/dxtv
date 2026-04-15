@@ -1,7 +1,7 @@
 /*!
  * @name xmlyfm3
- * @description 喜马拉雅FM（修复：限免专辑点进列表为空 + 修复限免无法播放）
- * @version v1.5.7
+ * @description 喜马拉雅FM（修复：创作者热门节目为空 + 限免专辑播放）
+ * @version v1.5.8
  * @author codex
  * @key csp_xmlyfm
  */
@@ -215,7 +215,7 @@ async function loadAlbumsByKeyword(keyword, page = 1) {
   return []
 }
 
-// 修复：加载专辑全部曲目（无20条限制）
+// 加载专辑全部曲目（无20条限制）
 async function loadAlbumTracks(albumId, page = 1) {
   let allTracks = [];
   let currentPage = 1;
@@ -250,15 +250,34 @@ async function loadAlbumTracks(albumId, page = 1) {
   return allTracks;
 }
 
+// ✅ 彻底修复：主播/创作者最新获取轨道接口
 async function loadArtistTracks(artistId, page = 1) {
   const urls = [
-    `https://mobile.ximalaya.com/mobile/v1/anchor/track?anchorId=${artistId}&pageId=${page}&pageSize=${PAGE_LIMIT}`,
-    `https://www.ximalaya.com/revision/anchor/v1/tracks?anchorId=${artistId}&page=${page}&rows=${PAGE_LIMIT}`
+    `https://www.ximalaya.com/revision/user/track?page=${page}&pageSize=${PAGE_LIMIT}&uid=${artistId}`,
+    `https://m.ximalaya.com/m-revision/common/user/track/page?uid=${artistId}&page=${page}&pageSize=${PAGE_LIMIT}`,
+    `https://mobile.ximalaya.com/mobile/v1/anchor/track?anchorId=${artistId}&pageId=${page}&pageSize=${PAGE_LIMIT}`
   ]
+  
+  const mobileUA = 'Mozilla/5.0 (Linux; Android 10; SM-G981B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.162 Mobile Safari/537.36'
+
   for (const url of urls) {
     try {
-      const data = await fetchJson(url)
-      const list = firstArray(data?.data?.tracks, data?.data?.list)
+      const isMobile = url.includes('mobile.') || url.includes('m.')
+      const { data } = await $fetch.get(url, {
+        headers: {
+          'User-Agent': isMobile ? mobileUA : UA,
+          'Referer': isMobile ? 'https://m.ximalaya.com/' : 'https://www.ximalaya.com/'
+        }
+      })
+      const info = safeArgs(data)
+      // 容错各类版本接口：通常包含 trackList 或 tracks
+      const list = firstArray(
+        info?.data?.trackList, 
+        info?.data?.tracks, 
+        info?.data?.list, 
+        info?.trackList, 
+        info?.tracks
+      )
       if (list.length > 0) return list
     } catch (e) {}
   }
@@ -312,7 +331,6 @@ async function getAlbums(ext) {
   return jsonify({ list: [] })
 }
 
-// 🔥 核心修复：限免专辑下，不过滤单曲，全部显示
 async function getSongs(ext) {
   const { page, gid, id, text, type } = argsify(ext)
   const gidValue = `${gid ?? ''}`
@@ -359,12 +377,10 @@ async function search(ext) {
   return jsonify({})
 }
 
-// ✅ 彻底修复：精准解析多版本接口，找回被隐藏的限免/VIP播放链接
 async function getSongInfo(ext) {
   const { trackId, quality } = argsify(ext)
   if (!trackId) return jsonify({ urls: [] })
 
-  // 增加高优移动端接口，移动端往往放宽了限免/VIP的拉取限制
   const urls = [
     `https://mobile.ximalaya.com/mobile-playpage/track/v3/baseInfo/${Date.now()}?device=android&trackId=${trackId}&trackQualityLevel=2`,
     `https://mobile.ximalaya.com/v1/track/baseInfo?device=android&trackId=${trackId}`,
@@ -384,8 +400,6 @@ async function getSongInfo(ext) {
       })
 
       const info = safeArgs(data)
-      
-      // 关键修复：喜马拉雅移动端v3接口数据通常藏在 info.data.trackInfo 里
       const d = (info.data && info.data.trackInfo) ? info.data.trackInfo : (info.data || info.trackInfo || info)
 
       let playUrl =
