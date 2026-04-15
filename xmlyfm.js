@@ -1,7 +1,7 @@
 /*!
  * @name xmlyfm3
- * @description 喜马拉雅FM（终极修复：剥离假签名防WAF拦截 + 纯净底层API解析限免专辑）
- * @version v1.6.2
+ * @description 喜马拉雅FM（终极修复：严格过滤VIP和部分试听，仅展示纯免费或全局限免专辑）
+ * @version v1.6.3
  * @author codex
  * @key csp_xmlyfm
  */
@@ -87,32 +87,40 @@ function firstArray(...candidates) {
   return []
 }
 
+// ✅ 彻底重写的付费判断逻辑
 function isPaidItem(item) {
   if (!item) return false
+
+  // 1. 判断是否属于【真·全局限时免费】（整个专辑对所有人限免）
   const now = new Date()
-  const isLimitFree = !!(
+  const isStrictLimitFree = !!(
     item.is_limit_free === true ||
     item.limit_free === true ||
     item.limitFree === true ||
     item.limit_free_status === 1 ||
     item.albumTimeLimited === true ||
-    item.isSample === true ||
-    item.isVipFree === true ||
     item.freeType === 1 ||
     item.limitFreeType === 1 ||
-    item.vipFreeType === 1 ||
     (item.free_end_time && new Date(item.free_end_time) > now)
   )
-  if (isLimitFree) {
+
+  if (isStrictLimitFree) {
     item._limitFree = true
-    return false
+    return false // 全局限免，放行
   }
-  return !!(
+
+  // 2. 如果不是全局限免，只要包含VIP免费、部分试听、或者纯付费属性，全部拦截
+  const isVipOrPaid = !!(
     item.isPaid === true || item.isPaid === 1 ||
     item.is_paid === true || item.is_paid === 1 ||
+    item.isVipFree === true || item.isVipFree === 1 || 
+    item.isVip === true || item.isVip === 1 ||
+    item.vipFreeType > 0 || item.vip_free_type > 0 ||
     item.payType > 0 || item.pay_type > 0 ||
     item.priceTypeId > 0 || item.price_type_id > 0
   )
+
+  return isVipOrPaid // 返回 true 表示是付费/VIP内容，在外部会被 filter 过滤掉
 }
 
 async function fetchJson(url, extraHeaders = {}) {
@@ -362,6 +370,7 @@ async function getSongs(ext) {
     }
   }
 
+  // 单曲依然全放行（因为专辑列表已经做过过滤了）
   return jsonify({ list: list.map(mapTrack) })
 }
 
@@ -393,7 +402,6 @@ async function search(ext) {
   return jsonify({})
 }
 
-// ✅ 彻底净化：剥离容易触发WAF的假头，专攻底层免签名验证API，大幅提升限免播放成功率
 async function getSongInfo(ext) {
   let arg = safeArgs(ext);
   let trackId = arg?.trackId || arg?.id;
@@ -408,20 +416,14 @@ async function getSongInfo(ext) {
   }
   if (!trackId) return jsonify({ urls: [] })
 
-  // 不再发送任何被视为"注入攻击"的字段，使用官方原生 UA
   const appUA = 'ting_6.7.9(SM-G981B,Android10)';
   const mobileUA = 'Mozilla/5.0 (Linux; Android 10; SM-G981B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36';
 
   const urls = [
-    // 权重1：App最底层 V3 API (官方App自身使用的接口，无视网页版下载拦截，限免专辑直出playUrl)
     { url: `https://mobile.ximalaya.com/mobile-playpage/track/v3/baseInfo/${Date.now()}?device=android&trackId=${trackId}&trackQualityLevel=2`, ua: appUA, ref: '' },
-    // 权重2：H5免签名 API (网页端专门为分享页保留的后门，放行率极高)
     { url: `https://m.ximalaya.com/m-revision/common/track/getPlayUrlV4?trackId=${trackId}`, ua: mobileUA, ref: `https://m.ximalaya.com/sound/${trackId}` },
-    // 权重3：支付鉴权 API (针对VIP和限免内容的专门通道)
     { url: `https://mpay.ximalaya.com/mobile/track/pay/${trackId}?device=android`, ua: appUA, ref: '' },
-    // 权重4：App旧版基础信息 API
     { url: `https://mobile.ximalaya.com/v1/track/baseInfo?device=android&trackId=${trackId}`, ua: appUA, ref: '' },
-    // 权重5：古董 JSON API (兜底，几乎没有防爬虫)
     { url: `https://m.ximalaya.com/tracks/${trackId}.json`, ua: mobileUA, ref: `https://m.ximalaya.com/` }
   ]
 
@@ -434,11 +436,9 @@ async function getSongInfo(ext) {
         }
       })
 
-      // 高度宽容的解析结构，防止WAF拦截时解析HTML报错
       const info = typeof data === 'string' ? JSON.parse(data) : data;
       const d = (info?.data && info?.data?.trackInfo) ? info.data.trackInfo : (info?.data || info?.trackInfo || info);
 
-      // 全方位覆盖所有可能的播放地址字段
       let playUrl =
         d?.playUrl64 || d?.playUrl32 || d?.playUrl || d?.src || d?.url || 
         d?.playPathHq || d?.play_path_64 || d?.play_path_32 || d?.play_path ||
@@ -452,7 +452,6 @@ async function getSongInfo(ext) {
         return jsonify({ urls: [playUrl] })
       }
     } catch (e) {
-      // 遭遇拦截时静默尝试下一个更底层的接口
     }
   }
 
