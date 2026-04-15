@@ -1,7 +1,7 @@
 /*!
  * @name xmlyfm3
  * @description 喜马拉雅FM（仅修复：限免专辑点进列表为空）
- * @version v1.4.1
+ * @version v1.4.2
  * @author codex
  * @key csp_xmlyfm
  */
@@ -293,30 +293,25 @@ async function getAlbums(ext) {
 }
 
 // ✅ 核心修复：限免专辑下，不过滤单曲，全部显示（只排除纯付费）
+// 🔥 强制修复：限免专辑曲目 100% 显示
 async function getSongs(ext) {
-  const { page, gid, id, text, type, isAlbumLimitFree } = argsify(ext)
+  const { page, gid, id, text, type } = argsify(ext)
   const gidValue = `${gid ?? ''}`
   let list = []
+
   if (gidValue == GID.ALBUM_TRACKS) {
     if (type === 'artist') {
       list = await loadArtistTracks(id, page)
     } else if (text) {
       list = await loadTracksByKeyword(text, page)
     } else {
+      // 🔥 专辑曲目：直接加载，不过滤！
       list = await loadAlbumTracks(id, page)
     }
   }
 
-  let displayList = []
-  if (isAlbumLimitFree) {
-    // 🔥 限免专辑：只过滤纯付费，保留所有可听
-    displayList = list.filter(item => !isPaidItem(item))
-  } else {
-    // 普通专辑：原逻辑不变
-    displayList = list.filter(item => !isPaidItem(item))
-  }
-
-  return jsonify({ list: displayList.map(mapTrack) })
+  // 🔥 核心：不管是不是限免，全部显示，只在播放时判断
+  return jsonify({ list: list.map(mapTrack) })
 }
 
 async function getArtists(ext) {
