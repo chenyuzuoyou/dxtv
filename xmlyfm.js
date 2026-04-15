@@ -1,7 +1,7 @@
 /*!
  * @name xmlyfm3
  * @description 喜马拉雅FM（仅修复：限免专辑点进列表为空）
- * @version v1.5.4
+ * @version v1.5.5
  * @author codex
  * @key csp_xmlyfm
  */
