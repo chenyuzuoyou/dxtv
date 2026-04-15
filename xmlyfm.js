@@ -1,12 +1,12 @@
 /*!
  * @name xmlyfm3
- * @description 喜马拉雅FM（终极修复：剥离假签名防WAF拦截 + 纯净底层API解析限免专辑）
- * @version v1.6.2
+ * @description 喜马拉雅FM（纯净版：彻底屏蔽限免/VIP + 极速解析免费接口）
+ * @version v1.6.4
  * @author codex
  * @key csp_xmlyfm
  */
 const $config = argsify($config_str)
-const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'
+const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 const headers = { 'User-Agent': UA }
 const PAGE_LIMIT = 20
 const SEARCH_PAGE_LIMIT = 5
@@ -87,9 +87,11 @@ function firstArray(...candidates) {
   return []
 }
 
+// 核心过滤：将所有限免、付费、VIP全部视为收费项拦截
 function isPaidItem(item) {
   if (!item) return false
   const now = new Date()
+  
   const isLimitFree = !!(
     item.is_limit_free === true ||
     item.limit_free === true ||
@@ -103,16 +105,16 @@ function isPaidItem(item) {
     item.vipFreeType === 1 ||
     (item.free_end_time && new Date(item.free_end_time) > now)
   )
-  if (isLimitFree) {
-    item._limitFree = true
-    return false
-  }
-  return !!(
+
+  const isPaid = !!(
     item.isPaid === true || item.isPaid === 1 ||
     item.is_paid === true || item.is_paid === 1 ||
     item.payType > 0 || item.pay_type > 0 ||
     item.priceTypeId > 0 || item.price_type_id > 0
   )
+
+  // 只要涉及限免或付费，通通返回 true（需要过滤掉）
+  return isLimitFree || isPaid
 }
 
 async function fetchJson(url, extraHeaders = {}) {
@@ -137,14 +139,13 @@ function mapAlbum(item) {
 
   return {
     id,
-    name: item._limitFree ? `【限免】${name}` : name,
-    title: item._limitFree ? `【限免】${name}` : name,
+    name: name, title: name,
     cover, artwork: cover, pic: cover, coverImg: cover,
     artist: {
       id: artistId, name: artistName, title: artistName,
       cover: artistCover, artwork: artistCover, pic: artistCover, avatar: artistCover
     },
-    ext: { gid: GID.ALBUM_TRACKS, id, type: 'album', isAlbumLimitFree: item._limitFree }
+    ext: { gid: GID.ALBUM_TRACKS, id, type: 'album' }
   }
 }
 
@@ -164,8 +165,7 @@ function mapTrack(item) {
 
   return {
     id,
-    name: item._limitFree ? `【限免】${name}` : name,
-    title: item._limitFree ? `【限免】${name}` : name,
+    name: name, title: name,
     cover, artwork: cover, pic: cover, coverImg: cover,
     duration: parseInt(item?.duration ?? item?.interval ?? 0),
     artist: {
@@ -338,6 +338,7 @@ async function getAlbums(ext) {
   const gidValue = `${gid ?? ''}`
   if (gidValue == GID.RECOMMENDED_ALBUMS) {
     const list = await loadRecommendedAlbums(page)
+    // 强制过滤，抛弃限免及付费专辑
     return jsonify({ list: list.filter(item => !isPaidItem(item)).map(mapAlbum) })
   }
   if (gidValue == GID.TAG_ALBUMS) {
@@ -362,7 +363,8 @@ async function getSongs(ext) {
     }
   }
 
-  return jsonify({ list: list.map(mapTrack) })
+  // 强制过滤播放列表，隐藏限免、试听与付费单集
+  return jsonify({ list: list.filter(item => !isPaidItem(item)).map(mapTrack) })
 }
 
 async function getArtists(ext) {
@@ -380,6 +382,7 @@ async function search(ext) {
   if (!text || page > SEARCH_PAGE_LIMIT) return jsonify({})
   if (type == 'album') {
     const list = await loadAlbumsByKeyword(text, page)
+    // 强制过滤搜索结果
     return jsonify({ list: list.filter(item => !isPaidItem(item)).map(mapAlbum) })
   }
   if (type == 'track' || type == 'song') {
@@ -393,7 +396,7 @@ async function search(ext) {
   return jsonify({})
 }
 
-// ✅ 彻底净化：剥离容易触发WAF的假头，专攻底层免签名验证API，大幅提升限免播放成功率
+// 极简版获取播放地址：因为只剩纯免费内容，直接剔除所有反爬鉴权API，秒解析播放链接
 async function getSongInfo(ext) {
   let arg = safeArgs(ext);
   let trackId = arg?.trackId || arg?.id;
@@ -408,37 +411,25 @@ async function getSongInfo(ext) {
   }
   if (!trackId) return jsonify({ urls: [] })
 
-  // 不再发送任何被视为"注入攻击"的字段，使用官方原生 UA
   const appUA = 'ting_6.7.9(SM-G981B,Android10)';
   const mobileUA = 'Mozilla/5.0 (Linux; Android 10; SM-G981B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36';
 
+  // 直接调用极速底层接口（App V3 接口速度最快、稳定性最高）
   const urls = [
-    // 权重1：App最底层 V3 API (官方App自身使用的接口，无视网页版下载拦截，限免专辑直出playUrl)
-    { url: `https://mobile.ximalaya.com/mobile-playpage/track/v3/baseInfo/${Date.now()}?device=android&trackId=${trackId}&trackQualityLevel=2`, ua: appUA, ref: '' },
-    // 权重2：H5免签名 API (网页端专门为分享页保留的后门，放行率极高)
-    { url: `https://m.ximalaya.com/m-revision/common/track/getPlayUrlV4?trackId=${trackId}`, ua: mobileUA, ref: `https://m.ximalaya.com/sound/${trackId}` },
-    // 权重3：支付鉴权 API (针对VIP和限免内容的专门通道)
-    { url: `https://mpay.ximalaya.com/mobile/track/pay/${trackId}?device=android`, ua: appUA, ref: '' },
-    // 权重4：App旧版基础信息 API
-    { url: `https://mobile.ximalaya.com/v1/track/baseInfo?device=android&trackId=${trackId}`, ua: appUA, ref: '' },
-    // 权重5：古董 JSON API (兜底，几乎没有防爬虫)
-    { url: `https://m.ximalaya.com/tracks/${trackId}.json`, ua: mobileUA, ref: `https://m.ximalaya.com/` }
+    { url: `https://mobile.ximalaya.com/mobile-playpage/track/v3/baseInfo/${Date.now()}?device=android&trackId=${trackId}&trackQualityLevel=2`, ua: appUA },
+    { url: `https://m.ximalaya.com/m-revision/common/track/getPlayUrlV4?trackId=${trackId}`, ua: mobileUA },
+    { url: `https://mobile.ximalaya.com/v1/track/baseInfo?device=android&trackId=${trackId}`, ua: appUA }
   ]
 
   for (const item of urls) {
     try {
       const { data } = await $fetch.get(item.url, {
-        headers: {
-          'User-Agent': item.ua,
-          'Referer': item.ref
-        }
-      })
-
-      // 高度宽容的解析结构，防止WAF拦截时解析HTML报错
+        headers: { 'User-Agent': item.ua }
+      });
+      
       const info = typeof data === 'string' ? JSON.parse(data) : data;
       const d = (info?.data && info?.data?.trackInfo) ? info.data.trackInfo : (info?.data || info?.trackInfo || info);
 
-      // 全方位覆盖所有可能的播放地址字段
       let playUrl =
         d?.playUrl64 || d?.playUrl32 || d?.playUrl || d?.src || d?.url || 
         d?.playPathHq || d?.play_path_64 || d?.play_path_32 || d?.play_path ||
@@ -452,7 +443,7 @@ async function getSongInfo(ext) {
         return jsonify({ urls: [playUrl] })
       }
     } catch (e) {
-      // 遭遇拦截时静默尝试下一个更底层的接口
+      // 容错继续尝试
     }
   }
 
