@@ -1,7 +1,7 @@
 /*!
  * @name xmlyfm3
- * @description 喜马拉雅FM (显示限免VIP/修复专辑/创作者列表)
- * @version v1.3
+ * @description 喜马拉雅FM（显示限免+修复专辑/创作者/封面）
+ * @version v1.4
  * @author codex
  * @key csp_xmlyfm
  */
@@ -22,26 +22,26 @@ const appConfig = {
   tabLibrary: {
     name: '探索',
     groups: [
-      {name: '播客', type: 'album', ui: 1, showMore: true, ext: {gid: GID.TAG_ALBUMS, kw: '播客'}},
-      {name: '历史', type: 'album', ui: 1, showMore: true, ext: {gid: GID.TAG_ALBUMS, kw: '历史'}},
-      {name: '图书', type: 'album', ui: 1, showMore: true, ext: {gid: GID.TAG_ALBUMS, kw: '图书'}},
-      {name: '热门专辑', type: 'album', ui: 1, showMore: true, ext: {gid: GID.TAG_ALBUMS, kw: '热门'}},
-      {name: '小说', type: 'album', ui: 1, showMore: true, ext: {gid: GID.TAG_ALBUMS, kw: '小说'}},
-      {name: '相声', type: 'album', ui: 1, showMore: true, ext: {gid: GID.TAG_ALBUMS, kw: '相声'}},
-      {name: '音乐', type: 'album', ui: 1, showMore: true, ext: {gid: GID.TAG_ALBUMS, kw: '音乐'}},
-      {name: '有声书', type: 'album', ui: 1, showMore: true, ext: {gid: GID.TAG_ALBUMS, kw: '有声书'}},
-      {name: '评书', type: 'album', ui: 1, showMore: true, ext: {gid: GID.TAG_ALBUMS, kw: '评书'}},
-      {name: '情感', type: 'album', ui: 1, showMore: true, ext: {gid: GID.TAG_ALBUMS, kw: '情感'}},
-      {name: '儿童', type: 'album', ui: 1, showMore: true, ext: {gid: GID.TAG_ALBUMS, kw: '儿童'}},
-      {name: '综艺', type: 'album', ui: 1, showMore: true, ext: {gid: GID.TAG_ALBUMS, kw: '综艺'}},
-      {name: '娱乐', type: 'album', ui: 1, showMore: true, ext: {gid: GID.TAG_ALBUMS, kw: '娱乐'}},
-      {name: '悬疑', type: 'album', ui: 1, showMore: true, ext: {gid: GID.TAG_ALBUMS, kw: '悬疑'}},
-      {name: '健康', type: 'album', ui: 1, showMore: true, ext: {gid: GID.TAG_ALBUMS, kw: '健康'}},
-      {name: '财经', type: 'album', ui: 1, showMore: true, ext: {gid: GID.TAG_ALBUMS, kw: '财经'}},
-      {name: '教育', type: 'album', ui: 1, showMore: true, ext: {gid: GID.TAG_ALBUMS, kw: '教育'}},
-      {name: '人文', type: 'album', ui: 1, showMore: true, ext: {gid: GID.TAG_ALBUMS, kw: '人文'}},
-      {name: '英语', type: 'album', ui: 1, showMore: true, ext: {gid: GID.TAG_ALBUMS, kw: '英语'}},
-      {name: '二次元', type: 'album', ui: 1, showMore: true, ext: {gid: GID.TAG_ALBUMS, kw: '二次元'}}
+      {name: '播客', type: 'album', ui:1, showMore:true, ext:{gid:GID.TAG_ALBUMS, kw:'播客'}},
+      {name: '历史', type: 'album', ui:1, showMore:true, ext:{gid:GID.TAG_ALBUMS, kw:'历史'}},
+      {name: '图书', type: 'album', ui:1, showMore:true, ext:{gid:GID.TAG_ALBUMS, kw:'图书'}},
+      {name: '热门专辑', type: 'album', ui:1, showMore:true, ext:{gid:GID.TAG_ALBUMS, kw:'热门'}},
+      {name: '小说', type: 'album', ui:1, showMore:true, ext:{gid:GID.TAG_ALBUMS, kw:'小说'}},
+      {name: '相声', type: 'album', ui:1, showMore:true, ext:{gid:GID.TAG_ALBUMS, kw:'相声'}},
+      {name: '音乐', type: 'album', ui:1, showMore:true, ext:{gid:GID.TAG_ALBUMS, kw:'音乐'}},
+      {name: '有声书', type: 'album', ui:1, showMore:true, ext:{gid:GID.TAG_ALBUMS, kw:'有声书'}},
+      {name: '评书', type: 'album', ui:1, showMore:true, ext:{gid:GID.TAG_ALBUMS, kw:'评书'}},
+      {name: '情感', type: 'album', ui:1, showMore:true, ext:{gid:GID.TAG_ALBUMS, kw:'情感'}},
+      {name: '儿童', type: 'album', ui:1, showMore:true, ext:{gid:GID.TAG_ALBUMS, kw:'儿童'}},
+      {name: '综艺', type: 'album', ui:1, showMore:true, ext:{gid:GID.TAG_ALBUMS, kw:'综艺'}},
+      {name: '娱乐', type: 'album', ui:1, showMore:true, ext:{gid:GID.TAG_ALBUMS, kw:'娱乐'}},
+      {name: '悬疑', type: 'album', ui:1, showMore:true, ext:{gid:GID.TAG_ALBUMS, kw:'悬疑'}},
+      {name: '健康', type: 'album', ui:1, showMore:true, ext:{gid:GID.TAG_ALBUMS, kw:'健康'}},
+      {name: '财经', type: 'album', ui:1, showMore:true, ext:{gid:GID.TAG_ALBUMS, kw:'财经'}},
+      {name: '教育', type: 'album', ui:1, showMore:true, ext:{gid:GID.TAG_ALBUMS, kw:'教育'}},
+      {name: '人文', type: 'album', ui:1, showMore:true, ext:{gid:GID.TAG_ALBUMS, kw:'人文'}},
+      {name: '英语', type: 'album', ui:1, showMore:true, ext:{gid:GID.TAG_ALBUMS, kw:'英语'}},
+      {name: '二次元', type: 'album', ui:1, showMore:true, ext:{gid:GID.TAG_ALBUMS, kw:'二次元'}}
     ]
   },
   tabMe: {
@@ -56,9 +56,9 @@ const appConfig = {
   tabSearch: {
     name: '搜索',
     groups: [
-      {name: '专辑', type: 'album', ext: {type: 'album'}},
-      {name: '节目', type: 'song', ext: {type: 'track'}},
-      {name: '创作者', type: 'artist', ext: {type: 'artist'}}
+      {name: '专辑', type: 'album', ext:{type:'album'}},
+      {name: '节目', type: 'song', ext:{type:'track'}},
+      {name: '创作者', type: 'artist', ext:{type:'artist'}}
     ]
   }
 }
@@ -83,7 +83,7 @@ function firstArray(...candidates) {
   return []
 }
 
-// ✅ 修复1：统一限免判断（专辑/单曲通用），并设置_limitFree标记
+// ✅ 核心：限免正确识别，不误杀
 function isPaidItem(item) {
   if (!item) return false
   const now = new Date()
@@ -98,17 +98,15 @@ function isPaidItem(item) {
     item.freeType === 1 ||
     item.limitFreeType === 1 ||
     item.vipFreeType === 1 ||
-    (item.free_end_time && new Date(item.free_end_time) > now) ||
-    (item.freeEndTime && new Date(item.freeEndTime) > now)
+    (item.free_end_time && new Date(item.free_end_time) > now)
   )
   if (isLimitFree) {
-    item._limitFree = true // 关键：给单曲/专辑都打上限免标记
+    item._limitFree = true
     return false
   }
-  // 付费判断
   return !!(
-    item.isPaid === true || item.isPaid === 1 || item.isPaid === 'true' ||
-    item.is_paid === true || item.is_paid === 1 || item.is_paid === 'true' ||
+    item.isPaid === true || item.isPaid === 1 ||
+    item.is_paid === true || item.is_paid === 1 ||
     item.payType > 0 || item.pay_type > 0 ||
     item.priceTypeId > 0 || item.price_type_id > 0
   )
@@ -119,42 +117,55 @@ async function fetchJson(url, extraHeaders = {}) {
   return safeArgs(data)
 }
 
-// ✅ 修复2：专辑【限免】角标
+// ✅ 修复：完整封面字段，全部还原
 function mapAlbum(item) {
   const id = `${item?.albumId ?? item?.id ?? item?.album_id ?? ''}`
   const name = item?.albumTitle ?? item?.title ?? item?.albumName ?? ''
-  const cover = toHttps(item?.coverLarge ?? item?.coverUrlLarge ?? item?.coverUrl ?? item?.albumCover ?? '')
-  const artistId = `${item?.uid ?? item?.anchorId ?? ''}`
-  const artistName = item?.nickname ?? item?.anchorNickname ?? '主播'
+  const cover = toHttps(
+    item?.coverLarge ?? item?.coverUrlLarge ?? item?.coverUrl ??
+    item?.cover_path ?? item?.coverPath ?? item?.coverMiddle ??
+    item?.picUrl ?? item?.albumCoverUrl290 ?? item?.albumCover ??
+    item?.albumPic ?? item?.pic ?? item?.picPath ?? item?.imgPath ?? ''
+  )
+  const artistId = `${item?.uid ?? item?.anchorId ?? item?.anchorUid ?? item?.userId ?? ''}`
+  const artistName = item?.nickname ?? item?.anchorNickname ?? item?.anchorName ?? '喜马拉雅'
+  const artistCover = toHttps(item?.avatar ?? item?.anchorAvatar ?? '')
+
   return {
     id,
     name: item._limitFree ? `【限免】${name}` : name,
     title: item._limitFree ? `【限免】${name}` : name,
-    cover, artwork: cover, pic: cover,
+    cover, artwork: cover, pic: cover, coverImg: cover,
     artist: {
       id: artistId, name: artistName, title: artistName,
-      cover: toHttps(item?.avatar ?? ''), avatar: toHttps(item?.avatar ?? '')
+      cover: artistCover, artwork: artistCover, pic: artistCover, avatar: artistCover
     },
     ext: { gid: GID.ALBUM_TRACKS, id, type: 'album' }
   }
 }
 
-// ✅ 修复3：单曲【限免】角标
+// ✅ 修复：完整封面字段
 function mapTrack(item) {
-  const id = `${item?.trackId ?? item?.id ?? ''}`
-  const name = item?.title ?? item?.trackTitle ?? ''
-  const cover = toHttps(item?.coverLarge ?? item?.albumCover ?? '')
-  const artistId = `${item?.uid ?? item?.anchorId ?? ''}`
-  const artistName = item?.nickname ?? item?.anchorNickName ?? '主播'
+  const id = `${item?.trackId ?? item?.id ?? item?.soundId ?? ''}`
+  const name = item?.title ?? item?.trackTitle ?? item?.name ?? ''
+  const cover = toHttps(
+    item?.coverLarge ?? item?.coverUrlLarge ?? item?.coverMiddle ??
+    item?.coverUrlMiddle ?? item?.albumCover ?? item?.coverPath ??
+    item?.cover_path ?? item?.coverUrl ?? item?.pic ?? ''
+  )
+  const artistId = `${item?.uid ?? item?.anchorUid ?? item?.anchorId ?? ''}`
+  const artistName = item?.nickname ?? item?.anchorNickName ?? item?.anchorName ?? '主播'
+  const artistCover = toHttps(item?.avatar ?? item?.anchorAvatar ?? '')
+
   return {
     id,
     name: item._limitFree ? `【限免】${name}` : name,
     title: item._limitFree ? `【限免】${name}` : name,
-    cover, artwork: cover, pic: cover,
-    duration: parseInt(item?.duration ?? 0),
+    cover, artwork: cover, pic: cover, coverImg: cover,
+    duration: parseInt(item?.duration ?? item?.interval ?? 0),
     artist: {
       id: artistId, name: artistName, title: artistName,
-      cover: toHttps(item?.avatar ?? ''), avatar: toHttps(item?.avatar ?? '')
+      cover: artistCover, artwork: artistCover, pic: artistCover, avatar: artistCover
     },
     ext: { source: XM_SOURCE, trackId: id, title: name, singer: artistName }
   }
@@ -163,7 +174,7 @@ function mapTrack(item) {
 function mapArtistCard(item) {
   const artistId = `${item?.uid ?? item?.anchorId ?? ''}`
   const artistName = item?.nickname ?? item?.anchorNickname ?? '创作者'
-  const artistCover = toHttps(item?.avatar ?? '')
+  const artistCover = toHttps(item?.avatar ?? item?.anchorAvatar ?? '')
   return {
     id: artistId, name: artistName, title: artistName,
     cover: artistCover, artwork: artistCover, avatar: artistCover,
@@ -183,7 +194,7 @@ async function loadRecommendedAlbums(page = 1) {
   for (const url of urls) {
     try {
       const data = await fetchJson(url)
-      const list = firstArray(data?.data?.result?.response?.docs, data?.data?.list, data?.data?.albums, data?.list)
+      const list = firstArray(data?.data?.result?.response?.docs, data?.data?.list, data?.data?.albums)
       if (list.length > 0) return list
     } catch (e) {}
   }
@@ -199,7 +210,7 @@ async function loadAlbumsByKeyword(keyword, page = 1) {
   for (const url of urls) {
     try {
       const data = await fetchJson(url)
-      const list = firstArray(data?.data?.result?.response?.docs, data?.data?.album?.docs, data?.data?.albums, data?.data?.list)
+      const list = firstArray(data?.data?.result?.response?.docs, data?.data?.album?.docs, data?.data?.albums)
       if (list.length > 0) return list
     } catch (e) {}
   }
@@ -221,7 +232,7 @@ async function loadAlbumTracks(albumId, page = 1) {
   return []
 }
 
-// ✅ 修复4：新增加载主播曲目（解决创作者页为空）
+// ✅ 修复：创作者曲目接口
 async function loadArtistTracks(artistId, page = 1) {
   const urls = [
     `https://mobile.ximalaya.com/mobile/v1/anchor/track?anchorId=${artistId}&pageId=${page}&pageSize=${PAGE_LIMIT}`,
@@ -230,7 +241,7 @@ async function loadArtistTracks(artistId, page = 1) {
   for (const url of urls) {
     try {
       const data = await fetchJson(url)
-      const list = firstArray(data?.data?.tracks, data?.data?.list, data?.tracks)
+      const list = firstArray(data?.data?.tracks, data?.data?.list)
       if (list.length > 0) return list
     } catch (e) {}
   }
@@ -246,7 +257,7 @@ async function loadTracksByKeyword(keyword, page = 1) {
   for (const url of urls) {
     try {
       const data = await fetchJson(url)
-      const list = firstArray(data?.data?.result?.response?.docs, data?.data?.track?.docs, data?.data?.tracks, data?.data?.list)
+      const list = firstArray(data?.data?.result?.response?.docs, data?.data?.track?.docs, data?.data?.tracks)
       if (list.length > 0) return list
     } catch (e) {}
   }
@@ -284,18 +295,18 @@ async function getAlbums(ext) {
   return jsonify({ list: [] })
 }
 
-// ✅ 修复5：getSongs支持artist类型（创作者页）
+// ✅ 修复：支持专辑、搜索、创作者三种来源
 async function getSongs(ext) {
   const { page, gid, id, text, type } = argsify(ext)
   const gidValue = `${gid ?? ''}`
   let list = []
   if (gidValue == GID.ALBUM_TRACKS) {
     if (type === 'artist') {
-      list = await loadArtistTracks(id, page) // 创作者曲目
+      list = await loadArtistTracks(id, page)
     } else if (text) {
-      list = await loadTracksByKeyword(text, page) // 搜索单曲
+      list = await loadTracksByKeyword(text, page)
     } else {
-      list = await loadAlbumTracks(id, page) // 专辑曲目
+      list = await loadAlbumTracks(id, page)
     }
   }
   const freeList = list.filter(item => !isPaidItem(item))
