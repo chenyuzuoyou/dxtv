@@ -91,13 +91,13 @@ const appConfig = {
       { name: '咪咕-排行榜', type: 'playlist', ui: 1, showMore: true, ext: { source: 'mg', gid: '1' } },
       { name: '咪咕-热门歌手', type: 'artist', ui: 0, showMore: true, ext: { source: 'mg', gid: '2' } },
 
+      { name: '喜马-音乐', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', gid: '2', kw: '音乐' } },
       { name: '喜马-播客', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', gid: '2', kw: '播客' } },
       { name: '喜马-历史', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', gid: '2', kw: '历史' } },
       { name: '喜马-图书', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', gid: '2', kw: '图书' } },
       { name: '喜马-热门专辑', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', gid: '2', kw: '热门' } },
       { name: '喜马-小说', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', gid: '2', kw: '小说' } },
-      { name: '喜马-相声', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', gid: '2', kw: '相声' } },
-      { name: '喜马-音乐', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', gid: '2', kw: '音乐' } }
+      { name: '喜马-相声', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', gid: '2', kw: '相声' } }
     ]
   },
   tabMe: {
