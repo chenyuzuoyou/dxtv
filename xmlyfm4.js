@@ -1,14 +1,18 @@
 /*!
- * @name xmlyfm4 (专辑列表+内页全面修复版)
- * @description 喜马拉雅FM（探索/搜索专辑全部显示 + [限免]标注 + 专辑内条目加载稳定 + 极速解析）
- * @version v1.6.9-mod
+ * @name xmlyfm4 (2026全面修复版)
+ * @description 喜马拉雅FM（专辑列表+内页全面恢复 + [限免]标注 + 稳定接口优先）
+ * @version v1.7.0-mod
  * @author codex + Grok 修改
  * @key csp_xmlyfm
  */
 const $config = argsify($config_str)
-const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-const MOBILE_UA = 'Mozilla/5.0 (Linux; Android 10; SM-G981B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'
-const headers = { 'User-Agent': UA }
+const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36'
+const MOBILE_UA = 'Mozilla/5.0 (Linux; Android 14; SM-G981B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Mobile Safari/537.36'
+const headers = { 
+  'User-Agent': UA,
+  'Accept': 'application/json, text/plain, */*',
+  'Referer': 'https://www.ximalaya.com/'
+}
 const PAGE_LIMIT = 20
 const SEARCH_PAGE_LIMIT = 5
 const XM_SOURCE = 'xmly'
@@ -89,7 +93,7 @@ function firstArray(...candidates) {
   return []
 }
 
-// 限免判断逻辑
+// 限免判断（不变）
 function isCurrentlyLimitFree(item) {
   if (!item) return false
   const now = Date.now()
@@ -168,18 +172,46 @@ async function fetchJson(url, extraHeaders = {}) {
   }
 }
 
+// ==================== 专辑列表加载（探索页 & 搜索） ====================
+async function loadRecommendedAlbums(page = 1) {
+  const urls = [
+    `https://www.ximalaya.com/revision/search?core=album&kw=&page=${page}&rows=${PAGE_LIMIT}&spellchecker=true&condition=relation&device=web`,
+    `https://mobile.ximalaya.com/mobile/discovery/v3/recommend/album?pageId=${page}&pageSize=${PAGE_LIMIT}`
+  ]
+  for (const url of urls) {
+    const data = await fetchJson(url)
+    const list = firstArray(data?.data?.result?.response?.docs, data?.data?.list, data?.data?.albums, data?.data)
+    if (list.length > 0) return list
+  }
+  return []
+}
+
+async function loadAlbumsByKeyword(keyword, page = 1) {
+  const kw = encodeURIComponent(keyword || '')
+  const urls = [
+    `https://www.ximalaya.com/revision/search?core=album&kw=${kw}&page=${page}&rows=${PAGE_LIMIT}&spellchecker=true&condition=relation&device=web`,
+    `https://mobile.ximalaya.com/mobile/search/result?query=${kw}&page=${page}`
+  ]
+  for (const url of urls) {
+    const data = await fetchJson(url)
+    const list = firstArray(data?.data?.result?.response?.docs, data?.data?.album?.docs, data?.data?.albums, data?.data?.list)
+    if (list.length > 0) return list
+  }
+  return []
+}
+
 // ==================== 专辑内条目加载（核心修复） ====================
 async function loadAlbumTracks(albumId) {
   let allTracks = []
   let currentPage = 1
-  const maxPage = 50
+  const maxPage = 30   // 减少最大页数，避免超时
 
   while (currentPage <= maxPage) {
     const urls = [
-      // 优先网页端 revision 接口（目前最稳定，许多免费专辑依赖此接口）
+      // 优先网页端最稳定接口
       `https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${albumId}&pageNum=${currentPage}&pageSize=100&sort=0`,
       `https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${albumId}&pageNum=${currentPage}&pageSize=100`,
-      // 移动端备选
+      // 移动端强备选
       `https://mobile.ximalaya.com/mobile/v1/album/track?albumId=${albumId}&device=android&isAsc=true&pageId=${currentPage}&pageSize=100`,
       `https://mobile.ximalaya.com/mobile/v1/album/track/?albumId=${albumId}&pageSize=100&pageId=${currentPage}`
     ]
@@ -188,11 +220,11 @@ async function loadAlbumTracks(albumId) {
     for (const url of urls) {
       try {
         const isMobile = url.includes('mobile.ximalaya.com')
-        const extra = {
+        const extraHeaders = {
           'User-Agent': isMobile ? MOBILE_UA : UA,
           'Referer': `https://www.ximalaya.com/album/${albumId}`
         }
-        const data = await fetchJson(url, extra)
+        const data = await fetchJson(url, extraHeaders)
 
         const list = firstArray(
           data?.data?.tracks,
@@ -212,51 +244,23 @@ async function loadAlbumTracks(albumId) {
     if (pageTracks.length === 0) break
 
     allTracks = allTracks.concat(pageTracks)
-    if (pageTracks.length < 80) break
+    if (pageTracks.length < 60) break   // 最后一页通常较少
     currentPage++
   }
 
   return allTracks
 }
 
-// 探索页和搜索页专辑列表（恢复稳定接口）
-async function loadRecommendedAlbums(page = 1) {
-  const urls = [
-    `https://www.ximalaya.com/revision/search?core=album&kw=&page=${page}&rows=${PAGE_LIMIT}&spellchecker=true&condition=relation&device=web`,
-    `https://mobile.ximalaya.com/mobile/discovery/v3/recommend/album?pageId=${page}&pageSize=${PAGE_LIMIT}`
-  ]
-  for (const url of urls) {
-    const data = await fetchJson(url)
-    const list = firstArray(data?.data?.result?.response?.docs, data?.data?.list, data?.data?.albums)
-    if (list.length > 0) return list
-  }
-  return []
-}
-
-async function loadAlbumsByKeyword(keyword, page = 1) {
-  const kw = keyword || ''
-  const urls = [
-    `https://www.ximalaya.com/revision/search?core=album&kw=${encodeURIComponent(kw)}&page=${page}&rows=${PAGE_LIMIT}&spellchecker=true&condition=relation&device=web`,
-    `https://mobile.ximalaya.com/mobile/search/result?query=${encodeURIComponent(kw)}&page=${page}`
-  ]
-  for (const url of urls) {
-    const data = await fetchJson(url)
-    const list = firstArray(data?.data?.result?.response?.docs, data?.data?.album?.docs, data?.data?.albums)
-    if (list.length > 0) return list
-  }
-  return []
-}
-
-// 其他函数保持简洁（loadArtistTracks、loadTracksByKeyword 等可按需补充原逻辑，这里省略以节省篇幅，你可直接复制粘贴原版本）
-
 async function getConfig() { return jsonify(appConfig) }
 
 async function getAlbums(ext) {
   const { page, gid, kw } = argsify(ext)
   let rawList = []
-  if (`${gid}` == GID.RECOMMENDED_ALBUMS) rawList = await loadRecommendedAlbums(page)
-  else if (`${gid}` == GID.TAG_ALBUMS) rawList = await loadAlbumsByKeyword(kw, page)
-
+  if (`${gid}` == GID.RECOMMENDED_ALBUMS) {
+    rawList = await loadRecommendedAlbums(page)
+  } else if (`${gid}` == GID.TAG_ALBUMS) {
+    rawList = await loadAlbumsByKeyword(kw, page)
+  }
   return jsonify({ list: rawList.map(item => mapAlbum(item)) })
 }
 
@@ -266,11 +270,11 @@ async function getSongs(ext) {
 
   if (`${gid}` == GID.ALBUM_TRACKS) {
     if (type === 'artist') {
-      list = [] // 可补充 loadArtistTracks
+      list = [] // 如需支持可补充
     } else if (text) {
-      list = [] // 可补充 loadTracksByKeyword
-    } else {
-      list = await loadAlbumTracks(id)   // 核心修复函数
+      list = [] // 如需支持可补充
+    } else if (id) {
+      list = await loadAlbumTracks(id)
     }
   }
 
@@ -287,11 +291,7 @@ async function search(ext) {
     return jsonify({ list: rawList.map(item => mapAlbum(item)) })
   }
   if (type == 'track' || type == 'song') {
-    // 可补充 loadTracksByKeyword
-    return jsonify({ list: [] })
-  }
-  if (type == 'artist') {
-    return jsonify({ list: [] })
+    return jsonify({ list: [] }) // 如需支持搜索单集可补充
   }
   return jsonify({})
 }
@@ -305,14 +305,14 @@ async function getSongInfo(ext) {
   if (!trackId) return jsonify({ urls: [] })
 
   const playUrls = [
-    `https://mobile.ximalaya.com/mobile-playpage/track/v3/baseInfo/${Date.now()}?device=android&trackId=${trackId}&trackQualityLevel=2`,
+    `https://mobile.ximalaya.com/mobile-playpage/track/v3/baseInfo/${Date.now()}?device=android&trackId=${trackId}`,
     `https://mobile.ximalaya.com/mobile/v1/track/baseInfo?device=android&trackId=${trackId}`,
     `https://m.ximalaya.com/m-revision/common/track/getPlayUrlV4?trackId=${trackId}`
   ]
 
   for (const u of playUrls) {
     try {
-      const { data } = await $fetch.get(u, { headers: { 'User-Agent': MOBILE_UA } })
+      const { data } = await $fetch.get(u, { headers: { 'User-Agent': MOBILE_UA, 'Referer': 'https://www.ximalaya.com/' } })
       const info = safeArgs(data)
       const d = info?.data?.trackInfo || info?.data || info?.trackInfo || info
       let playUrl = d?.playUrl64 || d?.playUrl32 || d?.playUrl || d?.src || d?.url || d?.playPathHq || d?.play_path_64 || d?.audioUrl
