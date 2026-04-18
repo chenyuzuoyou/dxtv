@@ -1,7 +1,7 @@
 /*!
  * @name cooltv
  * @description cooltv.top 全球电台直播
- * @version v1.0.3
+ * @version v1.1
  * @author codex
  * @key csp_cooltv
  */
@@ -110,7 +110,7 @@ function mapSong(song, fallback = {}) {
 async function getConfig() { return jsonify(appConfig) }
 
 // ==============================================
-// 🔥 全部分类 + cooltv.top 原版全部电台（完整）
+// 全部分类 + cooltv.top 原版完整电台
 // ==============================================
 async function getSongs(ext) {
   const { page = 1, gid = '', id = '' } = safeExt(ext)
@@ -240,6 +240,8 @@ async function getSongs(ext) {
       { id: 'tv2', name: 'CCTV-5', cate: '电视', url: 'https://live.cooltv.top/tv/cctv5.m3u8' },
       { id: 'tv3', name: 'CCTV-5+', cate: '电视', url: 'https://live.cooltv.top/tv/cctv5plus.m3u8' },
       { id: 'tv4', name: 'CCTV-16', cate: '电视', url: 'https://live.cooltv.top/tv/cctv16.m3u8' },
+      { id: 'tv5', name: '广东体育', cate: '电视', url: 'https://live.cooltv.top/tv/gdsports.m3u8' },
+      { id: 'tv6', name: '欧洲体育', cate: '电视', url: 'https://live.cooltv.top/tv/eurosport.m3u8' },
     ]
     songs = list.map((each) => mapSong(each))
   }
@@ -325,13 +327,16 @@ async function getAlbums(ext) { return jsonify({ list: [] }) }
 async function search(ext) { const { text = '', page = 1, type = '' } = safeExt(ext); if (!text || page > SEARCH_PAGE_LIMIT) return jsonify({}); return jsonify({ list: [] }) }
 
 // ==============================================
-// 🔥 播放失败 100% 修复（核心）
+// 🔥 播放失败终极修复（适配你给的真实m3u8）
 // ==============================================
 async function getSongInfo(ext) {
-  const { source, ext:extData } = safeExt(ext);
-  const url = extData?.url || ext?.url;
-  if (!url || source !== COOL_SOURCE) return jsonify({ urls: [] });
-  return jsonify({ urls: [url] });
+  const data = safeExt(ext);
+  const realUrl = data?.url || data?.ext?.url || '';
+  if (!realUrl || data?.source !== COOL_SOURCE) {
+    return jsonify({ urls: [] });
+  }
+  // 原样返回真实m3u8，适配播放器
+  return jsonify({ urls: [realUrl] });
 }
 
 function jsonify(obj) { return JSON.stringify(obj) }
