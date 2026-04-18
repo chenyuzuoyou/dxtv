@@ -1,7 +1,7 @@
 /*!
  * @name cooltv
- * @description COOL Radio 分页展开+稳定播放版
- * @version v1.1.1
+ * @description COOL Radio 稳定防死锁版 (破除播放器直播流缓存)
+ * @version v1.1.2
  * @author AI
  * @key csp_cooltv
  */
@@ -17,9 +17,6 @@ const CATEGORIES = {
   Chill: 'Chill', Country: 'Country', EDM: 'EDM', Gold: 'Gold', Kids: 'Kids', Rock: 'Rock'
 };
 
-// ================== 核心配置改动 ==================
-// 修改 UI 样式：首页采用 ui: 1 (歌单卡片/列表模式) 
-// 结合 showMore: true 让点击分类名称或 "更多" 时进入新页面
 const appConfig = {
   ver: 1,
   name: 'cooltv',
@@ -81,7 +78,7 @@ async function fetchHtml(url) {
 async function getConfig() { return jsonify(appConfig); }
 async function search(ext) { return jsonify({ list: [] }); }
 
-// ================== 格式化与截断逻辑 ==================
+// ================== 格式化与分页截断逻辑 ==================
 function filterAndPaginate(stationsList, categoryName, page, isIndex) {
     let targetList = stationsList.filter(s => 
         s.cat === categoryName || 
@@ -97,13 +94,10 @@ function filterAndPaginate(stationsList, categoryName, page, isIndex) {
     let songs = [];
     let pageList = [];
     
-    // 如果是从首页请求 (通常带有特殊标识或 page 强制归 1)，只提取前 9 个
+    // 首页限流展示9个，进入分类页后正常分页加载
     if (isIndex || (page === 1 && !globalStationsCache)) {
-        // 部分框架根据 ui 和 from 字段判定，这里统一做安全策略
-        // 为确保首页只显 9 个，点击更多进去再展示完整分页
         pageList = targetList.slice(0, 9);
     } else {
-        // 在分类专属页内正常滑动加载
         let offset = (page - 1) * PAGE_LIMIT;
         pageList = targetList.slice(offset, offset + PAGE_LIMIT);
     }
@@ -128,7 +122,6 @@ async function getSongs(ext) {
   const { type = 'HQ', page = 1, from = '' } = safeExt(ext);
   let categoryName = CATEGORIES[type] || '高清专区';
   
-  // 判断当前是否处于首页加载环境 (如果是，只返回9个)
   let isIndex = from === 'index' || page === 1;
 
   if (globalStationsCache && (Date.now() - globalCacheTime < 3600000)) {
@@ -218,32 +211,31 @@ async function getSongs(ext) {
     console.log("获取失败", err);
   }
 
-  // 这里的 isIndex == true 会将结果截断为 9 个
   return jsonify({ list: filterAndPaginate(globalStationsCache || allStations, categoryName, page, isIndex) });
 }
 
-// ================== 播放增强提取 ==================
+// ================== 核心播放伪装处理 ==================
 async function getSongInfo(ext) {
   const { streamUrl } = safeExt(ext);
   
   if (streamUrl) {
-      // 分解备用路线
+      // 1. 切分多条备用线路
       let urls = streamUrl.split(/[;,]/)
                           .map(u => u.trim())
                           .filter(u => u.startsWith('http'));
       
       if (urls.length > 0) {
-          // 选择第一条地址，如果地址自身没有媒体后缀，尝试拼接或让底层播放器自己处理重定向
-          let primaryUrl = urls[0];
-          
-          // 对于少数特殊的流媒体处理
-          if (!primaryUrl.includes('.m3u8') && !primaryUrl.includes('.mp3') && !primaryUrl.includes('.flv')) {
-              // 某些电台返回的可能是个 HTML 页面包裹播放器，或者是302重定向跳转。
-              // 这里我们直接把它作为直链送出，绝大多数情况下播放器能够顺着重定向找到真正的媒体流。
-          }
+          // 2. 防死锁机制：为所有的直播流链接强行追加毫秒级时间戳
+          // 这会让播放器每次请求都认为这是一个全新且未缓存的文件，防止切台时卡死
+          let finalUrls = urls.map(u => {
+              // 为了避免破坏某些本身自带复杂参数的推流链接
+              if (u.includes('.m3u8') || u.includes('.flv') || u.includes('live')) {
+                  return u + (u.includes('?') ? '&' : '?') + '_t=' + Date.now();
+              }
+              return u;
+          });
 
-          // 既然很多播放器不能兼容数组备用，我们退回保证绝对给出一个单独的干净字符串
-          return jsonify({ urls: [primaryUrl] });
+          return jsonify({ urls: finalUrls });
       }
   }
   return jsonify({ urls: [] });
