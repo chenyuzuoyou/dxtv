@@ -1,7 +1,7 @@
 /*!
  * @name cooltv
- * @description COOL Radio 引擎防死锁版 (彻底优化起播与切台假死)
- * @version v1.1.4
+ * @description COOL Radio 纯净守护版 (防卡死+严格过滤)
+ * @version v1.1.5
  * @author AI
  * @key csp_cooltv
  */
@@ -21,7 +21,7 @@ const appConfig = {
   ver: 1,
   name: 'cooltv',
   message: '欢迎使用COOL Radio',
-  warning: '',
+  warning: '提示：聚合电台存在大量原始死链，若无法播放请耐心尝试其他台。',
   desc: '提供高质量的全球电台与电视频道伴音',
   tabLibrary: {
     name: '探索',
@@ -38,7 +38,6 @@ const appConfig = {
 };
 
 let globalStationsCache = null;
-let globalCacheTime = 0;
 let fetchingPromise = null; 
 
 function withHeaders(extra = {}) {
@@ -79,148 +78,110 @@ async function fetchHtml(url) {
 async function getConfig() { return jsonify(appConfig); }
 async function search(ext) { return jsonify({ list: [] }); }
 
+// 核心拉取引擎
 async function loadAllStations() {
-    if (globalStationsCache && (Date.now() - globalCacheTime < 3600000)) {
-        return globalStationsCache;
-    }
-    if (fetchingPromise) {
-        return await fetchingPromise;
-    }
-    
+    if (globalStationsCache) return globalStationsCache;
+    if (fetchingPromise) return await fetchingPromise;
+
     fetchingPromise = (async () => {
-        let allStations = [];
-        let seenUrls = new Set();
-
-        function addStation(name, rawUrl, cat, cover) {
-            if (!rawUrl || typeof rawUrl !== 'string' || rawUrl.length < 5 || rawUrl.includes('javascript:')) return;
-            
-            let url = rawUrl.split(/[;,]/)[0].trim().replace(/\s/g, '');
-            
-            // 核心防死锁 1：强行过滤掉会让普通音乐播放器直接卡死崩溃的非 HTTP 协议
-            if (url.startsWith('rtmp') || url.startsWith('rtsp') || url.startsWith('mms')) {
-                return;
-            }
-
-            if (!url.startsWith('http')) {
-                if (url.match(/\.(m3u8|flv|mp3|aac|ts)/i)) url = `https://cooltv.top${url.startsWith('/') ? '' : '/'}${url}`;
-                else return;
-            }
-            if (seenUrls.has(url)) return;
-            seenUrls.add(url);
-            
-            let cleanCover = cover;
-            if (cleanCover && !cleanCover.startsWith('http') && !cleanCover.startsWith('data:')) {
-                cleanCover = `https://cooltv.top${cleanCover.startsWith('/') ? '' : '/'}${cleanCover}`;
-            } else if (!cleanCover || cleanCover === 'undefined' || cleanCover === 'null') {
-                cleanCover = 'https://cooltv.top/favicon.ico';
-            }
-
-            allStations.push({
-                name: String(name || '未命名').replace(/<[^>]+>/g, '').trim(),
-                url: url,
-                cat: String(cat || '未知').replace(/<[^>]+>/g, '').trim(),
-                cover: cleanCover
-            });
-        }
-
-        function extractObj(obj, fallbackCat = '未知') {
-            if (!obj) return;
-            if (Array.isArray(obj)) { obj.forEach(o => extractObj(o, fallbackCat)); return; }
-            if (typeof obj === 'object') {
-                let name = obj.name || obj.title || obj.channel || obj.n || obj.t || obj.name_zh;
-                let url = obj.url || obj.stream || obj.streamUrl || obj.m3u8 || obj.live || obj.u || obj.src || obj.play_url;
-                let cat = obj.category || obj.type || obj.group || obj.c || fallbackCat;
-                let cover = obj.logo || obj.cover || obj.icon || obj.image || obj.pic || obj.img || obj.thumb;
-
-                if (url && typeof url === 'string') addStation(name, url, cat, cover);
-
-                for (let k in obj) {
-                    let val = obj[k];
-                    if (typeof val === 'string' && val.startsWith('http') && val.match(/\.(m3u8|flv|mp3|aac|ts)/i)) {
-                        addStation(name || k, val, cat, cover);
-                    } else if (typeof val === 'object') extractObj(val, cat);
+        let stations = [];
+        try {
+            let html = await fetchHtml('https://cooltv.top/');
+            // 精准定位底层真实数据
+            let nextMatch = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/i);
+            if (nextMatch) {
+                let data = JSON.parse(nextMatch[1]);
+                function extract(obj) {
+                    if (!obj) return;
+                    if (Array.isArray(obj)) { obj.forEach(extract); return; }
+                    if (typeof obj === 'object') {
+                        if (obj.name && obj.url && typeof obj.url === 'string') {
+                            stations.push({
+                                name: obj.name,
+                                url: obj.url,
+                                cat: obj.category || '综合',
+                                cover: obj.logo || obj.cover || ''
+                            });
+                        }
+                        for (let k in obj) extract(obj[k]);
+                    }
                 }
+                extract(data);
             }
+        } catch (e) {
+            console.log("数据解析失败", e);
         }
-
-        const potentialDataUrls = ['https://cooltv.top/stations.json', 'https://cooltv.top/radio.json', 'https://cooltv.top/data.json'];
-        const responses = await Promise.all(potentialDataUrls.map(url => fetchHtml(url).catch(e => '[ERROR]')));
         
-        for (let jText of responses) {
-            if (!jText.startsWith('[ERROR]') && jText.includes('{')) {
-                try { extractObj(JSON.parse(jText)); } 
-                catch (e) {
-                    let r = /(?:["']?(?:url|stream|m3u8|live)["']?)\s*:\s*["'](http[^"']+)["']/gi;
-                    let m;
-                    while ((m = r.exec(jText)) !== null) addStation('提取流', m[1], '未知', '');
-                }
+        let valid = [];
+        let seen = new Set();
+        for (let s of stations) {
+            // 切割出第一条有效源
+            let url = s.url.split(/[;,]/)[0].trim().replace(/\s/g, '');
+            
+            // 🛡️ 终极杀手拦截：彻底过滤掉会导致软件播放器卡死崩溃的链接
+            if (!url.startsWith('http')) continue;
+            if (url.match(/\.(png|jpg|jpeg|gif|js|css|html|php|json)$/i)) continue;
+            if (url.startsWith('rtmp') || url.startsWith('rtsp') || url.startsWith('mms')) continue; 
+            
+            if (!seen.has(url)) {
+                seen.add(url);
+                valid.push({
+                    name: s.name.replace(/<[^>]+>/g, '').trim(),
+                    url: url,
+                    cat: s.cat,
+                    cover: s.cover || 'https://cooltv.top/favicon.ico'
+                });
             }
         }
-        return allStations;
+        return valid;
     })();
 
-    try {
-        globalStationsCache = await fetchingPromise;
-        globalCacheTime = Date.now();
-    } catch (e) {
-        console.log("获取数据严重错误", e);
-    } finally {
-        fetchingPromise = null;
-    }
-    
-    return globalStationsCache || [];
+    globalStationsCache = await fetchingPromise;
+    fetchingPromise = null;
+    return globalStationsCache;
 }
 
+// 格式化输出
 async function getSongs(ext) {
-  const { type = 'HQ', page = 1, from = '' } = safeExt(ext);
-  let categoryName = CATEGORIES[type] || '高清专区';
-  let isIndex = from === 'index';
+    const { type = 'HQ', page = 1, from = '' } = safeExt(ext);
+    let catName = CATEGORIES[type] || '高清专区';
+    let isIndex = from === 'index';
 
-  let stationsList = await loadAllStations();
+    let list = await loadAllStations();
+    let targetList = list.filter(s => s.cat.includes(catName) || catName.includes(s.cat));
+    
+    // 如果分类匹配不到，防止空载
+    if (targetList.length === 0 && list.length > 0) targetList = list;
 
-  let targetList = stationsList.filter(s => 
-      s.cat === categoryName || s.cat.includes(categoryName) || categoryName.includes(s.cat) || s.cat === '未知'
-  );
+    let pageList = isIndex ? targetList.slice(0, 9) : targetList.slice((page - 1) * PAGE_LIMIT, page * PAGE_LIMIT);
 
-  if (targetList.length === 0 && stationsList.length > 0) targetList = stationsList; 
-
-  let pageList = [];
-  
-  if (isIndex) {
-      pageList = targetList.slice(0, 9);
-  } else {
-      let offset = (page - 1) * PAGE_LIMIT;
-      pageList = targetList.slice(offset, offset + PAGE_LIMIT);
-  }
-
-  let songs = [];
-  for (let s of pageList) {
-      let displayName = s.name === '未命名' ? `[${s.cat}] 频道` : s.name;
-      if (targetList === stationsList && s.cat !== '未知') displayName = `[${s.cat}] ${displayName}`;
-      
-      songs.push({
-          id: safeId(s.url + displayName),
-          name: displayName,
-          // 核心防死锁 2：补齐专辑字段防UI崩溃，加入 duration: 0 和 isLive 标志避免播放器死等文件大小探测
-          artist: { id: 'cooltv', name: s.cat !== '未知' ? s.cat : categoryName, cover: s.cover },
-          album: { id: 'live_radio', name: '网络电台频道' },
-          cover: s.cover,
-          duration: 0, 
-          isLive: true,
-          ext: { streamUrl: s.url, isLive: true } 
-      });
-  }
-
-  return jsonify({ list: songs });
+    let songs = [];
+    for (let s of pageList) {
+        songs.push({
+            id: safeId(s.url),
+            name: s.name,
+            artist: { id: 'cooltv', name: s.cat, cover: s.cover },
+            album: { id: 'cooltv_album', name: '网络电台频道' }, // 补齐必填属性防止 UI 渲染报错
+            cover: s.cover,
+            duration: 0, // 声明0，告知引擎此为直播不要探测
+            ext: { streamUrl: s.url }
+        });
+    }
+    return jsonify({ list: songs });
 }
 
+// 播放增强
 async function getSongInfo(ext) {
-  try {
-      const { streamUrl } = safeExt(ext);
-      if (streamUrl) {
-          return jsonify({ urls: [streamUrl] });
-      }
-  } catch(e) {}
-  
-  return jsonify({ urls: [] });
+    const { streamUrl } = safeExt(ext);
+    if (streamUrl) {
+        return jsonify({ 
+            urls: [streamUrl],
+            // 伪装请求头，欺骗服务器防火墙
+            headers: { 
+                'User-Agent': UA,
+                'Referer': 'https://cooltv.top/'
+            }
+        });
+    }
+    return jsonify({ urls: [] });
 }
