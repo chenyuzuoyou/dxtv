@@ -1,7 +1,8 @@
 /*!
  * @name 听书&听友 (合成版)
  * @description 提取合成的听书与听友模块，基于荔枝直连模板格式
- * @author AI
+ * @author Ai
+ * @key csp_tingshu
  */
 const $config = argsify($config_str)
 const UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1'
