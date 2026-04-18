@@ -1,0 +1,101 @@
+[
+    {
+        "id": "iptv.radio",
+        "name": "电台广播",
+        "desc": "电台广播",
+        "type": "iptv",
+	    	"icon": "https://cdn.9228.eu/tv.png",
+        "author": "purkylin",
+        "version": "0.0.1",
+        "update_time": "2025-07-11T10:45:00Z",
+        "endpoint": "https://cdn.jsdelivr.net/gh/YueChan/Live@refs/heads/main/Radio.m3u"
+    },
+    {
+        "id": "cat",
+        "name": "王二小1",
+        "desc": "cat",
+        "type": "cat-paw-open",
+	      "icon": "https://cdn.9228.eu/cat.png",
+        "author": "purkylin",
+        "version": "0.0.1",
+        "update_time": "2025-07-11T10:45:00Z",
+        "endpoint": "https://9280.kstore.space/cat/index.js.md5"
+    },
+    {
+        "id": "cat2",
+        "name": "王二小2",
+        "desc": "cat",
+        "type": "cat-paw-open",
+		    "icon": "https://cdn.9228.eu/cat.png",
+        "author": "purkylin",
+        "version": "0.0.1",
+        "update_time": "2025-07-11T10:45:00Z",
+        "endpoint": "http://wexfnw:wexfnw@cat.xn--4kq62z5rby2qupq9ub.top/index.js.md5"
+    },
+    {
+		"id": "xiaowo",
+		"name": "小涡音乐",
+		"desc": "Music",
+		"type": "music-free",
+		"icon": "https://cdn.9228.eu/music.png",
+		"author": "purkylin",
+		"version": "0.0.2",
+		"update_time": "2025-11-12T10:45:00Z",
+		"endpoint": "https://dev.9228.eu/js/xiaowo4.js"
+	},
+	{
+		"id": "xiaoqiu",
+		"name": "小秋音乐",
+		"desc": "Music",
+		"type": "music-free",
+		"icon": "https://cdn.9228.eu/music.png",
+		"author": "purkylin",
+		"version": "0.0.2",
+		"update_time": "2025-11-12T10:45:00Z",
+		"endpoint": "https://dev.9228.eu/js/xiaoqiu.js"
+	},
+  {
+		"id": "xiaoyun",
+		"name": "小云音乐",
+		"desc": "Music",
+		"type": "music-free",
+		"icon": "https://cdn.9228.eu/music2.png",
+		"author": "purkylin",
+		"version": "0.0.2",
+		"update_time": "2025-11-12T10:45:00Z",
+		"endpoint": "https://dev.9228.eu/js/xiaoyun3.js"
+	},
+	{
+		"id": "xiaogou",
+		"name": "小狗音乐",
+		"desc": "Music",
+		"type": "music-free",
+		"icon": "https://cdn.9228.eu/music2.png",
+		"author": "purkylin",
+		"version": "0.0.2",
+		"update_time": "2025-11-12T10:45:00Z",
+		"endpoint": "https://dev.9228.eu/js/xiaogou.js"
+	},
+	{
+		"id": "qdy",
+		"name": "全都要",
+		"desc": "Music Resolver",
+		"type": "luexue",
+		"icon": "https://cdn.9228.eu/music.png",
+		"author": "purkylin",
+		"version": "0.0.2",
+		"update_time": "2025-11-12T10:45:00Z",
+		"endpoint": "https://dev.9228.eu/js/qdy.js"
+	},
+	{
+		"id": "music_copyright",
+		"name": "Music Copyright",
+		"desc": "Music_Copyright",
+		"type": "music",
+		"icon": "https://cdn.9228.eu/music.png",
+		"author": "purkylin",
+		"version": "0.0.2",
+		"update_time": "2025-11-12T10:45:00Z",
+		"endpoint": "https://gh-proxy.org/https://raw.githubusercontent.com/purkylin/MusicFreePluginsHub/refs/heads/main/dist/plugins.json"
+	  },
+]
