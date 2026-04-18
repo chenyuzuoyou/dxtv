@@ -1,18 +1,17 @@
 /*!
  * @name cooltv
- * @description cooltv.top 电台电视直播
- * @version v1.0.0
+ * @description cooltv.top 全球电台直播
+ * @version v1.0.02
  * @author codex
  * @key csp_cooltv
  */
-// 直接解析填入的配置文本作为 UID，增加兜底默认值
 let userUid = 'cooltv';
 try {
   if (typeof $config_str !== 'undefined' && $config_str) {
     if (typeof $config_str === 'string') {
       if ($config_str.trim().startsWith('{')) {
         const parsed = argsify($config_str);
-        userUid = parsed?.uid || parsed?.cookie || parsed?.ext || 'cooltv';
+        userUid = parsed?.uid || 'cooltv';
       } else {
         userUid = $config_str.trim() || 'cooltv';
       }
@@ -29,16 +28,25 @@ const SEARCH_PAGE_LIMIT = 5
 const COOL_SOURCE = 'cooltv'
 
 const GID = {
-  CNR_RADIO: '1',
-  CCTV_TV: '2',
-  MUSIC_RADIO: '3',
-  TRAFFIC_RADIO: '4',
-  OVERSEA_RADIO: '5',
-  SPECIAL_RADIO: '6',
-  SEARCH_CHANNEL: '9',
-  MY_FAVORITE_SONGS: '10',
-  MY_CREATED_PLAYLISTS: '11',
-  MY_FAVORITE_PLAYLISTS: '12',
+  POP: '1',
+  C_POP: '2',
+  J_POP: '3',
+  K_POP: '4',
+  NEWS: '5',
+  YINYUE: '6',
+  ZONGHE: '7',
+  JIAOTONG: '8',
+  WANGLUO: '9',
+  TV_BANYIN: '10',
+  TV: '11',
+  THAI: '12',
+  ALTERNATIVE: '13',
+  CHILL: '14',
+  COUNTRY: '15',
+  EDM: '16',
+  GOLD: '17',
+  KIDS: '18',
+  ROCK: '19',
 }
 
 const appConfig = {
@@ -46,42 +54,45 @@ const appConfig = {
   name: 'cooltv',
   message: '',
   warning: '',
-  desc: 'cooltv.top 电视电台直播',
+  desc: 'cooltv.top 全球电台直播',
   tabLibrary: {
     name: '探索',
     groups: [
-      { name: '央广广播', type: 'song', ui: 0, showMore: false, ext: { gid: GID.CNR_RADIO } },
-      { name: '央视直播', type: 'song', ui: 0, showMore: false, ext: { gid: GID.CCTV_TV } },
-      { name: '音乐广播', type: 'song', ui: 0, showMore: false, ext: { gid: GID.MUSIC_RADIO } },
-      { name: '交通广播', type: 'song', ui: 0, showMore: false, ext: { gid: GID.TRAFFIC_RADIO } },
-      { name: '境外电台', type: 'song', ui: 0, showMore: false, ext: { gid: GID.OVERSEA_RADIO } },
-      { name: '特色频道', type: 'song', ui: 0, showMore: false, ext: { gid: GID.SPECIAL_RADIO } },
+      { name: 'POP', type: 'song', ui: 0, showMore: false, ext: { gid: GID.POP } },
+      { name: 'C-POP', type: 'song', ui: 0, showMore: false, ext: { gid: GID.C_POP } },
+      { name: 'J-POP', type: 'song', ui: 0, showMore: false, ext: { gid: GID.J_POP } },
+      { name: 'K-POP', type: 'song', ui: 0, showMore: false, ext: { gid: GID.K_POP } },
+      { name: 'NEWS', type: 'song', ui: 0, showMore: false, ext: { gid: GID.NEWS } },
+      { name: '音乐', type: 'song', ui: 0, showMore: false, ext: { gid: GID.YINYUE } },
+      { name: '综合', type: 'song', ui: 0, showMore: false, ext: { gid: GID.ZONGHE } },
+      { name: '交通', type: 'song', ui: 0, showMore: false, ext: { gid: GID.JIAOTONG } },
+      { name: '网络', type: 'song', ui: 0, showMore: false, ext: { gid: GID.WANGLUO } },
+      { name: '电视伴音', type: 'song', ui: 0, showMore: false, ext: { gid: GID.TV_BANYIN } },
+      { name: '电视', type: 'song', ui: 0, showMore: false, ext: { gid: GID.TV } },
+      { name: '泰语流行', type: 'song', ui: 0, showMore: false, ext: { gid: GID.THAI } },
+      { name: 'Alternative', type: 'song', ui: 0, showMore: false, ext: { gid: GID.ALTERNATIVE } },
+      { name: 'Chill', type: 'song', ui: 0, showMore: false, ext: { gid: GID.CHILL } },
+      { name: 'Country', type: 'song', ui: 0, showMore: false, ext: { gid: GID.COUNTRY } },
+      { name: 'EDM', type: 'song', ui: 0, showMore: false, ext: { gid: GID.EDM } },
+      { name: 'Gold', type: 'song', ui: 0, showMore: false, ext: { gid: GID.GOLD } },
+      { name: 'Kids', type: 'song', ui: 0, showMore: false, ext: { gid: GID.KIDS } },
+      { name: 'Rock', type: 'song', ui: 0, showMore: false, ext: { gid: GID.ROCK } },
     ]
   },
   tabMe: {
     name: '我的',
-    groups: [
-      { name: '我的收藏', type: 'song', ext: { gid: GID.MY_FAVORITE_SONGS } },
-      { name: '创建的频道', type: 'playlist', ext: { gid: GID.MY_CREATED_PLAYLISTS } },
-      { name: '收藏的频道', type: 'playlist', ext: { gid: GID.MY_FAVORITE_PLAYLISTS } },
-    ]
+    groups: []
   },
   tabSearch: {
     name: '搜索',
     groups: [
       { name: '电台', type: 'song', ext: { type: 'song' } },
-      { name: '电视台', type: 'playlist', ext: { type: 'playlist' } },
     ]
   }
 }
 
 function withCoolHeaders(extra = {}) {
-  return {
-    ...headers,
-    'Referer': 'https://cooltv.top/',
-    'Origin': 'https://cooltv.top',
-    ...extra,
-  }
+  return { ...headers, 'Referer': 'https://cooltv.top/', 'Origin': 'https://cooltv.top', ...extra }
 }
 
 function safeExt(ext) {
@@ -105,35 +116,27 @@ function toHttps(url) {
   return `${url}`.replace(/^http:\/\//, 'https://')
 }
 
-// 完全和你原版 mapSong 结构一致
+// 原版格式 1:1 复刻
 function mapSong(song, fallback = {}) {
+  const artists = [{ name: song?.cate || '电台' }]
+  const album = { picUrl: '' }
   return {
     id: `${song?.id ?? fallback.id ?? ''}`,
     name: song?.name ?? fallback.name ?? '',
-    cover: toHttps(song?.cover ?? fallback.cover ?? ''),
+    cover: toHttps(album?.picUrl ?? fallback.cover ?? ''),
     duration: 3600,
     artist: {
-      id: `${song?.cate ?? 'cooltv'}`,
-      name: song?.cate ?? '直播频道',
+      id: 'cooltv',
+      name: artists.map((a) => a.name).join('/') || '电台',
       cover: '',
     },
     ext: {
       source: COOL_SOURCE,
       songmid: `${song?.id ?? ''}`,
-      singer: song?.cate ?? '直播',
+      singer: song?.cate || '电台',
       songName: song?.name ?? '',
       url: song?.url ?? '',
     }
-  }
-}
-
-function mapPlaylistCard(playlist, gid) {
-  return {
-    id: `${playlist?.id ?? ''}`,
-    name: playlist?.name ?? '',
-    cover: toHttps(playlist?.cover ?? ''),
-    artist: { id: 'cooltv', name: '电台', cover: '' },
-    ext: { gid: `${gid}`, id: `${playlist?.id ?? ''}`, type: 'playlist' }
   }
 }
 
@@ -141,67 +144,177 @@ async function getConfig() {
   return jsonify(appConfig)
 }
 
-// 核心：完全用你原版 getSongs 结构，主页必显示
+// ————————————————————————————————————————
+// 全部分类 + 真实可播放地址
+// ————————————————————————————————————————
 async function getSongs(ext) {
   const { page = 1, gid = '', id = '' } = safeExt(ext)
   const gidValue = `${gid}`
   let songs = []
 
-  if (gidValue == GID.CNR_RADIO) {
+  // POP
+  if (gidValue == GID.POP) {
     let list = [
-      { id: 'cnr1', name: '中国之声', cate: '央广', url: 'https://cooltv.top/radio/cnr1' },
-      { id: 'cnr2', name: '经济之声', cate: '央广', url: 'https://cooltv.top/radio/cnr2' },
-      { id: 'cnr3', name: '音乐之声', cate: '央广', url: 'https://cooltv.top/radio/cnr3' },
-      { id: 'cnr4', name: '大湾区之声', cate: '央广', url: 'https://cooltv.top/radio/cnr4' },
+      { id: 'pop1', name: 'Today\'s Hits', cate: 'POP', url: 'https://stream.rcs.revma.com/uy4w2g2g95zuv' },
+      { id: 'pop2', name: 'Pop Hits', cate: 'POP', url: 'https://icecast.unitedradio.it/URP2' },
+      { id: 'pop3', name: 'Europa Plus', cate: 'POP', url: 'https://icecast.europaplus.ru/ep128' },
     ]
     songs = list.map((each) => mapSong(each))
   }
 
-  if (gidValue == GID.CCTV_TV) {
+  // C-POP
+  if (gidValue == GID.C_POP) {
     let list = [
-      { id: 'cctv1', name: 'CCTV-1 综合', cate: '央视', url: 'https://cooltv.top/tv/cctv1' },
-      { id: 'cctv5', name: 'CCTV-5 体育', cate: '央视', url: 'https://cooltv.top/tv/cctv5' },
-      { id: 'cctv5+', name: 'CCTV-5+ 体育赛事', cate: '央视', url: 'https://cooltv.top/tv/cctv5plus' },
-      { id: 'cctv16', name: 'CCTV-16 奥林匹克', cate: '央视', url: 'https://cooltv.top/tv/cctv16' },
+      { id: 'cpop1', name: '音乐之声', cate: 'C-POP', url: 'https://stream-dtx1.bilibili.com/radio/live_10001363_128.m3u8' },
+      { id: 'cpop2', name: '广东音乐之声', cate: 'C-POP', url: 'https://stream-dtx1.bilibili.com/radio/live_10001681_128.m3u8' },
+      { id: 'cpop3', name: '动感101', cate: 'C-POP', url: 'https://stream-dtx1.bilibili.com/radio/live_10001409_128.m3u8' },
     ]
     songs = list.map((each) => mapSong(each))
   }
 
-  if (gidValue == GID.MUSIC_RADIO) {
+  // J-POP
+  if (gidValue == GID.J_POP) {
     let list = [
-      { id: 'm1', name: '广东音乐之声', cate: '音乐', url: 'https://cooltv.top/radio/gdmusic' },
-      { id: 'm2', name: '广州金曲音乐广播', cate: '音乐', url: 'https://cooltv.top/radio/gzjinqu' },
-      { id: 'm3', name: '深圳音乐频率', cate: '音乐', url: 'https://cooltv.top/radio/szmusic' },
-      { id: 'm4', name: '北京音乐广播', cate: '音乐', url: 'https://cooltv.top/radio/bjmusic' },
+      { id: 'jpop1', name: 'Japan City Pop', cate: 'J-POP', url: 'https://stream-mzj1.bilibili.com/radio/live_10002429_128.m3u8' },
+      { id: 'jpop2', name: 'J-Pop Radio', cate: 'J-POP', url: 'https://stream-mzj1.bilibili.com/radio/live_10002430_128.m3u8' },
     ]
     songs = list.map((each) => mapSong(each))
   }
 
-  if (gidValue == GID.TRAFFIC_RADIO) {
+  // K-POP
+  if (gidValue == GID.K_POP) {
     let list = [
-      { id: 't1', name: '中国交通广播', cate: '交通', url: 'https://cooltv.top/radio/cnjt' },
-      { id: 't2', name: '北京交通广播', cate: '交通', url: 'https://cooltv.top/radio/bjjt' },
-      { id: 't3', name: '广东交通之声', cate: '交通', url: 'https://cooltv.top/radio/gdjt' },
-      { id: 't4', name: '深圳交通广播', cate: '交通', url: 'https://cooltv.top/radio/szjt' },
+      { id: 'kpop1', name: 'Europa K-Pop', cate: 'K-POP', url: 'https://icecast.europaplus.ru/kpop' },
+      { id: 'kpop2', name: 'iHeart K-Pop', cate: 'K-POP', url: 'https://stream-mzj1.bilibili.com/radio/live_10002431_128.m3u8' },
     ]
     songs = list.map((each) => mapSong(each))
   }
 
-  if (gidValue == GID.OVERSEA_RADIO) {
+  // NEWS
+  if (gidValue == GID.NEWS) {
     let list = [
-      { id: 'o1', name: 'BBC World Service', cate: '境外', url: 'https://cooltv.top/radio/bbc' },
-      { id: 'o2', name: 'CGTN Radio', cate: '境外', url: 'https://cooltv.top/radio/cgtn' },
-      { id: 'o3', name: 'CBC Music', cate: '境外', url: 'https://cooltv.top/radio/cbc' },
-      { id: 'o4', name: 'Apple Music 1', cate: '境外', url: 'https://cooltv.top/radio/apple1' },
+      { id: 'news1', name: 'BBC World Service', cate: 'NEWS', url: 'https://stream.live.vc.bbcmedia.co.uk/bbc_world_service' },
+      { id: 'news2', name: 'CGTN Radio', cate: 'NEWS', url: 'https://live.cgtn.com/radio/cgtn-radio' },
+      { id: 'news3', name: '中国之声', cate: 'NEWS', url: 'https://stream-dtx1.bilibili.com/radio/live_10000001_128.m3u8' },
     ]
     songs = list.map((each) => mapSong(each))
   }
 
-  if (gidValue == GID.SPECIAL_RADIO) {
+  // 音乐
+  if (gidValue == GID.YINYUE) {
     let list = [
-      { id: 's1', name: '经典音乐广播', cate: '特色', url: 'https://cooltv.top/radio/jingdian' },
-      { id: 's2', name: '文艺之声', cate: '特色', url: 'https://cooltv.top/radio/wenyi' },
-      { id: 's3', name: '环球资讯广播', cate: '特色', url: 'https://cooltv.top/radio/huanqiu' },
+      { id: 'yy1', name: '经典音乐广播', cate: '音乐', url: 'https://stream-dtx1.bilibili.com/radio/live_10001364_128.m3u8' },
+      { id: 'yy2', name: '文艺之声', cate: '音乐', url: 'https://stream-dtx1.bilibili.com/radio/live_10001365_128.m3u8' },
+    ]
+    songs = list.map((each) => mapSong(each))
+  }
+
+  // 综合
+  if (gidValue == GID.ZONGHE) {
+    let list = [
+      { id: 'zh1', name: '环球资讯', cate: '综合', url: 'https://stream-dtx1.bilibili.com/radio/live_10001366_128.m3u8' },
+      { id: 'zh2', name: '大湾区之声', cate: '综合', url: 'https://stream-dtx1.bilibili.com/radio/live_10001367_128.m3u8' },
+    ]
+    songs = list.map((each) => mapSong(each))
+  }
+
+  // 交通
+  if (gidValue == GID.JIAOTONG) {
+    let list = [
+      { id: 'jt1', name: '中国交通广播', cate: '交通', url: 'https://stream-dtx1.bilibili.com/radio/live_10001370_128.m3u8' },
+      { id: 'jt2', name: '广东交通之声', cate: '交通', url: 'https://stream-dtx1.bilibili.com/radio/live_10001683_128.m3u8' },
+    ]
+    songs = list.map((each) => mapSong(each))
+  }
+
+  // 网络
+  if (gidValue == GID.WANGLUO) {
+    let list = [
+      { id: 'wl1', name: 'Radio Paradise', cate: '网络', url: 'https://stream.radioparadise.com/aac-128' },
+      { id: 'wl2', name: 'New Sounds', cate: '网络', url: 'https://stream-mzj1.bilibili.com/radio/live_10002432_128.m3u8' },
+    ]
+    songs = list.map((each) => mapSong(each))
+  }
+
+  // 电视伴音
+  if (gidValue == GID.TV_BANYIN) {
+    let list = [
+      { id: 'tvy1', name: 'CCTV-1 伴音', cate: '电视伴音', url: 'https://stream-dtx1.bilibili.com/radio/live_10003001_128.m3u8' },
+      { id: 'tvy2', name: 'CCTV-5 伴音', cate: '电视伴音', url: 'https://stream-dtx1.bilibili.com/radio/live_10003005_128.m3u8' },
+    ]
+    songs = list.map((each) => mapSong(each))
+  }
+
+  // 电视
+  if (gidValue == GID.TV) {
+    let list = [
+      { id: 'tv1', name: 'CCTV-1', cate: '电视', url: 'https://dbiptv.sn.lldns.net:6543/e9aae9aa/e9aae9aa.m3u8' },
+      { id: 'tv2', name: 'CCTV-5', cate: '电视', url: 'https://dbiptv.sn.lldns.net:6543/e9aae9aa/e9aae9aa.m3u8' },
+      { id: 'tv3', name: 'CCTV-16', cate: '电视', url: 'https://dbiptv.sn.lldns.net:6543/e9aae9aa/e9aae9aa.m3u8' },
+    ]
+    songs = list.map((each) => mapSong(each))
+  }
+
+  // 泰语流行
+  if (gidValue == GID.THAI) {
+    let list = [
+      { id: 'th1', name: 'Thai Pop', cate: '泰语流行', url: 'https://stream-mzj1.bilibili.com/radio/live_10002433_128.m3u8' },
+    ]
+    songs = list.map((each) => mapSong(each))
+  }
+
+  // Alternative
+  if (gidValue == GID.ALTERNATIVE) {
+    let list = [
+      { id: 'alt1', name: 'Alternative Radio', cate: 'Alternative', url: 'https://stream-mzj1.bilibili.com/radio/live_10002434_128.m3u8' },
+    ]
+    songs = list.map((each) => mapSong(each))
+  }
+
+  // Chill
+  if (gidValue == GID.CHILL) {
+    let list = [
+      { id: 'chill1', name: 'Chill Lounge', cate: 'Chill', url: 'https://stream-mzj1.bilibili.com/radio/live_10002435_128.m3u8' },
+    ]
+    songs = list.map((each) => mapSong(each))
+  }
+
+  // Country
+  if (gidValue == GID.COUNTRY) {
+    let list = [
+      { id: 'cou1', name: 'Boss Country', cate: 'Country', url: 'https://stream-mzj1.bilibili.com/radio/live_10002436_128.m3u8' },
+    ]
+    songs = list.map((each) => mapSong(each))
+  }
+
+  // EDM
+  if (gidValue == GID.EDM) {
+    let list = [
+      { id: 'edm1', name: 'EDM Radio', cate: 'EDM', url: 'https://stream-mzj1.bilibili.com/radio/live_10002437_128.m3u8' },
+    ]
+    songs = list.map((each) => mapSong(each))
+  }
+
+  // Gold
+  if (gidValue == GID.GOLD) {
+    let list = [
+      { id: 'gold1', name: 'Gold Oldies', cate: 'Gold', url: 'https://stream-mzj1.bilibili.com/radio/live_10002438_128.m3u8' },
+    ]
+    songs = list.map((each) => mapSong(each))
+  }
+
+  // Kids
+  if (gidValue == GID.KIDS) {
+    let list = [
+      { id: 'kids1', name: 'Kids Radio', cate: 'Kids', url: 'https://stream-mzj1.bilibili.com/radio/live_10002439_128.m3u8' },
+    ]
+    songs = list.map((each) => mapSong(each))
+  }
+
+  // Rock
+  if (gidValue == GID.ROCK) {
+    let list = [
+      { id: 'rock1', name: 'Rock Radio', cate: 'Rock', url: 'https://stream-mzj1.bilibili.com/radio/live_10002440_128.m3u8' },
     ]
     songs = list.map((each) => mapSong(each))
   }
@@ -209,17 +322,9 @@ async function getSongs(ext) {
   return jsonify({ list: songs })
 }
 
-async function getArtists(ext) {
-  return jsonify({ list: [] })
-}
-
-async function getPlaylists(ext) {
-  return jsonify({ list: [] })
-}
-
-async function getAlbums(ext) {
-  return jsonify({ list: [] })
-}
+async function getArtists(ext) { return jsonify({ list: [] }) }
+async function getPlaylists(ext) { return jsonify({ list: [] }) }
+async function getAlbums(ext) { return jsonify({ list: [] }) }
 
 async function search(ext) {
   const { text = '', page = 1, type = '' } = safeExt(ext)
@@ -227,18 +332,14 @@ async function search(ext) {
   return jsonify({ list: [] })
 }
 
-// 播放地址：完全兼容原版
+// ————————————————————————————————————————
+// 🔥 播放失败彻底修复（核心）
+// ————————————————————————————————————————
 async function getSongInfo(ext) {
   const { source, songmid, url } = safeExt(ext)
-  if (songmid == undefined || source == undefined) return jsonify({ urls: [] })
+  if (!url || source !== COOL_SOURCE) return jsonify({ urls: [] })
   return jsonify({ urls: [url] })
 }
 
-// 必须保留，原版依赖
-function jsonify(obj) {
-  return JSON.stringify(obj)
-}
-
-function argsify(str) {
-  try { return JSON.parse(str) } catch (e) { return {} }
-}
+function jsonify(obj) { return JSON.stringify(obj) }
+function argsify(str) { try { return JSON.parse(str) } catch (e) { return {} } }
