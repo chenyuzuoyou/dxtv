@@ -1,16 +1,5 @@
 [
     {
-        "id": "iptv.radio",
-        "name": "电台广播",
-        "desc": "电台广播",
-        "type": "iptv",
-	    	"icon": "https://cdn.9228.eu/tv.png",
-        "author": "purkylin",
-        "version": "0.0.1",
-        "update_time": "2025-07-11T10:45:00Z",
-        "endpoint": "https://cdn.jsdelivr.net/gh/YueChan/Live@refs/heads/main/Radio.m3u"
-    },
-    {
         "id": "cat",
         "name": "王二小1",
         "desc": "cat",
