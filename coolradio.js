@@ -1,14 +1,14 @@
 /*!
  * @name cooltv
- * @description COOL Radio 终极流畅纯净版 (全局锁秒开+精准9台+纯净直链)
- * @version v1.1.3
+ * @description COOL Radio 引擎防死锁版 (彻底优化起播与切台假死)
+ * @version v1.1.4
  * @author AI
  * @key csp_cooltv
  */
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 const headers = { 'User-Agent': UA };
-const PAGE_LIMIT = 60; // 专属页每页加载数量
+const PAGE_LIMIT = 60; 
 
 const CATEGORIES = {
   HQ: '高清专区', Pop: 'Pop', CPop: 'C-Pop', JPop: 'J-Pop', KPop: 'K-Pop',
@@ -28,8 +28,8 @@ const appConfig = {
     groups: Object.keys(CATEGORIES).map(key => ({
       name: CATEGORIES[key], 
       type: 'song', 
-      ui: 1,               // 采用歌单卡片UI
-      showMore: true,      // 开启更多按钮与上滑加载
+      ui: 1,               
+      showMore: true,      
       ext: { type: key }
     }))
   },
@@ -37,10 +37,9 @@ const appConfig = {
   tabSearch: { name: '搜索', groups: [{ name: '电台', type: 'song', ext: { type: 'radio' } }] }
 };
 
-// ================= 全局锁与缓存 =================
 let globalStationsCache = null;
 let globalCacheTime = 0;
-let fetchingPromise = null; // 并发锁：防止首页同时发起20个庞大请求导致严重卡顿
+let fetchingPromise = null; 
 
 function withHeaders(extra = {}) {
   return { 
@@ -80,25 +79,28 @@ async function fetchHtml(url) {
 async function getConfig() { return jsonify(appConfig); }
 async function search(ext) { return jsonify({ list: [] }); }
 
-// ================= 核心：带并发锁的数据拉取引擎 =================
 async function loadAllStations() {
-    // 1. 命中内存缓存，直接返回
     if (globalStationsCache && (Date.now() - globalCacheTime < 3600000)) {
         return globalStationsCache;
     }
-    // 2. 如果正在拉取中，其他 19 个分类的请求全部排队等待，不重复发网络请求
     if (fetchingPromise) {
         return await fetchingPromise;
     }
-    // 3. 发起真实拉取
+    
     fetchingPromise = (async () => {
         let allStations = [];
         let seenUrls = new Set();
 
         function addStation(name, rawUrl, cat, cover) {
             if (!rawUrl || typeof rawUrl !== 'string' || rawUrl.length < 5 || rawUrl.includes('javascript:')) return;
-            // 获取极致纯净的真实链接，不加时间戳破坏 CDN 签名
-            let url = rawUrl.split(/[;,]/)[0].trim();
+            
+            let url = rawUrl.split(/[;,]/)[0].trim().replace(/\s/g, '');
+            
+            // 核心防死锁 1：强行过滤掉会让普通音乐播放器直接卡死崩溃的非 HTTP 协议
+            if (url.startsWith('rtmp') || url.startsWith('rtsp') || url.startsWith('mms')) {
+                return;
+            }
+
             if (!url.startsWith('http')) {
                 if (url.match(/\.(m3u8|flv|mp3|aac|ts)/i)) url = `https://cooltv.top${url.startsWith('/') ? '' : '/'}${url}`;
                 else return;
@@ -169,31 +171,24 @@ async function loadAllStations() {
     return globalStationsCache || [];
 }
 
-// ================= 输出展示 =================
 async function getSongs(ext) {
   const { type = 'HQ', page = 1, from = '' } = safeExt(ext);
   let categoryName = CATEGORIES[type] || '高清专区';
-  
-  // 识别当前请求是否来自首页外层展示
   let isIndex = from === 'index';
 
   let stationsList = await loadAllStations();
 
-  // 筛选分类
   let targetList = stationsList.filter(s => 
       s.cat === categoryName || s.cat.includes(categoryName) || categoryName.includes(s.cat) || s.cat === '未知'
   );
 
-  // 防空载：如果分类里啥也没有，给它展示全部电台
   if (targetList.length === 0 && stationsList.length > 0) targetList = stationsList; 
 
   let pageList = [];
   
   if (isIndex) {
-      // 如果是首页请求，严格截取前 9 个，绝不卡顿
       pageList = targetList.slice(0, 9);
   } else {
-      // 如果是进入到分类专属页面内，按 60 个进行标准分页加载
       let offset = (page - 1) * PAGE_LIMIT;
       pageList = targetList.slice(offset, offset + PAGE_LIMIT);
   }
@@ -206,21 +201,26 @@ async function getSongs(ext) {
       songs.push({
           id: safeId(s.url + displayName),
           name: displayName,
+          // 核心防死锁 2：补齐专辑字段防UI崩溃，加入 duration: 0 和 isLive 标志避免播放器死等文件大小探测
           artist: { id: 'cooltv', name: s.cat !== '未知' ? s.cat : categoryName, cover: s.cover },
+          album: { id: 'live_radio', name: '网络电台频道' },
           cover: s.cover,
-          ext: { streamUrl: s.url } 
+          duration: 0, 
+          isLive: true,
+          ext: { streamUrl: s.url, isLive: true } 
       });
   }
 
   return jsonify({ list: songs });
 }
 
-// ================= 播放直连 =================
 async function getSongInfo(ext) {
-  const { streamUrl } = safeExt(ext);
-  if (streamUrl) {
-      // 返回极致纯净的第一条有效直链，不再混入分号或强制加时间戳
-      return jsonify({ urls: [streamUrl] });
-  }
+  try {
+      const { streamUrl } = safeExt(ext);
+      if (streamUrl) {
+          return jsonify({ urls: [streamUrl] });
+      }
+  } catch(e) {}
+  
   return jsonify({ urls: [] });
 }
