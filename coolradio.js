@@ -1,14 +1,14 @@
 /*!
  * @name cooltv
- * @description COOL Radio 纯净守护版 (防卡死+严格过滤)
- * @version v1.1.5
+ * @description COOL Radio 终极修正版 (修复首页空白+智能线路优选)
+ * @version v1.1.6
  * @author AI
  * @key csp_cooltv
  */
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 const headers = { 'User-Agent': UA };
-const PAGE_LIMIT = 60; 
+const PAGE_LIMIT = 60; // 展开更多后的每页加载量
 
 const CATEGORIES = {
   HQ: '高清专区', Pop: 'Pop', CPop: 'C-Pop', JPop: 'J-Pop', KPop: 'K-Pop',
@@ -21,15 +21,15 @@ const appConfig = {
   ver: 1,
   name: 'cooltv',
   message: '欢迎使用COOL Radio',
-  warning: '提示：聚合电台存在大量原始死链，若无法播放请耐心尝试其他台。',
+  warning: '提示：由于聚合电台特性，部分源站可能失效。连续遇到死链时请稍等，切忌疯狂切台以免软件卡死。',
   desc: '提供高质量的全球电台与电视频道伴音',
   tabLibrary: {
     name: '探索',
     groups: Object.keys(CATEGORIES).map(key => ({
       name: CATEGORIES[key], 
       type: 'song', 
-      ui: 1,               
-      showMore: true,      
+      ui: 0,               // 修复点1：必须设为 0 才能在首页正常渲染歌曲列表
+      showMore: true,      // 开启“更多”按钮及上滑加载
       ext: { type: key }
     }))
   },
@@ -78,7 +78,7 @@ async function fetchHtml(url) {
 async function getConfig() { return jsonify(appConfig); }
 async function search(ext) { return jsonify({ list: [] }); }
 
-// 核心拉取引擎
+// 核心拉取与解壳引擎
 async function loadAllStations() {
     if (globalStationsCache) return globalStationsCache;
     if (fetchingPromise) return await fetchingPromise;
@@ -87,7 +87,7 @@ async function loadAllStations() {
         let stations = [];
         try {
             let html = await fetchHtml('https://cooltv.top/');
-            // 精准定位底层真实数据
+            // 剥离出真实的底层 JSON 数据仓库
             let nextMatch = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/i);
             if (nextMatch) {
                 let data = JSON.parse(nextMatch[1]);
@@ -114,20 +114,28 @@ async function loadAllStations() {
         
         let valid = [];
         let seen = new Set();
+        
         for (let s of stations) {
-            // 切割出第一条有效源
-            let url = s.url.split(/[;,]/)[0].trim().replace(/\s/g, '');
+            // 切割多线路，进行智能优选 (防卡死机制核心)
+            let urls = s.url.split(/[;,]/).map(u => u.trim().replace(/\s/g, '')).filter(u => u.startsWith('http'));
+            if (urls.length === 0) continue;
+
+            // 优先选取 mp3 或 aac 等原生音频流（桌面端兼容性最好，秒开）
+            let bestUrl = urls.find(u => /\.(mp3|aac)$/i.test(u));
+            // 其次选取无后缀的直链（可能是隐藏的mp3）
+            if (!bestUrl) bestUrl = urls.find(u => !/\.(m3u8|flv)$/i.test(u));
+            // 只有当服务器仅提供 m3u8 时才使用它（电脑版部分播放器可能会放不出来）
+            if (!bestUrl) bestUrl = urls[0];
             
-            // 🛡️ 终极杀手拦截：彻底过滤掉会导致软件播放器卡死崩溃的链接
-            if (!url.startsWith('http')) continue;
-            if (url.match(/\.(png|jpg|jpeg|gif|js|css|html|php|json)$/i)) continue;
-            if (url.startsWith('rtmp') || url.startsWith('rtsp') || url.startsWith('mms')) continue; 
+            // 彻底过滤必定导致普通播放器崩溃的源
+            if (bestUrl.match(/\.(png|jpg|jpeg|gif|js|css|html|php|json)$/i)) continue;
+            if (bestUrl.startsWith('rtmp') || bestUrl.startsWith('rtsp') || bestUrl.startsWith('mms')) continue; 
             
-            if (!seen.has(url)) {
-                seen.add(url);
+            if (!seen.has(bestUrl)) {
+                seen.add(bestUrl);
                 valid.push({
                     name: s.name.replace(/<[^>]+>/g, '').trim(),
-                    url: url,
+                    url: bestUrl,
                     cat: s.cat,
                     cover: s.cover || 'https://cooltv.top/favicon.ico'
                 });
@@ -150,9 +158,9 @@ async function getSongs(ext) {
     let list = await loadAllStations();
     let targetList = list.filter(s => s.cat.includes(catName) || catName.includes(s.cat));
     
-    // 如果分类匹配不到，防止空载
     if (targetList.length === 0 && list.length > 0) targetList = list;
 
+    // 修复点2：精准管控加载数量，首页只截取 9 个，展示完整的九宫格/列表
     let pageList = isIndex ? targetList.slice(0, 9) : targetList.slice((page - 1) * PAGE_LIMIT, page * PAGE_LIMIT);
 
     let songs = [];
@@ -161,27 +169,19 @@ async function getSongs(ext) {
             id: safeId(s.url),
             name: s.name,
             artist: { id: 'cooltv', name: s.cat, cover: s.cover },
-            album: { id: 'cooltv_album', name: '网络电台频道' }, // 补齐必填属性防止 UI 渲染报错
+            album: { id: 'cooltv_album', name: '网络电台' }, 
             cover: s.cover,
-            duration: 0, // 声明0，告知引擎此为直播不要探测
             ext: { streamUrl: s.url }
         });
     }
     return jsonify({ list: songs });
 }
 
-// 播放增强
+// 返回纯净直链
 async function getSongInfo(ext) {
     const { streamUrl } = safeExt(ext);
     if (streamUrl) {
-        return jsonify({ 
-            urls: [streamUrl],
-            // 伪装请求头，欺骗服务器防火墙
-            headers: { 
-                'User-Agent': UA,
-                'Referer': 'https://cooltv.top/'
-            }
-        });
+        return jsonify({ urls: [streamUrl] });
     }
     return jsonify({ urls: [] });
 }
