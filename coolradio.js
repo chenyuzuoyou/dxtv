@@ -1,7 +1,7 @@
 /*!
  * @name cooltv
- * @description COOL Radio 电台抓取脚本 (增强兼容版)
- * @version v1.0.1
+ * @description COOL Radio 动态自适应抓取脚本
+ * @version v1.0.2
  * @author AI
  * @key csp_cooltv
  */
@@ -9,7 +9,7 @@
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36';
 const headers = { 'User-Agent': UA };
 
-// 对应网站的分类名称
+// 映射分类名称（必须与网站上显示的分类文字尽量吻合）
 const CATEGORIES = {
   HQ: '高清专区',
   Pop: 'Pop',
@@ -79,10 +79,11 @@ function safeExt(ext) {
 
 async function fetchHtml(url) {
   try {
-    const { data } = await $fetch.get(url, { headers: withHeaders() });
+    const res = await $fetch.get(url, { headers: withHeaders() });
+    const data = res.data || res;
     return typeof data === 'string' ? data : JSON.stringify(data);
   } catch (e) {
-    console.log('请求失败：', url, e);
+    console.log('网络请求失败：', url, e);
     return '';
   }
 }
@@ -91,151 +92,145 @@ async function getConfig() {
   return jsonify(appConfig);
 }
 
-// 核心改动：使用双重解析策略保证列表输出
+// 核心自适应列表抓取模块
 async function getSongs(ext) {
   const { type = 'HQ' } = safeExt(ext);
   let categoryName = CATEGORIES[type] || '高清专区';
   
-  const html = await fetchHtml('https://cooltv.top/');
-  let songs = [];
+  // 1. 获取主页 HTML
+  let html = await fetchHtml('https://cooltv.top/');
+  let targetHtml = html;
   
-  // 策略 1: 尝试解析网页隐藏的 JSON 框架数据
-  try {
-    const jsonMatches = [
-      /<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/,
-      /window\.__INITIAL_STATE__\s*=\s*(\{[\s\S]*?\});/,
-      /const\s+stations\s*=\s*(\[[\s\S]*?\]);/
-    ];
-    for (let reg of jsonMatches) {
-      const match = html.match(reg);
-      if (match) {
-        const data = JSON.parse(match[1]);
-        // 简单递归查找包含 url 或 m3u8 的数组
-        let extracted = [];
-        JSON.stringify(data, (key, value) => {
-          if (Array.isArray(value) && value.length > 0 && (value[0].url || value[0].streamUrl || value[0].m3u8)) {
-            extracted = value;
+  // 2. 提取页面上所有的 <a> 标签
+  const aRegex = /<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+  let allLinks = [];
+  let match;
+  while ((match = aRegex.exec(html)) !== null) {
+      allLinks.push({ 
+          link: match[1], 
+          text: match[2].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim() 
+      });
+  }
+
+  // 3. 智能寻找分类页面的链接（比如寻找 "Pop 23 个电台" 这样的入口）
+  let catUrl = null;
+  for (let item of allLinks) {
+      if (item.text.includes(categoryName) && item.text.includes('电台')) {
+          catUrl = item.link;
+          break;
+      }
+  }
+  if (!catUrl) {
+      for (let item of allLinks) {
+          if (item.text === categoryName) {
+              catUrl = item.link;
+              break;
           }
-          return value;
-        });
-        
-        if (extracted.length > 0) {
-           songs = extracted.map((s, i) => ({
-             id: s.id || `rad_js_${i}`,
-             name: s.name || s.title,
-             cover: s.cover || s.logo || s.pic || '',
-             artist: { id: 'ctv', name: s.category || categoryName, cover: '' },
-             ext: { streamUrl: s.url || s.streamUrl || s.m3u8 || '' }
-           })).filter(s => !s.category || s.category === categoryName);
-        }
       }
-    }
-  } catch(e) {
-    console.log("JSON 解析失败，转用 DOM 匹配");
   }
 
-  // 策略 2: 暴力匹配 HTML 中的标签（如果策略 1 失败）
-  if (songs.length === 0) {
-    // 根据分类名称对整个 HTML 切块，防止抓到其他分类的电台
-    // 用其他分类的名字作为结束锚点
-    const otherCategories = Object.values(CATEGORIES).filter(c => c !== categoryName).join('|');
-    const blockRegex = new RegExp(`${categoryName}[\\s\\S]*?(?=<h[1-6]|class="category|按地区浏览|${otherCategories})`, 'i');
-    let blockMatch = html.match(blockRegex);
-    let searchArea = blockMatch ? blockMatch[0] : html;
-
-    // 匹配所有的 a 标签
-    const linkRegex = /<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g;
-    let match;
-    let index = 0;
-    
-    while ((match = linkRegex.exec(searchArea)) !== null) {
-        let link = match[1];
-        // 去除 HTML 标签，只保留电台名称文本
-        let text = match[2].replace(/<[^>]+>/g, '').trim();
-        
-        // 过滤掉无关导航（如主页、搜索、类型等）
-        if (text && text.length > 1 && text.length < 30 && !link.includes('javascript:') && !link.startsWith('#') && !['主页', '分类', '搜索', '类型'].includes(text)) {
-            
-            // 判断链接本身是不是就是流媒体
-            let isStream = /\.(m3u8|mp3|flv|aac|ts)($|\?)/i.test(link);
-            
-            // 组装播放页面的完整链接
-            let fullPageUrl = link;
-            if (!isStream && !link.startsWith('http')) {
-                fullPageUrl = link.startsWith('/') ? `https://cooltv.top${link}` : `https://cooltv.top/${link}`;
-            }
-
-            songs.push({
-                id: `rad_dom_${categoryName}_${index++}`,
-                name: text,
-                cover: '', 
-                artist: { id: 'ctv', name: categoryName, cover: '' },
-                ext: { 
-                    streamUrl: isStream ? link : '',
-                    pageUrl: !isStream ? fullPageUrl : ''
-                }
-            });
-        }
-    }
+  // 4. 如果找到了专属分类页面，就跳转过去拉取新页面的 HTML
+  if (catUrl && catUrl !== '/' && !catUrl.startsWith('#')) {
+      let fullCatUrl = catUrl.startsWith('http') ? catUrl : `https://cooltv.top${catUrl.startsWith('/') ? '' : '/'}${catUrl}`;
+      targetHtml = await fetchHtml(fullCatUrl);
+      
+      // 重新从分类页提取标签
+      allLinks = [];
+      let tm;
+      while ((tm = aRegex.exec(targetHtml)) !== null) {
+          allLinks.push({ 
+              link: tm[1], 
+              text: tm[2].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim() 
+          });
+      }
   }
 
-  // 列表数据去重
-  let uniqueSongs = [];
+  // 5. 遍历链接，智能清洗并提取真正的电台条目
+  let songs = [];
   let seen = new Set();
-  for (let s of songs) {
-      if (!seen.has(s.name)) {
-          seen.add(s.name);
-          uniqueSongs.push(s);
+  
+  for (let item of allLinks) {
+      // 过滤干扰符（Emoji、HQ标记等）
+      let name = item.text.replace(/📻|HQ|🎵|⭐|📺|✅/g, '').trim();
+      let link = item.link;
+      
+      // 黑名单过滤：排除导航栏、控制台等无关链接
+      if (name.length < 2 || name.length > 40) continue;
+      if (/^(主页|分类|搜索|类型|地区|关于|提交|公告|最近播放|国家台|省份)$/.test(name)) continue;
+      if (/\d+\s*个电台/.test(name)) continue; // 排除分类聚合本身的文字
+      if (link === '/' || link.startsWith('#') || link.startsWith('javascript:')) continue;
+      
+      // 组装结果
+      if (!seen.has(link) && !seen.has(name)) {
+          seen.add(link);
+          seen.add(name);
+          
+          let isStream = /\.(m3u8|mp3|flv|aac|ts)($|\?)/i.test(link);
+          let fullPageUrl = link.startsWith('http') ? link : `https://cooltv.top${link.startsWith('/') ? '' : '/'}${link}`;
+
+          songs.push({
+              id: `ctv_${Buffer.from(link).toString('base64').slice(0, 10)}`, // 简单生成个唯一ID
+              name: name,
+              artist: { id: 'cooltv', name: categoryName, cover: '' },
+              cover: 'https://cooltv.top/favicon.ico', 
+              ext: {
+                  streamUrl: isStream ? fullPageUrl : '',
+                  pageUrl: !isStream ? fullPageUrl : ''
+              }
+          });
       }
   }
 
-  // 兜底提示：如果该分类真的完全空了，给用户一个明确的指示条目
-  if (uniqueSongs.length === 0) {
-      uniqueSongs.push({
+  // 兜底保护提示
+  if (songs.length === 0) {
+      songs.push({
           id: 'error_empty',
-          name: `[未解析到数据] - 请检查网站结构是否改变`,
+          name: `[未解析到数据] 尝试刷新或检查网络`,
           artist: { id: 'err', name: categoryName, cover: '' },
           ext: {}
       });
   }
 
-  return jsonify({ list: uniqueSongs });
+  return jsonify({ list: songs });
 }
 
-// 占位模块
+// 占位搜索
 async function search(ext) {
   return jsonify({ list: [] });
 }
 
-// 获取播放链接模块
+// 核心播放嗅探模块
 async function getSongInfo(ext) {
   const { streamUrl, pageUrl } = safeExt(ext);
   
-  // 如果在列表页已经抓取到了后缀为 m3u8 等的直链，直接返回
+  // 情况 1: 如果直接拿到了 .m3u8 等直链，直接播放
   if (streamUrl) {
     return jsonify({ urls: [streamUrl] });
   }
 
-  // 否则进入该电台的播放页面，抓取里面的流媒体链接
+  // 情况 2: 如果拿到的是电台播放详情页，进入该页嗅探媒体源
   if (pageUrl) {
     try {
         const html = await fetchHtml(pageUrl);
-        // 尝试匹配标准的流媒体播放链接
-        const streamMatch = html.match(/(https?:\/\/[^\s"'<>]+\.(?:m3u8|mp3|flv|aac|ts)(?:\?[^\s"'<>]*)?)/i);
-        if (streamMatch) {
-            return jsonify({ urls: [streamMatch[1]] });
-        }
         
-        // 尝试匹配 source 或者 video/audio 标签里的 src
-        const mediaMatch = html.match(/<(?:source|audio|video)[^>]+src="([^"]+)"/i);
+        // 嗅探 A: HTML 中明文的媒体直链
+        const streamMatch = html.match(/(https?:\/\/[^"'\s<>]+\.(?:m3u8|mp3|flv|aac|ts)(?:\?[^"'\s<>]*)?)/i);
+        if (streamMatch) return jsonify({ urls: [streamMatch[1]] });
+        
+        // 嗅探 B: HTML 播放器标签里的 src
+        const mediaMatch = html.match(/<(?:source|audio|video)[^>]+src=["']([^"']+)["']/i);
         if (mediaMatch) {
-             // 检查是否是相对路径
              let finalUrl = mediaMatch[1];
              if(!finalUrl.startsWith('http')) finalUrl = `https://cooltv.top${finalUrl.startsWith('/') ? '' : '/'}${finalUrl}`;
              return jsonify({ urls: [finalUrl] });
         }
+
+        // 嗅探 C: JS 配置对象中隐式挂载的 URL
+        const configMatch = html.match(/(?:url|stream|source|file)["']?\s*:\s*["'](https?:\/\/[^"']+)["']/i);
+        if (configMatch) return jsonify({ urls: [configMatch[1]] });
+
     } catch (e) {
-        console.log("详情页解析失败", e);
+        console.log("详情页流媒体解析失败", e);
     }
   }
 
