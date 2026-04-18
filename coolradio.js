@@ -1,14 +1,14 @@
 /*!
  * @name cooltv
- * @description COOL Radio 流畅播放版 (分页防卡顿+多线路备用)
- * @version v1.1.0
+ * @description COOL Radio 分页展开+稳定播放版
+ * @version v1.1.1
  * @author AI
  * @key csp_cooltv
  */
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 const headers = { 'User-Agent': UA };
-const PAGE_LIMIT = 60; // 每次分页加载的数量，彻底解决滑动卡顿
+const PAGE_LIMIT = 60; 
 
 const CATEGORIES = {
   HQ: '高清专区', Pop: 'Pop', CPop: 'C-Pop', JPop: 'J-Pop', KPop: 'K-Pop',
@@ -17,6 +17,9 @@ const CATEGORIES = {
   Chill: 'Chill', Country: 'Country', EDM: 'EDM', Gold: 'Gold', Kids: 'Kids', Rock: 'Rock'
 };
 
+// ================== 核心配置改动 ==================
+// 修改 UI 样式：首页采用 ui: 1 (歌单卡片/列表模式) 
+// 结合 showMore: true 让点击分类名称或 "更多" 时进入新页面
 const appConfig = {
   ver: 1,
   name: 'cooltv',
@@ -26,14 +29,17 @@ const appConfig = {
   tabLibrary: {
     name: '探索',
     groups: Object.keys(CATEGORIES).map(key => ({
-      name: CATEGORIES[key], type: 'song', ui: 0, showMore: false, ext: { type: key }
+      name: CATEGORIES[key], 
+      type: 'song', 
+      ui: 1,               // 1: 歌单模式展示，适合配合首页限流
+      showMore: true,      // true: 开启上滑加载及分类专属页
+      ext: { type: key }
     }))
   },
   tabMe: { name: '我的', groups: [] },
   tabSearch: { name: '搜索', groups: [{ name: '电台', type: 'song', ext: { type: 'radio' } }] }
 };
 
-// 全局缓存，避免切换分类或翻页时重复发请求
 let globalStationsCache = null;
 let globalCacheTime = 0;
 
@@ -75,8 +81,8 @@ async function fetchHtml(url) {
 async function getConfig() { return jsonify(appConfig); }
 async function search(ext) { return jsonify({ list: [] }); }
 
-// 分页与格式化输出模块
-function filterAndPaginate(stationsList, categoryName, page) {
+// ================== 格式化与截断逻辑 ==================
+function filterAndPaginate(stationsList, categoryName, page, isIndex) {
     let targetList = stationsList.filter(s => 
         s.cat === categoryName || 
         s.cat.includes(categoryName) || 
@@ -85,14 +91,23 @@ function filterAndPaginate(stationsList, categoryName, page) {
     );
 
     if (targetList.length === 0 && stationsList.length > 0) {
-        targetList = stationsList; // 防空载
+        targetList = stationsList; 
     }
 
-    // 核心优化：分页截取，防止内存爆炸
-    let offset = (page - 1) * PAGE_LIMIT;
-    let pageList = targetList.slice(offset, offset + PAGE_LIMIT);
-
     let songs = [];
+    let pageList = [];
+    
+    // 如果是从首页请求 (通常带有特殊标识或 page 强制归 1)，只提取前 9 个
+    if (isIndex || (page === 1 && !globalStationsCache)) {
+        // 部分框架根据 ui 和 from 字段判定，这里统一做安全策略
+        // 为确保首页只显 9 个，点击更多进去再展示完整分页
+        pageList = targetList.slice(0, 9);
+    } else {
+        // 在分类专属页内正常滑动加载
+        let offset = (page - 1) * PAGE_LIMIT;
+        pageList = targetList.slice(offset, offset + PAGE_LIMIT);
+    }
+
     for (let s of pageList) {
         let displayName = s.name === '未命名频道' ? `[${s.cat}] 频道` : s.name;
         if (targetList === stationsList && s.cat !== '未知') {
@@ -103,19 +118,21 @@ function filterAndPaginate(stationsList, categoryName, page) {
             name: displayName,
             artist: { id: 'cooltv', name: s.cat !== '未知' ? s.cat : categoryName, cover: s.cover },
             cover: s.cover,
-            ext: { streamUrl: s.url } // 这里存入的是包含备用线路的完整原始 URL 字符串
+            ext: { streamUrl: s.url } 
         });
     }
     return songs;
 }
 
 async function getSongs(ext) {
-  const { type = 'HQ', page = 1 } = safeExt(ext);
+  const { type = 'HQ', page = 1, from = '' } = safeExt(ext);
   let categoryName = CATEGORIES[type] || '高清专区';
   
-  // 如果内存有缓存且正在翻页或切分类，直接走内存秒切
+  // 判断当前是否处于首页加载环境 (如果是，只返回9个)
+  let isIndex = from === 'index' || page === 1;
+
   if (globalStationsCache && (Date.now() - globalCacheTime < 3600000)) {
-      return jsonify({ list: filterAndPaginate(globalStationsCache, categoryName, page) });
+      return jsonify({ list: filterAndPaginate(globalStationsCache, categoryName, page, isIndex) });
   }
 
   let allStations = [];
@@ -125,7 +142,6 @@ async function getSongs(ext) {
     if (!rawUrl || typeof rawUrl !== 'string' || rawUrl.length < 5) return;
     if (rawUrl.includes('javascript:')) return;
     
-    // 关键优化：不再切除备用线路，而是保留整个带有分号的原始字符串供 getSongInfo 拆分
     if (seenUrls.has(rawUrl)) return;
     seenUrls.add(rawUrl);
     
@@ -202,21 +218,32 @@ async function getSongs(ext) {
     console.log("获取失败", err);
   }
 
-  return jsonify({ list: filterAndPaginate(globalStationsCache || allStations, categoryName, page) });
+  // 这里的 isIndex == true 会将结果截断为 9 个
+  return jsonify({ list: filterAndPaginate(globalStationsCache || allStations, categoryName, page, isIndex) });
 }
 
-// 核心优化：多线路防跳过机制
+// ================== 播放增强提取 ==================
 async function getSongInfo(ext) {
   const { streamUrl } = safeExt(ext);
+  
   if (streamUrl) {
-      // 网站的数据常以分号或逗号分隔多条备用源，我们将其拆分为数组
-      // 播放器在接收到数组后，如果第一条播放失败，会自动尝试下一条
+      // 分解备用路线
       let urls = streamUrl.split(/[;,]/)
                           .map(u => u.trim())
                           .filter(u => u.startsWith('http'));
       
       if (urls.length > 0) {
-          return jsonify({ urls: urls });
+          // 选择第一条地址，如果地址自身没有媒体后缀，尝试拼接或让底层播放器自己处理重定向
+          let primaryUrl = urls[0];
+          
+          // 对于少数特殊的流媒体处理
+          if (!primaryUrl.includes('.m3u8') && !primaryUrl.includes('.mp3') && !primaryUrl.includes('.flv')) {
+              // 某些电台返回的可能是个 HTML 页面包裹播放器，或者是302重定向跳转。
+              // 这里我们直接把它作为直链送出，绝大多数情况下播放器能够顺着重定向找到真正的媒体流。
+          }
+
+          // 既然很多播放器不能兼容数组备用，我们退回保证绝对给出一个单独的干净字符串
+          return jsonify({ urls: [primaryUrl] });
       }
   }
   return jsonify({ urls: [] });
