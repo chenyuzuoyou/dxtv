@@ -1,12 +1,7 @@
-#EXTM3U
-#EXTINF:-1,晴彩青少
-http://feilong123.vip/409990236/iptv/gdy.php?id=1
-#EXTINF:-1,晴彩篮球
-http://feilong123.vip/409990236/iptv/gdy.php?id=2
-#EXTINF:-1,晴彩广场舞
-http://feilong123.vip/409990236/iptv/gdy.php?id=3
-#EXTINF:-1,咪视界
-http://feilong123.vip/409990236/iptv/gdy.php?id=4
+晴彩青少,http://feilong123.vip/409990236/iptv/gdy.php?id=1
+晴彩篮球,http://feilong123.vip/409990236/iptv/gdy.php?id=2
+晴彩广场舞,http://feilong123.vip/409990236/iptv/gdy.php?id=3
+咪视界,http://feilong123.vip/409990236/iptv/gdy.php?id=4
 #EXTINF:-1,咪视通-1
 http://feilong123.vip/409990236/iptv/gdy.php?id=5
 #EXTINF:-1,咪视界-2
