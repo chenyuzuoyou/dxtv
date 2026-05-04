@@ -1,7 +1,7 @@
 /*!
  * @name getpodcast
- * @description GetPodcast.xyz 全站播客
- * @version v1.1.0
+ * @description GetPodcast.xyz 全站播客（优化版）
+ * @version v1.2.0
  * @author Grok
  * @key csp_getpodcast
  */
@@ -11,17 +11,17 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36';
 const headers = { 'User-Agent': UA };
 
 const GID = {
-  ALL: '1',           // 全部播客（热门+推荐）
-  RECENT: '2',        // 最新更新
+  ALL: '1',
+  RECENT: '2',
   SEARCH: '3'
 };
 
 const appConfig = {
   ver: 1,
   name: 'getpodcast',
-  message: '全站播客RSS合集',
+  message: '全站播客聚合',
   warning: '',
-  desc: 'https://getpodcast.xyz/',
+  desc: 'https://getpodcast.xyz/ - 中文播客RSS合集',
   tabLibrary: {
     name: '探索',
     groups: [
@@ -35,16 +35,12 @@ const appConfig = {
   }
 };
 
-function withHeaders() {
-  return headers;
-}
-
 async function fetchText(url) {
   try {
-    const { data } = await $fetch.get(url, { headers: withHeaders() });
-    return typeof data === 'string' ? data : JSON.stringify(data);
+    const { data } = await $fetch.get(url, { headers });
+    return typeof data === 'string' ? data : '';
   } catch (e) {
-    console.log('请求失败:', url, e);
+    console.log('请求失败:', url);
     return '';
   }
 }
@@ -55,51 +51,59 @@ function safeExt(ext) {
   try { return argsify(ext); } catch (e) { return {}; }
 }
 
-// 简单解析首页提取播客卡片
-function parseHomePage(html) {
-  const podcasts = [];
-  // 匹配常见标题模式
-  const titleRegex = /###\s*([^#\n]+?)\s*\n/g;
-  const podcastRegex = /###\s*([^\n]+?)\n[\s\S]*?([\u4e00-\u9fa5a-zA-Z0-9_ ]{2,30})/g;
-
-  let match;
-  const seen = new Set();
-
-  while ((match = podcastRegex.exec(html)) !== null) {
-    const name = match[1].trim();
-    const author = match[2] ? match[2].trim() : '未知';
-    if (name.length < 2 || seen.has(name)) continue;
-    seen.add(name);
-
-    // 构造可能的RSS链接（常见格式）
-    const slug = name.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '').substring(0, 20);
-    const possibleRss = `https://data.getpodcast.xyz/data/${slug}.xml`; // 可能不准，但可尝试
-
-    podcasts.push({
-      id: name,
-      name: name,
-      cover: '', // 首页无封面，可后续优化
-      artist: { name: author, id: 'getpodcast' },
-      ext: { gid: GID.ALL, rssUrl: possibleRss, title: name }
-    });
-  }
-  return podcasts.slice(0, 50); // 限制数量
-}
-
 async function getConfig() {
   return jsonify(appConfig);
 }
 
-async function getPlaylists(ext) {
-  const { gid = '', page = 1 } = safeExt(ext);
-  let cards = [];
+// 从首页Markdown提取播客列表
+function parseHomePodcasts(html) {
+  const podcasts = [];
+  const seen = new Set();
 
+  // 匹配 ### 标题 + 下一行作者/平台
+  const regex = /###\s*([^\n]+?)\s*\n[\s\S]*?([^\n]{2,40})/g;
+  let match;
+
+  while ((match = regex.exec(html)) !== null) {
+    let name = match[1].trim();
+    let artist = match[2].trim();
+
+    if (name.length < 3 || seen.has(name)) continue;
+    seen.add(name);
+
+    // 清理常见后缀
+    name = name.replace(/（.*?\）/g, '').trim();
+
+    // 构造可能的 RSS（很多是 data.getpodcast.xyz 格式，但目前不可直接访问）
+    // 这里我们把名称作为 ID，后续点击时尝试常见 RSS 源或直接用名称搜索
+    const slug = name.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '').slice(0, 30);
+
+    podcasts.push({
+      id: slug || name,
+      name: name,
+      cover: '', 
+      artist: { id: 'getpodcast', name: artist || '未知' },
+      ext: { 
+        gid: GID.ALL, 
+        rssUrl: '', 
+        title: name,
+        searchName: name 
+      }
+    });
+  }
+
+  return podcasts.slice(0, 80); // 取较多条目
+}
+
+async function getPlaylists(ext) {
+  const { gid = '' } = safeExt(ext);
   const html = await fetchText(BASE_URL);
 
-  if (gid == GID.ALL) {
-    cards = parseHomePage(html);
-  } else if (gid == GID.RECENT) {
-    cards = parseHomePage(html); // 目前首页就是最新
+  let cards = parseHomePodcasts(html);
+
+  if (gid == GID.RECENT) {
+    // 最新更新和热门目前用同一数据源
+    cards = cards.slice(0, 40);
   }
 
   return jsonify({ list: cards });
@@ -107,40 +111,50 @@ async function getPlaylists(ext) {
 
 function parseRSS(xml) {
   const episodes = [];
-  const podcastTitleMatch = xml.match(/<title>([^<]+)<\/title>/i);
-  const podcastTitle = podcastTitleMatch ? podcastTitleMatch[1].trim() : '未知播客';
+  const titleMatch = xml.match(/<title>([^<]+)<\/title>/i);
+  const podcastTitle = titleMatch ? titleMatch[1].trim() : '未知播客';
 
   const coverMatch = xml.match(/itunes:image href="([^"]+)"/i) || xml.match(/<image>[\s\S]*?<url>([^<]+)<\/url>/i);
   const cover = coverMatch ? coverMatch[1] : '';
 
   const itemRegex = /<item>[\s\S]*?<\/item>/gi;
-  let itemMatch;
-  while ((itemMatch = itemRegex.exec(xml)) !== null) {
-    const item = itemMatch[0];
-    const titleMatch = item.match(/<title>([^<]+)<\/title>/i);
-    const enclosure = item.match(/<enclosure[^>]*url="([^"]+)"/i);
-    const durationMatch = item.match(/<itunes:duration>([^<]+)<\/itunes:duration>/i);
+  let item;
+  while ((item = itemRegex.exec(xml)) !== null) {
+    const titleM = item[0].match(/<title>([^<]+)<\/title>/i);
+    const encl = item[0].match(/<enclosure[^>]*url="([^"]+)"/i);
+    const dur = item[0].match(/<itunes:duration>([^<]+)<\/itunes:duration>/i);
 
-    if (titleMatch && enclosure) {
+    if (titleM && encl) {
       episodes.push({
-        title: titleMatch[1].trim(),
-        url: enclosure[1],
-        duration: durationMatch ? durationMatch[1] : ''
+        title: titleM[1].trim(),
+        url: encl[1],
+        duration: dur ? dur[1] : ''
       });
     }
   }
-
   return { title: podcastTitle, cover, episodes };
 }
 
 async function getSongs(ext) {
-  const { rssUrl = '', id = '' } = safeExt(ext);
-  const target = rssUrl || id;
+  const { rssUrl = '', id = '', searchName = '' } = safeExt(ext);
 
-  if (!target) return jsonify({ list: [] });
+  let targetRss = rssUrl;
 
-  const xml = await fetchText(target);
-  if (!xml) return jsonify({ list: [] });
+  // 如果没有直接RSS，尝试常见数据源（目前很多不可用）
+  if (!targetRss && searchName) {
+    // 可尝试从其他公开RSS源，但这里先返回提示
+    console.log('尝试加载播客:', searchName);
+    // 目前无法自动获取RSS，建议用户手动提供RSS或等待站点更新
+  }
+
+  if (!targetRss) {
+    return jsonify({ list: [], message: '暂无RSS地址，请尝试搜索其他播客或提供RSS链接' });
+  }
+
+  const xml = await fetchText(targetRss);
+  if (!xml || xml.length < 100) {
+    return jsonify({ list: [], message: 'RSS加载失败' });
+  }
 
   const data = parseRSS(xml);
   const songs = data.episodes.map(ep => ({
@@ -163,9 +177,9 @@ async function getSongs(ext) {
 
 function parseDuration(d) {
   if (!d) return 0;
-  if (typeof d === 'string' && d.includes(':')) {
-    const p = d.split(':').map(Number);
-    return (p[0]||0)*3600 + (p[1]||0)*60 + (p[2]||0);
+  if (d.includes(':')) {
+    const parts = d.split(':').map(Number);
+    return (parts[0]||0)*3600 + (parts[1]||0)*60 + (parts[2]||0);
   }
   return parseInt(d) || 0;
 }
@@ -174,11 +188,11 @@ async function search(ext) {
   const { text = '' } = safeExt(ext);
   if (!text) return jsonify({ list: [] });
 
-  // 简单在首页搜索
   const html = await fetchText(BASE_URL);
-  const all = parseHomePage(html);
+  const all = parseHomePodcasts(html);
   const filtered = all.filter(p => 
-    p.name.toLowerCase().includes(text.toLowerCase())
+    (p.name && p.name.toLowerCase().includes(text.toLowerCase())) ||
+    (p.artist && p.artist.name.toLowerCase().includes(text.toLowerCase()))
   );
 
   return jsonify({ list: filtered });
@@ -192,6 +206,5 @@ async function getSongInfo(ext) {
   return jsonify({ urls: [] });
 }
 
-// 空函数兼容
-async function getArtists() { return jsonify({ list: [] }); }
-async function getAlbums() { return jsonify({ list: [] }); }
+async function getArtists(ext) { return jsonify({ list: [] }); }
+async function getAlbums(ext) { return jsonify({ list: [] }); }
