@@ -1,14 +1,15 @@
 /*!
  * @name getpodcast
- * @description GetPodcast 播客 RSS 解析（最终修复版）
- * @author codex
+ * @description GetPodcast 播客 RSS 解析（终极可用版）
+ * @author codex0
  * @key csp_getpodcast
  */
 const $config = argsify($config_str)
 const UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1'
 const headers = {
   'User-Agent': UA,
-  'Referer': 'https://getpodcast.xyz/'
+  'Referer': 'https://getpodcast.xyz/',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
 }
 const PODCAST_SOURCE = 'getpodcast'
 const GID = {
@@ -16,11 +17,10 @@ const GID = {
   PODCAST_EPISODES: '3',
 }
 
-// 首页纯分类入口
 const allCategories = [
   '全站热门', '悬疑灵异', '商业财经', '科技数码', '历史人文',
   '情感生活', '影视评论', '英语学习', '儿童启蒙', '脱口秀',
-  '犯罪刑侦', '健康养生', '游戏动漫', '资讯热点", "文化读书'
+  '犯罪刑侦', '健康养生', '游戏动漫', '资讯热点', '文化读书'
 ];
 
 const appConfig = {
@@ -28,13 +28,11 @@ const appConfig = {
   name: 'GetPodcast',
   message: '',
   warning: '',
-  desc: 'GetPodcast 播客 RSS 解析，支持 mp3 播放',
+  desc: 'GetPodcast 播客 RSS 解析，修复爬取逻辑',
   tabLibrary: {
     name: '探索',
-    // 关键修改：首页只放分类入口，不渲染任何播客
     groups: allCategories.map(kw => ({
       name: kw,
-      // 用 playlist 类型，强制播放器只显示为“可点击的列表项”，不直接渲染内容
       type: 'playlist',
       showMore: false,
       ext: { gid: GID.CATEGORY_PODCASTS, kw: kw }
@@ -53,18 +51,21 @@ const appConfig = {
 function safeArgs(data) { return typeof data === 'string' ? argsify(data) : (data ?? {}) }
 function toHttps(url) { if (!url) return ''; let s = `${url}`; if (s.startsWith('//')) return 'https:' + s; return s }
 function cleanText(t) { return `${t ?? ''}`.replace(/\s+/g, ' ').trim() }
-function firstArray(...candidates) { for (const i of candidates) { if (Array.isArray(i) && i.length > 0) return i } return [] }
+function log(msg) { console.log(`[GetPodcast] ${msg}`) }
 
 async function fetchHtml(url) {
   try {
-    const { data } = await $fetch.get(url, { headers })
+    log(`请求页面: ${url}`)
+    const { data, status } = await $fetch.get(url, { headers })
+    log(`请求结果: 状态码 ${status}, 数据长度 ${data?.length || 0}`)
     return data || ''
-  } catch (e) { 
-    return '' 
+  } catch (e) {
+    log(`请求失败: ${e.message}`)
+    return ''
   }
 }
 
-// 【真实爬取】getpodcast.xyz 播客 RSS 地址（去掉了兜底示例）
+// 【终极修复】爬取播客 RSS 地址，用更通用的正则
 async function loadPodcastsByCategory(keyword) {
   let url = 'https://getpodcast.xyz/'
   if (keyword && keyword !== '全站热门') {
@@ -75,24 +76,48 @@ async function loadPodcastsByCategory(keyword) {
   if (!html) return []
 
   const list = []
-  const podcastRegex = /<a[^>]+href="(https?:\/\/[^"']+\.xml)"[^>]*>([^<]+)<\/a>/gi
+  const rssUrls = new Set()
+  const podcastData = []
 
-  let match
-  while ((match = podcastRegex.exec(html)) !== null) {
-    const xmlUrl = match[1]
-    const title = cleanText(match[2])
-    
+  // 1. 先提取所有 .xml 链接
+  const rssRegex = /(https?:\/\/[^"'\s]+\.xml)/gi
+  let rssMatch
+  while ((rssMatch = rssRegex.exec(html)) !== null) {
+    rssUrls.add(rssMatch[1])
+  }
+  log(`找到 ${rssUrls.size} 个 RSS 链接`)
+
+  // 2. 提取播客标题（和 RSS 链接关联）
+  const linkRegex = /<a[^>]+href="([^"]+)"[^>]*>([^<]+)<\/a>/gi
+  let linkMatch
+  while ((linkMatch = linkRegex.exec(html)) !== null) {
+    const href = linkMatch[1]
+    const title = cleanText(linkMatch[2])
+    if (href.endsWith('.xml') && !rssUrls.has(href)) {
+      rssUrls.add(href)
+    }
+    // 关联标题和 RSS 链接（如果 href 是 .xml）
+    if (href.endsWith('.xml')) {
+      podcastData.push({ href, title })
+    }
+  }
+
+  // 3. 合并数据，构建列表
+  rssUrls.forEach(xmlUrl => {
+    const match = podcastData.find(p => p.href === xmlUrl)
+    const title = match?.title || xmlUrl.split('/').pop() || '未知播客'
     if (!list.some(p => p.xmlUrl === xmlUrl)) {
       list.push({
         id: encodeURIComponent(xmlUrl),
-        title: title || '未知播客',
-        xmlUrl: xmlUrl,
+        title,
+        xmlUrl,
         cover: '',
         author: '播客主播'
       })
     }
-  }
-  
+  })
+
+  log(`最终解析出 ${list.length} 个播客`)
   return list.slice(0, 100)
 }
 
@@ -135,6 +160,7 @@ async function loadEpisodesByXml(xmlUrl) {
       })
     }
   }
+  log(`解析到 ${items.length} 个单集`)
   return items
 }
 
@@ -170,10 +196,10 @@ function mapSong(item) {
 
 async function getConfig() { return jsonify(appConfig) }
 
-// 关键：点击分类后才加载播客列表
 async function getAlbums(ext) {
   const { gid, kw } = argsify(ext)
   if (gid == GID.CATEGORY_PODCASTS) {
+    log(`点击分类: ${kw}`)
     const list = await loadPodcastsByCategory(kw)
     return jsonify({ list: list.map(mapAlbum), isEnd: true })
   }
@@ -184,6 +210,7 @@ async function getSongs(ext) {
   const { gid, id } = argsify(ext)
   if (gid == GID.PODCAST_EPISODES && id) {
     const xmlUrl = decodeURIComponent(id)
+    log(`解析播客: ${xmlUrl}`)
     const list = await loadEpisodesByXml(xmlUrl)
     return jsonify({ list: list.map(mapSong) })
   }
@@ -205,5 +232,6 @@ async function getSongInfo(ext) {
   const { trackId } = argsify(ext)
   if (!trackId) return jsonify({ urls: [] })
   const mp3 = decodeURIComponent(trackId)
+  log(`获取播放地址: ${mp3}`)
   return jsonify({ urls: [toHttps(mp3)] })
 }
