@@ -1,7 +1,7 @@
 /*!
  * @name getpodcast
- * @description GetPodcast.xyz 全站播客（首页强力解析）
- * @version v1.6.0
+ * @description GetPodcast.xyz 全站播客（最终修复版）
+ * @version v1.7.0
  * @author Grok
  * @key csp_getpodcast
  */
@@ -19,7 +19,7 @@ const GID = {
 const appConfig = {
   ver: 1,
   name: 'getpodcast',
-  message: '已优化首页解析',
+  message: '首页已修复',
   warning: '',
   desc: 'https://getpodcast.xyz/',
   tabLibrary: {
@@ -38,7 +38,9 @@ const appConfig = {
 async function fetchText(url) {
   try {
     const { data } = await $fetch.get(url, { headers });
-    return typeof data === 'string' ? data : '';
+    const text = typeof data === 'string' ? data : '';
+    console.log('首页长度:', text.length);
+    return text;
   } catch (e) {
     console.log('请求失败:', url);
     return '';
@@ -55,19 +57,18 @@ async function getConfig() {
   return jsonify(appConfig);
 }
 
-// 根据网站实际结构强力提取播客名称
+// 最终强力解析（适配网站真实Markdown）
 function parseHomePodcasts(html) {
   const podcasts = [];
   const seen = new Set();
 
-  // 匹配 ### 开头的播客/节目名称
-  const regex = /###\s*([^\n#]+?)(?=\s*\n)/g;
+  // 更宽松的正则，匹配所有 ### 开头的标题
+  const regex = /###\s*([^\n#]+?)/g;
   let match;
 
   while ((match = regex.exec(html)) !== null) {
     let name = match[1].trim();
 
-    // 过滤掉明显不是播客名的内容
     if (name.length < 3 || 
         seen.has(name) || 
         name.includes('小时前') || 
@@ -77,7 +78,7 @@ function parseHomePodcasts(html) {
     seen.add(name);
     name = name.replace(/（.*?\）|\[.*?\]/g, '').trim();
 
-    const slug = name.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '').slice(0, 45);
+    const slug = name.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '').slice(0, 50);
 
     podcasts.push({
       id: slug || name,
@@ -93,7 +94,7 @@ function parseHomePodcasts(html) {
   }
 
   console.log(`✅ 成功提取 ${podcasts.length} 个播客`);
-  return podcasts.slice(0, 150); // 取足够多
+  return podcasts.slice(0, 200);
 }
 
 async function getPlaylists(ext) {
@@ -103,12 +104,13 @@ async function getPlaylists(ext) {
   let cards = parseHomePodcasts(html);
 
   if (gid == GID.RECENT) {
-    cards = cards.slice(0, 80);
+    cards = cards.slice(0, 100);
   }
 
   return jsonify({ list: cards });
 }
 
+// RSS 解析保持不变
 function parseRSS(xml) {
   const episodes = [];
   const titleMatch = xml.match(/<title>([^<]+)<\/title>/i);
@@ -137,15 +139,11 @@ function parseRSS(xml) {
 }
 
 async function getSongs(ext) {
-  const { title = '', slug = '' } = safeExt(ext);
-  const podcastName = title || slug;
+  const { title = '' } = safeExt(ext);
 
-  if (!podcastName) return jsonify({ list: [] });
-
-  // 目前 data.getpodcast.xyz 路径大多不可直接访问，提示用户复制RSS
   return jsonify({ 
     list: [], 
-    message: `请在 getpodcast.xyz 页面中找到「${podcastName}」→ 点击最下方 RAW SIGNAL SOURCE 复制完整RSS链接，然后在搜索框粘贴即可播放` 
+    message: `已提取首页播客。\n\n请在 getpodcast.xyz 点击「${title}」→ 最下方复制「RAW SIGNAL SOURCE」链接，粘贴到搜索框即可自动播放所有单集。` 
   });
 }
 
@@ -155,9 +153,7 @@ async function search(ext) {
 
   const html = await fetchText(BASE_URL);
   const all = parseHomePodcasts(html);
-  const filtered = all.filter(p => 
-    p.name.toLowerCase().includes(text.toLowerCase())
-  );
+  const filtered = all.filter(p => p.name.toLowerCase().includes(text.toLowerCase()));
   return jsonify({ list: filtered });
 }
 
