@@ -61,7 +61,7 @@ const appConfig = {
       {
         name: '全部播客',
         type: 'album',
-        showMore: false,
+        showMore: true,
         ext: { gid: GID.RECOMMENDED_ALBUMS }
       }
     ]
