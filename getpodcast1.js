@@ -1,7 +1,7 @@
 /*!
  * @name getpodcast
- * @description GetPodcast.xyz 全站播客（最终自动版）
- * @version v1.5.0
+ * @description GetPodcast.xyz 全站播客（首页强力解析）
+ * @version v1.6.0
  * @author Grok
  * @key csp_getpodcast
  */
@@ -19,7 +19,7 @@ const GID = {
 const appConfig = {
   ver: 1,
   name: 'getpodcast',
-  message: '自动RSS',
+  message: '已优化首页解析',
   warning: '',
   desc: 'https://getpodcast.xyz/',
   tabLibrary: {
@@ -55,47 +55,55 @@ async function getConfig() {
   return jsonify(appConfig);
 }
 
-// 超级强力解析首页（适配当前Markdown结构）
+// 根据网站实际结构强力提取播客名称
 function parseHomePodcasts(html) {
   const podcasts = [];
   const seen = new Set();
 
-  // 匹配 ### 播客标题 + 下一行平台/作者
-  const regex = /###\s*([^\n#]+?)\s*\n[\s\S]*?([^\n]{3,50})/g;
+  // 匹配 ### 开头的播客/节目名称
+  const regex = /###\s*([^\n#]+?)(?=\s*\n)/g;
   let match;
 
   while ((match = regex.exec(html)) !== null) {
     let name = match[1].trim();
-    let artist = match[2].trim();
 
-    if (name.length < 3 || seen.has(name) || name.includes('小时前') || name.includes('天前')) continue;
+    // 过滤掉明显不是播客名的内容
+    if (name.length < 3 || 
+        seen.has(name) || 
+        name.includes('小时前') || 
+        name.includes('天前') ||
+        name.match(/^\d+$/)) continue;
+
     seen.add(name);
-
     name = name.replace(/（.*?\）|\[.*?\]/g, '').trim();
 
+    const slug = name.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '').slice(0, 45);
+
     podcasts.push({
-      id: name,
+      id: slug || name,
       name: name,
       cover: '',
-      artist: { id: 'getpodcast', name: artist || '播客' },
+      artist: { id: 'getpodcast', name: '播客' },
       ext: { 
         gid: GID.ALL, 
         title: name,
-        slug: name 
+        slug: slug 
       }
     });
   }
-  console.log(`✅ 解析到 ${podcasts.length} 个播客`);
-  return podcasts.slice(0, 120);
+
+  console.log(`✅ 成功提取 ${podcasts.length} 个播客`);
+  return podcasts.slice(0, 150); // 取足够多
 }
 
 async function getPlaylists(ext) {
   const { gid = '' } = safeExt(ext);
   const html = await fetchText(BASE_URL);
+  
   let cards = parseHomePodcasts(html);
 
   if (gid == GID.RECENT) {
-    cards = cards.slice(0, 60);
+    cards = cards.slice(0, 80);
   }
 
   return jsonify({ list: cards });
@@ -125,7 +133,7 @@ function parseRSS(xml) {
       });
     }
   }
-  return { title: podcastTitle, cover, episodes: episodes.slice(0, 100) };
+  return { title: podcastTitle, cover, episodes: episodes.slice(0, 150) };
 }
 
 async function getSongs(ext) {
@@ -134,45 +142,11 @@ async function getSongs(ext) {
 
   if (!podcastName) return jsonify({ list: [] });
 
-  // 先尝试直接访问 data.getpodcast.xyz 常见路径
-  const possibleRss = [
-    `https://data.getpodcast.xyz/data/ximalaya/${podcastName.replace(/[^a-zA-Z0-9]/g,'')}.xml`,
-    `https://data.getpodcast.xyz/data/163/${podcastName.replace(/[^a-zA-Z0-9]/g,'')}.xml`,
-    `https://data.getpodcast.xyz/data/lizhi/${podcastName.replace(/[^a-zA-Z0-9]/g,'')}.xml`
-  ];
-
-  for (let rssUrl of possibleRss) {
-    const xml = await fetchText(rssUrl);
-    if (xml && xml.includes('<rss') || xml.includes('<channel')) {
-      const data = parseRSS(xml);
-      const songs = data.episodes.map(ep => ({
-        id: ep.url,
-        name: ep.title,
-        cover: data.cover,
-        duration: parseDuration(ep.duration),
-        artist: { name: data.title },
-        ext: {
-          source: 'getpodcast',
-          songmid: ep.url,
-          url: ep.url,
-          singer: data.title,
-          songName: ep.title
-        }
-      }));
-      return jsonify({ list: songs });
-    }
-  }
-
-  return jsonify({ list: [], message: '未找到RSS，尝试在原网站复制「RAW SIGNAL SOURCE」链接后搜索' });
-}
-
-function parseDuration(d) {
-  if (!d) return 0;
-  if (d.includes(':')) {
-    const p = d.split(':').map(Number);
-    return (p[0]||0)*3600 + (p[1]||0)*60 + (p[2]||0);
-  }
-  return parseInt(d) || 0;
+  // 目前 data.getpodcast.xyz 路径大多不可直接访问，提示用户复制RSS
+  return jsonify({ 
+    list: [], 
+    message: `请在 getpodcast.xyz 页面中找到「${podcastName}」→ 点击最下方 RAW SIGNAL SOURCE 复制完整RSS链接，然后在搜索框粘贴即可播放` 
+  });
 }
 
 async function search(ext) {
@@ -181,7 +155,9 @@ async function search(ext) {
 
   const html = await fetchText(BASE_URL);
   const all = parseHomePodcasts(html);
-  const filtered = all.filter(p => p.name.toLowerCase().includes(text.toLowerCase()));
+  const filtered = all.filter(p => 
+    p.name.toLowerCase().includes(text.toLowerCase())
+  );
   return jsonify({ list: filtered });
 }
 
