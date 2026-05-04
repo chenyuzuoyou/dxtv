@@ -172,8 +172,9 @@ const appConfig = {
     name: '播客列表',
     groups: [
       {
-        name: '全部播客 ▼', // 箭头
-        type: 'album',
+        name: '全部播客', // 箭头
+        type: 'playlist',
+        ui: 1, 
         showMore: true, // 开启展开
         ext: { gid: GID.RECOMMENDED_ALBUMS }
       }
