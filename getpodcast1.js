@@ -1,7 +1,7 @@
 /*!
  * @name getpodcast
  * @description GetPodcast 全站播客（修复加载+展开箭头+封面图）
- * @author codex
+ * @author codex0
  * @key csp_getpodcast
  */
 const $config = argsify($config_str)
