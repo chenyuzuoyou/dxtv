@@ -1,7 +1,7 @@
 /*!
  * @name getpodcast
- * @description GetPodcast 全站播客解析脚本
- * @author codex
+ * @description GetPodcast 播客 RSS 解析（播放器专用）
+ * @author codex1
  * @key csp_getpodcast
  */
 const $config = argsify($config_str)
@@ -10,18 +10,15 @@ const headers = {
   'User-Agent': UA,
   'Referer': 'https://getpodcast.xyz/'
 }
-const PAGE_LIMIT = 999
-const SEARCH_PAGE_LIMIT = 5
 const PODCAST_SOURCE = 'getpodcast'
 const GID = {
-  RECOMMENDED_PODCASTS: '1',
   CATEGORY_PODCASTS: '2',
   PODCAST_EPISODES: '3',
 }
 
-// 全站播客分类
+// 首页只显示分类
 const allCategories = [
-  '热门推荐', '悬疑灵异', '商业财经', '科技数码', '历史人文',
+  '全站热门', '悬疑灵异', '商业财经', '科技数码', '历史人文',
   '情感生活', '影视评论', '英语学习', '儿童启蒙', '脱口秀',
   '犯罪刑侦', '健康养生', '游戏动漫', '资讯热点', '文化读书'
 ];
@@ -31,32 +28,17 @@ const appConfig = {
   name: 'GetPodcast',
   message: '',
   warning: '',
-  desc: 'GetPodcast.xyz 全站播客聚合解析',
+  desc: 'GetPodcast 播客 RSS 解析，支持 mp3 播放',
   tabLibrary: {
     name: '探索',
-    type: 'song',
-    groups: [
-      {
-        name: '全站热门',
-        type: 'song',
-        showMore: true,
-        ext: { gid: GID.CATEGORY_PODCASTS, kw: '热门' }
-      },
-      ...allCategories.map(kw => ({
-        name: kw,
-        type: 'song',
-        showMore: true,
-        ext: { gid: GID.CATEGORY_PODCASTS, kw: kw }
-      }))
-    ]
+    groups: allCategories.map(kw => ({
+      name: kw,
+      type: 'album',
+      showMore: true,
+      ext: { gid: GID.CATEGORY_PODCASTS, kw: kw }
+    }))
   },
-  tabMe: {
-    name: '我的',
-    groups: [
-      { name: '红心', type: 'song' },
-      { name: '播客', type: 'album' }
-    ]
-  },
+  tabMe: { name: '我的', groups: [{ name: '红心', type: 'song' }, { name: '播客', type: 'album' }] },
   tabSearch: {
     name: '搜索',
     groups: [
@@ -66,177 +48,163 @@ const appConfig = {
   }
 }
 
-function safeArgs(data) {
-  return typeof data === 'string' ? argsify(data) : (data ?? {})
-}
+function safeArgs(data) { return typeof data === 'string' ? argsify(data) : (data ?? {}) }
+function toHttps(url) { if (!url) return ''; let s = `${url}`; if (s.startsWith('//')) return 'https:' + s; return s }
+function cleanText(t) { return `${t ?? ''}`.replace(/\s+/g, ' ').trim() }
+function firstArray(...candidates) { for (const i of candidates) { if (Array.isArray(i) && i.length > 0) return i } return [] }
 
-function toHttps(url) {
-  if (!url) return ''
-  let s = `${url}`
-  if (s.startsWith('//')) return 'https:' + s
-  return s
-}
-
-function cleanText(t) {
-  return `${t ?? ''}`.replace(/\s+/g, ' ').trim()
-}
-
-function firstArray(...candidates) {
-  for (const i of candidates) {
-    if (Array.isArray(i) && i.length > 0) return i
-  }
-  return []
-}
-
-async function fetchJson(url, extraHeaders = {}) {
+async function fetchXml(url) {
   try {
-    const { data } = await $fetch.get(url, {
-      headers: { ...headers, ...extraHeaders }
-    })
-    return safeArgs(data)
-  } catch (e) {
-    return {}
-  }
+    const { data } = await $fetch.get(url, { headers })
+    return data || ''
+  } catch (e) { return '' }
 }
 
-// 映射播客专辑
-function mapPodcast(item) {
-  if (!item) return {};
-  const id = `${item.id ?? item.feedId ?? Math.random().toString(36).slice(2)}`;
+// 抓取 getpodcast.xyz 主页所有 .xml 播客地址
+async function loadPodcastsByCategory(keyword) {
+  const html = await fetchXml('https://getpodcast.xyz/')
+  const list = []
+  const rssRegex = /https?:\/\/[^"']+\.xml/gi
+  const titleRegex = /<a[^>]+href="[^"]*\.xml"[^>]*>([^<]+)<\/a>/gi
+
+  let rssMatch, titleMatch
+  const rssMap = {}
+
+  while ((rssMatch = rssRegex.exec(html)) !== null) {
+    const xmlUrl = rssMatch[0]
+    rssMap[xmlUrl] = true
+  }
+
+  while ((titleMatch = titleRegex.exec(html)) !== null) {
+    const title = cleanText(titleMatch[1])
+    const xmlUrl = Object.keys(rssMap)[list.length]
+    if (xmlUrl) {
+      list.push({
+        id: encodeURIComponent(xmlUrl),
+        title: title || '未知播客',
+        xmlUrl: xmlUrl,
+        cover: '',
+        author: '播客主播'
+      })
+    }
+  }
+  return list.slice(0, 100)
+}
+
+// 解析 XML RSS 获取所有单集 + mp3 地址
+async function loadEpisodesByXml(xmlUrl) {
+  const xml = await fetchXml(decodeURIComponent(xmlUrl))
+  if (!xml) return []
+
+  const items = []
+  const itemRegex = /<item>([\s\S]*?)<\/item>/gi
+  const titleRegex = /<title>([\s\S]*?)<\/title>/i
+  const enclosureRegex = /<enclosure[^>]+url="([^"]+)"/i
+  const coverRegex = /<itunes:image[^>]+href="([^"]+)"/i
+  const durationRegex = /<itunes:duration>([\d:]+)<\/itunes:duration>/i
+
+  let match
+  while ((match = itemRegex.exec(xml)) !== null) {
+    const content = match[1]
+    const title = (titleRegex.exec(content)?.[1] || '未知节目').trim()
+    const mp3 = enclosureRegex.exec(content)?.[1] || ''
+    const cover = coverRegex.exec(content)?.[1] || ''
+    const durStr = durationRegex.exec(content)?.[1] || '0'
+
+    let duration = 0
+    if (durStr.includes(':')) {
+      const p = durStr.split(':').map(Number)
+      duration = p.length === 3 ? p[0]*3600+p[1]*60+p[2] : p[0]*60+(p[1]||0)
+    } else {
+      duration = Number(durStr) || 0
+    }
+
+    if (mp3) {
+      items.push({
+        id: encodeURIComponent(mp3),
+        title,
+        cover,
+        duration,
+        mp3,
+        author: '主播'
+      })
+    }
+  }
+  return items
+}
+
+// 专辑映射
+function mapAlbum(item) {
   return {
-    id: id,
-    name: cleanText(item.title || item.name || '未知播客'),
-    cover: toHttps(item.cover || item.image || ''),
-    artist: {
-      id: `${item.authorId ?? 'podcaster'}`,
-      name: cleanText(item.author || item.host || '主播')
-    },
+    id: item.id,
+    name: item.title,
+    cover: toHttps(item.cover),
+    artist: { id: '0', name: item.author },
     ext: {
       gid: GID.PODCAST_EPISODES,
-      id: id,
-      source: PODCAST_SOURCE,
-      type: 'podcast'
+      id: item.id,
+      xmlUrl: item.xmlUrl,
+      source: PODCAST_SOURCE
     }
   }
 }
 
-// 映射播客单集
-function mapEpisode(item) {
-  if (!item) return {};
-  const trackId = `${item.id ?? item.episodeId ?? Math.random().toString(36).slice(2)}`;
+// 歌曲映射（带 mp3）
+function mapSong(item) {
   return {
-    id: trackId,
-    name: cleanText(item.title || item.episodeTitle || '未知节目'),
-    cover: toHttps(item.cover || item.image || ''),
-    duration: parseInt(item.duration || 0),
-    artist: { 
-      id: `${item.authorId ?? 'podcaster'}`, 
-      name: cleanText(item.author || item.host || '主播') 
-    },
+    id: item.id,
+    name: item.title,
+    cover: toHttps(item.cover),
+    duration: item.duration,
+    artist: { id: '0', name: item.author },
     ext: {
       source: PODCAST_SOURCE,
-      trackId: trackId,
-      songName: cleanText(item.title || '未知节目')
+      trackId: item.id,
+      mp3: item.mp3
     }
   }
 }
 
-// 获取分类播客列表
-async function loadPodcastsByKeyword(keyword, page = 1) {
-  try {
-    // 模拟GetPodcast.xyz接口请求
-    const res = await fetchJson(`https://getpodcast.xyz/api/podcasts?keyword=${encodeURIComponent(keyword)}&page=${page}`);
-    return firstArray(res.data || res.podcasts || []);
-  } catch (e) {
-    return [];
-  }
-}
+async function getConfig() { return jsonify(appConfig) }
 
-// 获取播客单集列表
-async function loadPodcastEpisodes(podcastId) {
-  if (!podcastId) return [];
-  try {
-    const data = await fetchJson(`https://getpodcast.xyz/api/podcast/${podcastId}/episodes`);
-    return firstArray(data.episodes || data.data || []);
-  } catch (e) {
-    return [];
-  }
-}
-
-// 获取配置
-async function getConfig() {
-  return jsonify(appConfig)
-}
-
-// 获取播客专辑列表
+// 获取分类下播客列表
 async function getAlbums(ext) {
-  const { page = 1, gid, kw } = argsify(ext)
+  const { gid, kw } = argsify(ext)
   if (gid == GID.CATEGORY_PODCASTS) {
-    const list = await loadPodcastsByKeyword(kw, page)
-    return jsonify({ 
-        list: list.map(mapPodcast),
-        isEnd: list.length < 20 
-    })
+    const list = await loadPodcastsByCategory(kw)
+    return jsonify({ list: list.map(mapAlbum), isEnd: true })
   }
   return jsonify({ list: [] })
 }
 
-// 获取节目单集
+// 获取播客单集（解析 XML）
 async function getSongs(ext) {
-  const { gid, id, kw, page = 1 } = argsify(ext)
-  
-  // 获取播客下的所有单集
+  const { gid, id } = argsify(ext)
   if (gid == GID.PODCAST_EPISODES && id) {
-    const list = await loadPodcastEpisodes(id)
-    return jsonify({ list: list.map(mapEpisode) })
+    const xmlUrl = decodeURIComponent(id)
+    const list = await loadEpisodesByXml(xmlUrl)
+    return jsonify({ list: list.map(mapSong) })
   }
-  
-  // 分类页直接加载节目
-  if (gid == GID.CATEGORY_PODCASTS && kw) {
-    const list = await loadPodcastsByKeyword(kw, page)
-    return jsonify({ 
-        list: list.map(mapEpisode),
-        isEnd: list.length < 20 
-    })
-  }
-  
   return jsonify({ list: [] })
 }
 
-async function getArtists(ext) {
-  return jsonify({ list: [] })
-}
+async function getArtists() { return jsonify({ list: [] }) }
+async function getPlaylists() { return jsonify({ list: [] }) }
 
-async function getPlaylists() {
-  return jsonify({ list: [] })
-}
-
-// 搜索功能
+// 搜索
 async function search(ext) {
-  const { text, page = 1, type } = argsify(ext)
+  const { text, type } = argsify(ext)
   if (!text) return jsonify({})
-  
-  const list = await loadPodcastsByKeyword(text, page)
-  
-  if (type === 'album') {
-    return jsonify({ list: list.map(mapPodcast), isEnd: list.length < 20 })
-  } else if (type === 'track' || type === 'song') {
-    return jsonify({ list: list.map(mapEpisode), isEnd: list.length < 20 })
-  }
-  
+  const list = await loadPodcastsByCategory(text)
+  if (type === 'album') return jsonify({ list: list.map(mapAlbum), isEnd: true })
+  if (type === 'track' || type === 'song') return jsonify({ list: [], isEnd: true })
   return jsonify({})
 }
 
-// 获取播放地址
+// 播放地址（直接返回 mp3）
 async function getSongInfo(ext) {
   const { trackId } = argsify(ext)
   if (!trackId) return jsonify({ urls: [] })
-  
-  try {
-    const playData = await fetchJson(`https://getpodcast.xyz/api/episode/${trackId}/play`);
-    let url = playData.url || playData.data?.url || '';
-    return jsonify({ urls: url ? [toHttps(url)] : [] });
-  } catch (e) {
-    return jsonify({ urls: [] })
-  }
+  const mp3 = decodeURIComponent(trackId)
+  return jsonify({ urls: [toHttps(mp3)] })
 }
