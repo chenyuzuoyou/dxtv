@@ -1,21 +1,19 @@
 /*!
  * @name getpodcast
- * @description GetPodcast 全站播客 RSS 解析播放
- * @author codex
+ * @description GetPodcast 全站播客 RSS 解析播放（修复版）
+ * @author codex2
  * @key csp_getpodcast
  */
 const $config = argsify($config_str)
 const UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1'
 const headers = {
   'User-Agent': UA,
-  'Referer': 'https://getpodcast.xyz/'
+  'Referer': 'https://getpodcast.xyz/',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
 }
-const PAGE_LIMIT = 999
-const SEARCH_PAGE_LIMIT = 5
 const PODCAST_SOURCE = 'getpodcast'
 const GID = {
   RECOMMENDED_ALBUMS: '1',
-  TAG_ALBUMS: '2',
   ALBUM_TRACKS: '3',
 }
 
@@ -56,7 +54,7 @@ const appConfig = {
   name: 'GetPodcast',
   message: '',
   warning: '',
-  desc: 'GetPodcast 全站播客，直接播放',
+  desc: 'GetPodcast 全站播客，修复CDATA与播放问题',
   tabLibrary: {
     name: '播客列表',
     groups: [
@@ -94,7 +92,13 @@ function toHttps(url) {
   return s
 }
 function cleanText(t) {
-  return `${t ?? ''}`.replace(/\s+/g, ' ').trim()
+  // 核心修复：去除 CDATA 标签
+  let str = `${t ?? ''}`
+    .replace(/<!\[CDATA\[/gi, '')
+    .replace(/\]\]>/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+  return str
 }
 function firstArray(...candidates) {
   for (const i of candidates) {
@@ -108,6 +112,7 @@ async function fetchXml(url) {
     const { data } = await $fetch.get(url, { headers })
     return data || ''
   } catch (e) {
+    console.error('fetchXml error:', e)
     return ''
   }
 }
@@ -128,7 +133,7 @@ function mapPodcast(item, index) {
   }
 }
 
-// 解析 RSS 获取单集
+// 解析 RSS 获取单集（修复CDATA、播放地址）
 async function parseRss(rssUrl) {
   const xml = await fetchXml(rssUrl)
   if (!xml) return []
@@ -143,7 +148,9 @@ async function parseRss(rssUrl) {
   let match
   while ((match = itemReg.exec(xml))) {
     const c = match[1]
-    const title = cleanText(titleReg.exec(c)?.[1] || '未知节目')
+    // 修复：处理 CDATA 包裹的标题
+    const rawTitle = titleReg.exec(c)?.[1] || '未知节目'
+    const title = cleanText(rawTitle)
     const url = enclsReg.exec(c)?.[1] || ''
     const cover = coverReg.exec(c)?.[1] || ''
     const durStr = durReg.exec(c)?.[1] || '0'
@@ -158,7 +165,13 @@ async function parseRss(rssUrl) {
     }
 
     if (url) {
-      items.push({ id: url, title, url, cover, duration })
+      items.push({ 
+        id: encodeURIComponent(url), // 修复：对URL编码，避免特殊字符问题
+        title, 
+        url, 
+        cover, 
+        duration 
+      })
     }
   }
   return items
@@ -227,9 +240,10 @@ async function search(ext) {
   return jsonify({})
 }
 
-// 播放地址
+// 播放地址（修复：解码URL，直接返回）
 async function getSongInfo(ext) {
   const { trackId } = argsify(ext)
   if (!trackId) return jsonify({ urls: [] })
-  return jsonify({ urls: [toHttps(trackId)] })
+  const mp3Url = decodeURIComponent(trackId)
+  return jsonify({ urls: [toHttps(mp3Url)] })
 }
