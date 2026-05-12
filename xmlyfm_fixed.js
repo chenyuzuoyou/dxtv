@@ -1,7 +1,7 @@
 /*!
 * @name xmlyfm3_fixed
 * @description 喜马拉雅FM 修复增强版（兼容新版接口 / 修复空播放列表 / 自动兼容 trackDetailInfos）
-* @version v4.0.0
+* @version v5.0.0
 * @author ChatGPT
 * @key csp_xmlyfm
   */
@@ -81,25 +81,6 @@ function toHttps(url) {
   if (!s.startsWith('http')) return 'https://imagev2.xmcdn.com/' + s.replace(/^\//, '')
   return s
 }
-function normalizeTrack(item) {
-  if (!item) return {}
-
-  if (item.trackInfo) {
-    return {
-      ...item,
-      ...item.trackInfo
-    }
-  }
-
-  if (item.trackBaseInfo) {
-    return {
-      ...item,
-      ...item.trackBaseInfo
-    }
-  }
-
-  return item
-}
 
 function firstArray(...candidates) {
   for (const item of candidates) {
@@ -120,7 +101,7 @@ function isPaidItem(item) {
     item.limit_free_status === 1 ||
     item.albumTimeLimited === true ||
     item.isSample === true ||
-    //item.isVipFree === true ||
+    item.isVipFree === true ||
     item.freeType === 1 ||
     item.limitFreeType === 1 ||
     item.vipFreeType === 1 ||
@@ -130,8 +111,8 @@ function isPaidItem(item) {
   const isPaid = !!(
     item.isPaid === true || item.isPaid === 1 ||
     item.is_paid === true || item.is_paid === 1 ||
-    item.payType === 1 || item.pay_type === 1 ||
-	item.priceTypeId === 1 || item.price_type_id === 1
+    item.payType > 0 || item.pay_type > 0 ||
+    item.priceTypeId > 0 || item.price_type_id > 0
   )
 
   // 只要涉及限免或付费，通通返回 true（需要过滤掉）
@@ -171,15 +152,18 @@ function mapAlbum(item) {
 }
 
 function mapTrack(raw) {
-  const item = normalizeTrack(raw)
-  const id = `${item?.trackId ?? item?.id ?? item?.soundId ?? ''}`
-  const name =
-  item?.title ??
-  item?.trackTitle ??
-  item?.trackName ??
-  item?.name ??
-  item?.trackInfo?.title ??
-  ''
+
+  const item = raw?.trackInfo
+    ? Object.assign({}, raw, raw.trackInfo)
+    : raw;
+  const id = `${
+	item?.trackId ??
+	item?.id ??
+	item?.soundId ??
+	item?.trackInfo?.trackId ??
+	''
+  }`
+  const name = item?.title ?? item?.trackTitle ?? item?.name ?? ''
   const cover = toHttps(
     item?.coverLarge ?? item?.coverUrlLarge ?? item?.coverMiddle ??
     item?.coverUrlMiddle ?? item?.albumCover ?? item?.coverPath ??
@@ -195,13 +179,7 @@ function mapTrack(raw) {
     id,
     name: name, title: name,
     cover, artwork: cover, pic: cover, coverImg: cover,
-    duration: parseInt(
-	  item?.duration ??
-	  item?.interval ??
-	  item?.trackInfo?.duration ??
-	  item?.playDuration ??
-	  0
-	),
+    duration: parseInt(item?.duration ?? item?.interval ?? 0),
     artist: {
       id: artistId, name: artistName, title: artistName,
       cover: artistCover, artwork: artistCover, pic: artistCover, avatar: artistCover
@@ -242,45 +220,50 @@ async function loadAlbumsByKeyword(keyword, page = 1) {
 }
 
 async function loadAlbumTracks(albumId, page = 1) {
-  let allTracks = [];
-  let currentPage = Number(page || 1);
-  const maxPage = 50;
-
-  while (currentPage <= maxPage) {
-    const urls = [
-      `https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${albumId}&pageNum=${currentPage}&pageSize=100&sort=1`,
-      `https://mobile.ximalaya.com/mobile/v1/album/track/?albumId=${albumId}&pageSize=100&pageId=${currentPage}`,
-      `https://mobile.ximalaya.com/mobile/album/v1/track/list?albumId=${albumId}&pageNum=${currentPage}&pageSize=100`
-    ];
-
-    let pageTracks = [];
-
     for (const url of urls) {
       try {
+
         const data = await fetchJson(url, {
-          Referer: `https://www.ximalaya.com/album/${albumId}`
+          Referer: `https://www.ximalaya.com/album/${albumId}`,
+          Origin: 'https://www.ximalaya.com'
         });
 
         pageTracks = firstArray(
-		  data?.data?.tracks,
-		  data?.data?.trackInfos,
-		  data?.data?.list,
-		  data?.tracks,
-		  data?.data?.trackDetailInfos,
-		  data?.trackDetailInfos,
-		  data?.data?.tracksAudioPlay,
-		  data?.data?.trackList,
-		  data?.trackList
-		);
+          data?.data?.tracks,
+          data?.data?.trackInfos,
+          data?.data?.list,
+          data?.tracks,
+          data?.trackInfos,
+          data?.data?.trackDetailInfos,
+          data?.trackDetailInfos,
+          data?.data?.trackList,
+          data?.trackList,
+          data?.data?.pageData?.tracks,
+          data?.data?.pageData?.trackList
+        );
 
         if (pageTracks.length > 0) {
-          pageTracks = pageTracks.map(normalizeTrack);
+
+          pageTracks = pageTracks.map(function(item) {
+
+            if (item.trackInfo) {
+              return Object.assign({}, item, item.trackInfo);
+            }
+
+            if (item.trackBaseInfo) {
+              return Object.assign({}, item, item.trackBaseInfo);
+            }
+
+            return item;
+          });
+
           break;
         }
+
       } catch (e) {}
     }
 
-    if (!Array.isArray(pageTracks) || pageTracks.length === 0) {
+    if (!pageTracks || pageTracks.length === 0) {
       break;
     }
 
@@ -293,17 +276,28 @@ async function loadAlbumTracks(albumId, page = 1) {
     currentPage++;
   }
 
-  const map = new Map();
+  const map = {};
+  const result = [];
 
-  allTracks.forEach(item => {
-    const id = `${item?.trackId ?? item?.id ?? item?.soundId ?? item?.trackInfo?.trackId ?? ''}`;
+  for (let i = 0; i < allTracks.length; i++) {
 
-    if (id && !map.has(id)) {
-      map.set(id, item);
+    const item = allTracks[i];
+
+    const id = String(
+      item?.trackId ||
+      item?.id ||
+      item?.soundId ||
+      item?.trackInfo?.trackId ||
+      ''
+    );
+
+    if (id && !map[id]) {
+      map[id] = true;
+      result.push(item);
     }
-  });
+  }
 
-  return [...map.values()];
+  return result;
 }
 
 async function loadArtistTracks(artistId, page = 1) {
@@ -514,4 +508,5 @@ async function getSongInfo(ext) {
 
   return jsonify({ urls: [] })
 }
+
 
