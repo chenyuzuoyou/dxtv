@@ -1,7 +1,7 @@
 /*!
 * @name xmlyfm3_fixed
 * @description 喜马拉雅FM 修复增强版（兼容新版接口 / 修复空播放列表 / 自动兼容 trackDetailInfos）
-* @version v3.0.0
+* @version v4.0.0
 * @author ChatGPT
 * @key csp_xmlyfm
   */
@@ -248,7 +248,7 @@ async function loadAlbumTracks(albumId, page = 1) {
 
   while (currentPage <= maxPage) {
     const urls = [
-      `https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${albumId}&pageNum=${currentPage}&pageSize=100`,
+      `https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${albumId}&pageNum=${currentPage}&pageSize=100&sort=1`,
       `https://mobile.ximalaya.com/mobile/v1/album/track/?albumId=${albumId}&pageSize=100&pageId=${currentPage}`,
       `https://mobile.ximalaya.com/mobile/album/v1/track/list?albumId=${albumId}&pageNum=${currentPage}&pageSize=100`
     ];
@@ -262,15 +262,16 @@ async function loadAlbumTracks(albumId, page = 1) {
         });
 
         pageTracks = firstArray(
-          data?.data?.tracks,
-          data?.data?.list,
-          data?.tracks,
-          data?.data?.trackDetailInfos,
-          data?.trackDetailInfos,
-          data?.data?.tracksAudioPlay,
-          data?.data?.trackList,
-          data?.trackList
-        );
+		  data?.data?.tracks,
+		  data?.data?.trackInfos,
+		  data?.data?.list,
+		  data?.tracks,
+		  data?.data?.trackDetailInfos,
+		  data?.trackDetailInfos,
+		  data?.data?.tracksAudioPlay,
+		  data?.data?.trackList,
+		  data?.trackList
+		);
 
         if (pageTracks.length > 0) {
           pageTracks = pageTracks.map(normalizeTrack);
@@ -295,7 +296,7 @@ async function loadAlbumTracks(albumId, page = 1) {
   const map = new Map();
 
   allTracks.forEach(item => {
-    const id = `${item?.trackId ?? item?.id ?? item?.soundId ?? ''}`;
+    const id = `${item?.trackId ?? item?.id ?? item?.soundId ?? item?.trackInfo?.trackId ?? ''}`;
 
     if (id && !map.has(id)) {
       map.set(id, item);
