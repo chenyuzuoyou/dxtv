@@ -1,0 +1,123 @@
+{
+  "sites": [
+    {
+      "key": "闪电影视",
+      "name": "🐬闪电影视｜追剧",
+      "type": 1,
+      "api": "http://sdzyapi.com/api.php/provide/vod/",
+      "searchable": 1,
+      "quickSearch": 1
+    },
+    {
+      "key": "牛牛影视",
+      "name": "🐬牛牛影视｜追剧",
+      "type": 0,
+      "api": "https://api.niuniuzy.me/api.php/provide/vod/",
+      "searchable": 1,
+      "quickSearch": 1
+    },
+    {
+      "key": "雲飛影视",
+      "name": "🐬雲飛影视｜追剧",
+      "type": 1,
+      "api": "http://cj.lziapi.com/api.php/provide/vod/",
+      "searchable": 1,
+      "quickSearch": 1
+    },
+    {
+      "key": "华视影院",
+      "name": "🐬华视影院｜追剧",
+      "type": 4,
+      "api": "http://zhangqun1818.serv00.net:5052/?sp=华视影院",
+      "searchable": 1,
+      "quickSearch": 1
+    },
+    {
+      "key": "火狐",
+      "name": "🐬火狐影视🦊｜追剧",
+      "type": 1,
+      "api": "https://hhzyapi.com/api.php/provide/vod/",
+      "searchable": 1,
+      "quickSearch": 1
+    },
+    {
+      "key": "量子2k",
+      "name": "🐬量子影视｜追剧",
+      "type": 1,
+      "api": "http://cj.lziapi.com/api.php/provide/vod/",
+      "searchable": 1,
+      "quickSearch": 1
+    },
+    {
+      "key": "API_如意",
+      "name": "🐬如意影视｜追剧",
+      "type": 1,
+      "api": "https://cj.rycjapi.com/api.php/provide/vod",
+      "searchable": 1,
+      "quickSearch": 1
+    },
+    {
+      "key": "cj_360资源",
+      "name": "🐬360丨短剧",
+      "type": 1,
+      "api": "https://360zy.com/api.php/provide/vod",
+      "searchable": 0,
+      "quickSearch": 1
+    },
+    {
+      "key": "AIvin",
+      "name": "🐬AIvin｜🔞",
+      "type": 0,
+      "api": "http://lbapiby.com/api.php/provide/vod/"
+    },
+    {
+      "key": "番号资源",
+      "name": "🐬番号资源｜🔞",
+      "type": 1,
+      "api": "http://fhapi9.com/api.php/provide/vod/"
+    },
+    {
+      "key": "黄色仓库",
+      "name": "🐬黄色仓库｜🔞",
+      "type": 1,
+      "api": "https://hsckzy.vip/api.php/provide/vod/"
+    },
+    {
+      "key": "xjzyw",
+      "name": "🐬香蕉｜🔞",
+      "type": 1,
+      "api": "https://www.xiangjiaozyw.com/api.php/provide/vod/"
+    },
+    {
+      "key": "桃花资源",
+      "name": "🐬桃花资源｜🔞",
+      "type": 1,
+      "api": "https://thzy1.me/api.php/provide/vod/"
+    },
+    {
+      "key": "乐播资源",
+      "name": "🐬乐播资源｜🔞",
+      "type": 1,
+      "api": "https://lbapi9.com/api.php/provide/vod/"
+    },
+    {
+      "key": "fqzy资源",
+      "name": "🐬国产资源｜🔞",
+      "type": 1,
+      "api": "https://fqzy.me/api.php/provide/vod/"
+    },
+    {
+      "key": "lsb资源",
+      "name": "🐬lsb资源｜🔞",
+      "type": 1,
+      "api": "https://apilsbzy1.com/api.php/provide/vod/"
+    },
+    {
+      "key": "91",
+      "name": "🐬传媒系列｜🔞",
+      "type": 1,
+      "api": "https://91md.me/api.php/provide/vod/"
+    }
+  ]
+  
+}
