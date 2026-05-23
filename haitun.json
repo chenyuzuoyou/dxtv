@@ -1,8 +1,7 @@
 {
-  "spider": "",
   "logo": "https://img.freepik.com/free-vector/cute-dolphin-swimming-cartoon-vector-icon-illustration-animal-nature-icon-isolated-flat-vector_138676-12582.jpg",
   "wallpaper": "http://tool.teyonds.com/api",
-  "warningText": "学习使用，资源来源于网络，请勿贩卖，24小时后删除",
+  "warningText": "学习使用，资源来源于网络，请勿贩卖，请加载24小时后删除，出现其他问题与作者无关，请知悉",
   "sites": [
     {
       "key": "AQY",
@@ -111,11 +110,24 @@
       "ext": "https://xn--fjq53n.xyz/Ting/yinyue/网易云音乐.py"
     },
     {
+      "key": "网易云音乐1",
+      "name": "🐬网易云1｜音乐",
+      "type": 3,
+      "api": "csp_网易云1",
+      "ext": "https://xn--fjq53n.xyz/Ting/yinyue/网易云音乐1.py"
+    },
+    {
       "key": "hhh",
       "name": "🐬truvaze｜🔞",
       "type": 3,
       "api": "csp_truvaze",
       "ext": "https://od.lk/s/NjFfMTI2OTY0NTk3Xw/truvaze.py"
+    },
+    {
+      "key": "AIvin",
+      "name": "🐬AIvin｜🔞",
+      "type": 0,
+      "api": "http://lbapiby.com/api.php/provide/vod/at/xml"
     },
     {
       "key": "大地采集",
@@ -124,6 +136,54 @@
       "api": "https://dadiapi.com/apple_m3u8.php",
       "searchable": 1,
       "quickSearch": 1
+    },
+    {
+      "key": "番号资源",
+      "name": "🐬番号资源｜🔞",
+      "type": 1,
+      "api": "http://fhapi9.com/api.php/provide/vod/"
+    },
+    {
+      "key": "黄色仓库",
+      "name": "🐬黄色仓库｜🔞",
+      "type": 1,
+      "api": "https://hsckzy.vip/api.php/provide/vod/"
+    },
+    {
+      "key": "xjzyw",
+      "name": "🐬香蕉｜🔞",
+      "type": 1,
+      "api": "https://www.xiangjiaozyw.com/api.php/provide/vod/?ac=list"
+    },
+    {
+      "key": "桃花资源",
+      "name": "🐬桃花资源｜🔞",
+      "type": 1,
+      "api": "https://thzy1.me/api.php/provide/vod/"
+    },
+    {
+      "key": "乐播资源",
+      "name": "🐬乐播资源｜🔞",
+      "type": 1,
+      "api": "https://lbapi9.com/api.php/provide/vod/"
+    },
+    {
+      "key": "fqzy资源",
+      "name": "🐬国产资源｜🔞",
+      "type": 1,
+      "api": "https://fqzy.me/api.php/provide/vod/?ac=list"
+    },
+    {
+      "key": "lsb资源",
+      "name": "🐬lsb资源｜🔞",
+      "type": 1,
+      "api": "https://apilsbzy1.com/api.php/provide/vod/"
+    },
+    {
+      "key": "91",
+      "name": "🐬传媒系列｜🔞",
+      "type": 1,
+      "api": "https://91md.me/api.php/provide/vod/"
     }
   ],
   "parses": [
@@ -182,6 +242,12 @@
       "type": 0,
       "ua": "okhttp/5.3.2",
       "url": "https://ghfast.top/https://raw.githubusercontent.com/develop202/migu_video/refs/heads/main/interface.txt"
+    },
+    {
+      "name": "🐬地方直播2",
+      "type": 0,
+      "ua": "okhttp/5.3.2",
+      "url": "https://raw.githubusercontent.com/Guovin/iptv-api/gd/output/ipv4/result.m3u"
     }
   ]
 }
