@@ -1,0 +1,187 @@
+{
+  "title": "VOD 资源站点",
+  "description": "自动生成的 VOD 单站点脚本清单",
+  "icon": "https://assets.vvebo.vip/scripts/icon.png",
+  "widgets": [
+    {
+      "id": "4kav",
+      "title": "4k-av",
+      "description": "获取聚合VOD影片资源",
+      "requiredVersion": "0.0.1",
+      "version": "1.2.1",
+      "author": "yuwang",
+      "url": "https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/4kav.js"
+    },
+    {
+      "id": "hjkk",
+      "title": "韓劇看看",
+      "description": "获取聚合VOD影片资源",
+      "requiredVersion": "0.0.1",
+      "version": "1.2.1",
+      "author": "yuwang",
+      "url": "https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/hjkk.js"
+    },
+    {
+      "id": "jpyy",
+      "title": "金牌影院",
+      "description": "获取聚合VOD影片资源",
+      "requiredVersion": "0.0.1",
+      "version": "1.2.1",
+      "author": "yuwang",
+      "url": "https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/jpyy.js"
+    },
+    {
+      "id": "saohuo",
+      "title": "燒火電影",
+      "description": "获取聚合VOD影片资源",
+      "requiredVersion": "0.0.1",
+      "version": "1.2.1",
+      "author": "yuwang",
+      "url": "https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/saohuo.js"
+    },
+    {
+      "id": "subaibai",
+      "title": "素白白影視",
+      "description": "获取聚合VOD影片资源",
+      "requiredVersion": "0.0.1",
+      "version": "1.2.1",
+      "author": "yuwang",
+      "url": "https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/subaibai.js"
+    },
+    {
+      "id": "novipnoad",
+      "title": "NO視頻",
+      "description": "获取聚合VOD影片资源",
+      "requiredVersion": "0.0.1",
+      "version": "1.2.1",
+      "author": "yuwang",
+      "url": "https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/novipnoad.js"
+    },
+    {
+      "id": "apple",
+      "title": "小蘋果",
+      "description": "获取聚合VOD影片资源",
+      "requiredVersion": "0.0.1",
+      "version": "1.2.1",
+      "author": "yuwang",
+      "url": "https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/apple.js"
+    },
+    {
+      "id": "xingya",
+      "title": "星芽短劇",
+      "description": "获取聚合VOD影片资源",
+      "requiredVersion": "0.0.1",
+      "version": "1.2.1",
+      "author": "yuwang",
+      "url": "https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/xingya.js"
+    },
+    {
+      "id": "guazi",
+      "title": "瓜子影視",
+      "description": "获取聚合VOD影片资源",
+      "requiredVersion": "0.0.1",
+      "version": "1.2.1",
+      "author": "yuwang",
+      "url": "https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/gzys.js"
+    },
+    {
+      "id": "anfuns",
+      "title": "anfuns",
+      "description": "获取聚合VOD影片资源",
+      "requiredVersion": "0.0.1",
+      "version": "1.2.1",
+      "author": "yuwang",
+      "url": "https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/anfuns.js"
+    },
+    {
+      "id": "iyftv",
+      "title": "愛壹帆",
+      "description": "获取聚合VOD影片资源",
+      "requiredVersion": "0.0.1",
+      "version": "1.2.1",
+      "author": "yuwang",
+      "url": "https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/iyftv.js"
+    },
+    {
+      "id": "duanjutt",
+      "title": "短劇天堂",
+      "description": "获取聚合VOD影片资源",
+      "requiredVersion": "0.0.1",
+      "version": "1.2.1",
+      "author": "yuwang",
+      "url": "https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/duanjutt.js"
+    },
+    {
+      "id": "tiantian",
+      "title": "天天影視",
+      "description": "获取聚合VOD影片资源",
+      "requiredVersion": "0.0.1",
+      "version": "1.2.1",
+      "author": "yuwang",
+      "url": "https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/tiantian.js"
+    },
+    {
+      "id": "hdmoli",
+      "title": "hdmoli",
+      "description": "获取聚合VOD影片资源",
+      "requiredVersion": "0.0.1",
+      "version": "1.2.1",
+      "author": "yuwang",
+      "url": "https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/hdmoli.js"
+    },
+    {
+      "id": "laodifang",
+      "title": "老地方",
+      "description": "获取聚合VOD影片资源",
+      "requiredVersion": "0.0.1",
+      "version": "1.2.1",
+      "author": "yuwang",
+      "url": "https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/laodifang.js"
+    },
+    {
+      "id": "aowu",
+      "title": "嗷嗚動漫",
+      "description": "获取聚合VOD影片资源",
+      "requiredVersion": "0.0.1",
+      "version": "1.2.1",
+      "author": "yuwang",
+      "url": "https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/aowu.js"
+    },
+    {
+      "id": "xiaohys",
+      "title": "小紅影視",
+      "description": "获取聚合VOD影片资源",
+      "requiredVersion": "0.0.1",
+      "version": "1.2.1",
+      "author": "yuwang",
+      "url": "https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/xiaohys.js"
+    },
+    {
+      "id": "jdys",
+      "title": "絕對影視",
+      "description": "获取聚合VOD影片资源",
+      "requiredVersion": "0.0.1",
+      "version": "1.2.1",
+      "author": "yuwang",
+      "url": "https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/jdys.js"
+    },
+    {
+      "id": "zero",
+      "title": "零度影視",
+      "description": "获取聚合VOD影片资源",
+      "requiredVersion": "0.0.1",
+      "version": "1.2.1",
+      "author": "yuwang",
+      "url": "https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/zero.js"
+    },
+    {
+      "id": "wwgz",
+      "title": "农民影视",
+      "description": "获取聚合VOD影片资源",
+      "requiredVersion": "0.0.1",
+      "version": "1.2.1",
+      "author": "yuwang",
+      "url": "https://raw.githubusercontent.com/Yswag/xptv-extensions/main/js/wwgz.js"
+    }
+  ]
+}
