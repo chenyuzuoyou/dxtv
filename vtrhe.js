@@ -1,205 +1,199 @@
-// Super Vtrahe Intelligent Adaptive XPTV Source
+// 2Super Vtrahe Dynamic Sniffer Script
 // URL: https://super.vtrahe.to/
 
 const $base_url = 'https://super.vtrahe.to'
 const $headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
     'Referer': `${$base_url}/`,
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+    'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8'
 }
 
 const cheerio = createCheerio()
 
-// 1. 动态获取配置与分类
+// 1. 动态嗅探网站真实的分类与对应的链接
 async function getConfig() {
-    let tabs = [{ name: '首页', ext: { id: '/' } }]
+    let tabs = [{ name: '最新', ext: { id: '/' } }]
     try {
         const { data: html = '' } = await $fetch.get($base_url, { headers: $headers })
         const $ = cheerio.load(html)
         const discoveredTabs = []
         
-        // 智能嗅探导航栏中的分类链接
+        // 动态抓取页面中所有的导航链接
         $('a').each((_, el) => {
             const href = $(el).attr('href') || ''
             const text = $(el).text().trim()
             
-            // 过滤出包含影视、分类、国家、类型的常见路由特征
-            if (href && text && text.length <= 4 && !text.includes('首页') && !text.includes('登录')) {
+            // 过滤：提取包含俄语/各类分类特征的菜单项，且排除非分类链接
+            if (href && text && text.length <= 15 && !text.includes('首页') && !text.includes('登录')) {
+                // 确保是本站相对路径或绝对路径
                 if (href.startsWith('/') || href.includes($base_url)) {
-                    const id = href.replace($base_url, '')
-                    if (id && id !== '/' && !discoveredTabs.some(t => t.ext.id === id)) {
-                        discoveredTabs.push({ name: text, ext: { id: id } })
+                    const cleanHref = href.replace($base_url, '')
+                    if (cleanHref && cleanHref !== '/' && !discoveredTabs.some(t => t.ext.id === cleanHref)) {
+                        discoveredTabs.push({ name: text, ext: { id: cleanHref } })
                     }
                 }
             }
         })
-        if (discoveredTabs.length > 0) tabs = discoveredTabs.slice(0, 8) // 最多取前8个有效分类
+        if (discoveredTabs.length > 0) tabs = discoveredTabs.slice(0, 12) // 最多加载前12个真实分类
     } catch (e) {
-        // 降级兜底方案
+        // 兜底静态数据
         tabs = [
-            { name: '电影', ext: { id: '/movies' } },
-            { name: '剧集', ext: { id: '/tv' } },
-            { name: '最新', ext: { id: '/latest' } }
+            { name: 'Русское', ext: { id: '/categories/russkoe/' } },
+            { name: 'Зрелые', ext: { id: '/categories/zrelye/' } }
         ]
     }
 
     return jsonify({ ver: 1, title: 'Super Vtrahe', site: $base_url, tabs })
 }
 
-// 2. 自适应海报卡片抓取
+// 2. 动态抓取对应分类下的海报
 async function getCards(ext) {
     ext = argsify(ext)
-    let { id = '/', page = 1 } = ext
+    const { id = '/', page = 1 } = ext
     
-    // 分页路径自适应（支持 /page/2 或 ?page=2）
+    // 自动适配动态链接的分页
     let url = id.startsWith('http') ? id : `${$base_url}${id}`
     if (page > 1) {
-        url = url.includes('?') ? `${url}&page=${page}` : `${url.replace(/\/$/, '')}/page/${page}`
+        url = url.includes('?') ? `${url}&page=${page}` : `${url.replace(/\/$/, '')}/page/${page}/`
     }
     
-    const { data: html = '' } = await $fetch.get(url, { headers: $headers })
-    const $ = cheerio.load(html)
-    const list = []
-    
-    // 算法：寻找包含 <a> 且内含 <img> 的容器，通常影视站的海报都是这种结构
-    $('a').each((_, el) => {
-        const a = $(el)
-        const href = a.attr('href') || ''
-        const img = a.find('img').first()
+    try {
+        const { data: html = '' } = await $fetch.get(url, { headers: $headers })
+        const $ = cheerio.load(html)
+        const list = []
         
-        if (href && img.length > 0) {
-            // 排除非详情页链接（如分类、关于、标签等）
-            if (href.includes('javascript:') || href === '/' || href.includes('/category/')) return
+        // 核心提取算法：扫描所有包含图片的 A 标签
+        $('a').each((_, el) => {
+            const a = $(el)
+            const href = a.attr('href') || ''
+            const img = a.find('img').first()
             
-            const title = img.attr('alt') || img.attr('title') || a.text().trim() || '未命名影片'
-            const pic = img.attr('data-src') || img.attr('data-original') || img.attr('src') || ''
-            const fullHref = href.startsWith('http') ? href : `${$base_url}${href}`
-            
-            // 查重，避免同一个卡片因为多个链接重复添加
-            if (title && !list.some(item => item.vod_id === fullHref)) {
-                list.push({
-                    vod_id: fullHref,
-                    vod_name: title,
-                    vod_pic: pic,
-                    ext: { url: fullHref }
-                })
+            if (href && img.length > 0) {
+                // 排除主页和分类自身链接
+                if (href === '/' || href.includes('/categories/') || href.includes('javascript:')) return
+                
+                const title = img.attr('alt') || img.attr('title') || a.text().trim() || 'Video'
+                const pic = img.attr('data-src') || img.attr('data-original') || img.attr('data-lazy-src') || img.attr('src') || ''
+                const fullHref = href.startsWith('http') ? href : `${$base_url}${href}`
+                
+                if (!list.some(item => item.vod_id === fullHref)) {
+                    list.push({
+                        vod_id: fullHref,
+                        vod_name: title,
+                        vod_pic: pic,
+                        ext: { id: fullHref, url: fullHref }
+                    })
+                }
             }
-        }
-    })
+        })
 
-    return jsonify({ list })
+        // 兜底方案：针对成人网站常用的传统 grid / block 布局类名进行强制提取
+        if (list.length === 0) {
+            $('.video-item, .post, .thumb, .item, .col-6, .video-thumb').each((_, el) => {
+                const item = $(el)
+                const a = item.find('a').first()
+                const img = item.find('img').first()
+                const href = a.attr('href')
+                if (href) {
+                    list.push({
+                        vod_id: href.startsWith('http') ? href : `${$base_url}${href}`,
+                        vod_name: img.attr('alt') || img.attr('title') || item.text().trim() || 'Video',
+                        vod_pic: img.attr('data-src') || img.attr('src') || '',
+                        ext: { url: href.startsWith('http') ? href : `${$base_url}${href}` }
+                    })
+                }
+            })
+        }
+
+        return jsonify({ list })
+    } catch (e) {
+        return jsonify({ list: [] })
+    }
 }
 
-// 3. 自适应剧集与正片嗅探
+// 3. 解析播放列表
 async function getTracks(ext) {
     const args = argsify(ext)
     const { url } = args
     if (!url) return jsonify({ code: 0, msg: 'Missing URL' })
 
-    const { data: html = '' } = await $fetch.get(url, { headers: $headers })
-    const $ = cheerio.load(html)
-    
-    const title = $('h1').first().text().trim() || $('title').text().replace(/-.*/, '').trim()
-    const tracks = []
-    
-    // 策略A：寻找带有播放、集数、Episode、Server等关键词附近的链接
-    $('a').each((_, el) => {
-        const a = $(el)
-        const href = a.attr('href') || ''
-        const text = a.text().trim()
+    try {
+        const { data: html = '' } = await $fetch.get(url, { headers: $headers })
+        const $ = cheerio.load(html)
+        const title = $('h1').first().text().trim() || $('title').text().trim() || '播放正片'
         
-        if (href && (href.includes('/play/') || href.includes('watch') || /\d+/.test(text))) {
-            if (text.length < 15) { // 过滤掉过长的描述文本
-                const fullUrl = href.startsWith('http') ? href : `${$base_url}${href}`
-                if (!tracks.some(t => t.url === fullUrl)) {
-                    tracks.push({ name: text || `正片/第${tracks.length + 1}集`, url: fullUrl })
-                }
-            }
-        }
-    })
-
-    // 策略B：如果在A中没找到（单片单页电影），直接将当前详情页作为播放页投喂
-    if (tracks.length === 0) {
-        tracks.push({ name: '正片', url: url })
+        const tracks = [{ name: '立即播放', url: url }]
+        return jsonify({
+            code: 1,
+            msg: 'success',
+            id: url,
+            title,
+            list: [{ title: '播放线路', tracks }],
+        })
+    } catch (e) {
+        return jsonify({ code: 0, msg: e.toString() })
     }
-
-    return jsonify({
-        code: 1,
-        msg: 'success',
-        id: url,
-        title,
-        list: [{ title: '智能解析线路', tracks }],
-    })
 }
 
-// 4. 播放视频流解析
+// 4. 解析底层真实流媒体链接
 async function getPlayinfo(ext) {
     const args = argsify(ext)
     const url = args.url
     if (!url) return jsonify({ urls: [] })
 
-    // 大多数影视站播放页会直接通过 iframe 或 script 载入 .m3u8/.mp4
-    const { data: html = '' } = await $fetch.get(url, { headers: $headers })
-    
-    // 正则直接从源代码硬抽视频流媒体链接
-    const m3u8Match = html.match(/(https?:\/\/[^\s"'`<>]+?\.(?:m3u8|mp4)[^\s"'`<>]*)/i)
-    if (m3u8Match) {
+    try {
+        const { data: html = '' } = await $fetch.get(url, { headers: $headers })
+        
+        // 扫描页面所有源码，提取隐藏的 m3u8 或 mp4 直链
+        const streamMatch = html.match(/(https?:\/\/[^\s"'`<>]+?\.(?:m3u8|mp4)[^\s"'`<>]*)/i)
+        if (streamMatch) {
+            return jsonify({
+                urls: [streamMatch[1]],
+                headers: [{ 'User-Agent': $headers['User-Agent'], 'Referer': `${$base_url}/` }]
+            })
+        }
+        
+        // 如果提取不到，则直接交由内核代理嗅探
         return jsonify({
-            urls: [m3u8Match[1]],
+            urls: [url],
             headers: [{ 'User-Agent': $headers['User-Agent'], 'Referer': `${$base_url}/` }]
         })
+    } catch (e) {
+        return jsonify({ urls: [url] })
     }
-
-    // 如果未在源码中直接发现流媒体，则原样丢给XPTV的内置内核去尝试抓包
-    return jsonify({
-        urls: [url],
-        headers: [{ 'User-Agent': $headers['User-Agent'], 'Referer': `${$base_url}/` }]
-    })
 }
 
-// 5. 搜索功能
+// 5. 搜索
 async function search(ext) {
     const args = argsify(ext)
     const keyword = args.text || args.wd || ''
     if (!keyword) return jsonify({ code: 0, msg: 'Missing keyword' })
 
-    // 影视站最通用的三种搜索路径变体格式尝试
-    const searchUrls = [
-        `${$base_url}/index.php/vod/search.html?wd=${encodeURIComponent(keyword)}`,
-        `${$base_url}/search/${encodeURIComponent(keyword)}`,
-        `${$base_url}/?s=${encodeURIComponent(keyword)}`
-    ]
-    
-    let html = ''
-    for (const sUrl of searchUrls) {
-        try {
-            const res = await $fetch.get(sUrl, { headers: $headers })
-            if (res.data && res.data.includes(keyword)) {
-                html = res.data
-                break
+    const searchUrl = `${$base_url}/?s=${encodeURIComponent(keyword)}`
+    try {
+        const { data: html = '' } = await $fetch.get(searchUrl, { headers: $headers })
+        const $ = cheerio.load(html)
+        const list = []
+        
+        $('a').each((_, el) => {
+            const a = $(el)
+            const href = a.attr('href') || ''
+            const img = a.find('img').first()
+            if (href && img.length > 0) {
+                const title = img.attr('alt') || a.text().trim()
+                if (title && title.includes(keyword)) {
+                    list.push({
+                        vod_id: href,
+                        vod_name: title,
+                        vod_pic: img.attr('src') || '',
+                        ext: { url: href.startsWith('http') ? href : `${$base_url}${href}` }
+                    })
+                }
             }
-        } catch(e){}
+        })
+        return jsonify({ code: 1, list })
+    } catch (e) {
+        return jsonify({ code: 0, list: [] })
     }
-
-    const $ = cheerio.load(html || '')
-    const list = []
-
-    $('a').each((_, el) => {
-        const a = $(el)
-        const href = a.attr('href') || ''
-        const img = a.find('img').first()
-        if (href && img.length > 0 && !href.includes('/category/')) {
-            const title = img.attr('alt') || a.text().trim()
-            if (title && title.includes(keyword)) {
-                list.push({
-                    vod_id: href,
-                    vod_name: title,
-                    vod_pic: img.attr('src') || '',
-                    ext: { url: href.startsWith('http') ? href : `${$base_url}${href}` }
-                })
-            }
-        }
-    })
-
-    return jsonify({ code: 1, list })
 }
