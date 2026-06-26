@@ -986,13 +986,13 @@ async function getSongs(ext) {
     //return jsonify({ list: recentPlayed.slice(offset, offset + PAGE_LIMIT) });
   //}
 
-  if (args.source === 'wy') return jsonify(await WY.getSongs(args)); if (args.source === 'tx') return jsonify(await QQ.getSongs(args)); if (args.source === 'kg') return jsonify(await KG.getSongs(args)); if (args.source === 'kw') return jsonify(await KW.getSongs(args)); if (args.source === 'mg') return jsonify(await MG.getSongs(args)); if (args.source === 'xm') return jsonify(await XM.getSongs(args));
+  if (args.source === 'wy') return jsonify(await WY.getSongs(args)); if (args.source === 'tx') return jsonify(await QQ.getSongs(args)); if (args.source === 'kg') return jsonify(await KG.getSongs(args)); if (args.source === 'kw') return jsonify(await KW.getSongs(args)); if (args.source === 'xm') return jsonify(await XM.getSongs(args));//if (args.source === 'mg') return jsonify(await MG.getSongs(args));  
   return jsonify({ list: [] });
 }
 
 async function getArtists(ext) {
   const args = argsify(ext);
-  if (args.source === 'wy') return jsonify(await WY.getArtists(args)); if (args.source === 'tx') return jsonify(await QQ.getArtists(args)); if (args.source === 'kg') return jsonify(await KG.getArtists(args)); if (args.source === 'kw') return jsonify(await KW.getArtists(args)); if (args.source === 'mg') return jsonify(await MG.getArtists(args));
+  if (args.source === 'wy') return jsonify(await WY.getArtists(args)); if (args.source === 'tx') return jsonify(await QQ.getArtists(args)); if (args.source === 'kg') return jsonify(await KG.getArtists(args)); if (args.source === 'kw') return jsonify(await KW.getArtists(args)); //if (args.source === 'mg') return jsonify(await MG.getArtists(args));
   return jsonify({ list: [] });
 }
 async function search(ext) {
@@ -1002,7 +1002,7 @@ async function search(ext) {
     if (args.type === 'album' || args.type === 'song' || args.type === 'artist') promises.push(XM.search(args).catch(() => ({ list: [] })));
     return jsonify({ list: mixArrays(...(await Promise.all(promises)).map(r => r.list || [])) });
   }
-  if (source === 'wy') return jsonify(await WY.search(args)); if (source === 'tx') return jsonify(await QQ.search(args)); if (source === 'kg') return jsonify(await KG.search(args)); if (source === 'kw') return jsonify(await KW.search(args)); if (source === 'mg') return jsonify(await MG.search(args)); if (source === 'xm') return jsonify(await XM.search(args));
+  if (source === 'wy') return jsonify(await WY.search(args)); if (source === 'tx') return jsonify(await QQ.search(args)); if (source === 'kg') return jsonify(await KG.search(args)); if (source === 'kw') return jsonify(await KW.search(args));  if (source === 'xm') return jsonify(await XM.search(args));//if (source === 'mg') return jsonify(await MG.search(args)); 
   return jsonify({ list: [] });
 }
 
