@@ -95,7 +95,6 @@ const appConfig = {
   tabMe: {
     name: '我的',
     groups: [
-      // 已融合：原“红心”改为“红心（缓存）”，并增加 ext.cache 标识
       { name: '红心（缓存）', type: 'song', ext: { cache: true } },
       { name: '歌单', type: 'playlist' },
       { name: '专辑', type: 'album' },
@@ -106,28 +105,27 @@ const appConfig = {
     name: '搜索',
     groups: [
       { name: '单曲', type: 'song', ext: { type: 'song', source: 'all' } },
-	    { name: '歌单', type: 'playlist', ext: { type: 'playlist', source: 'all' } },
+      { name: '歌单', type: 'playlist', ext: { type: 'playlist', source: 'all' } },
       { name: '专辑', type: 'album', ext: { type: 'album', source: 'all' } },
       { name: '歌手', type: 'artist', ext: { type: 'artist', source: 'all' } },
       { name: 'QQ单曲', type: 'song', ext: { type: 'song', source: 'tx' } },
-			{ name: 'QQ歌单', type: 'playlist', ext: { type: 'playlist', source: 'tx' } },
-			{ name: 'QQ专辑', type: 'album', ext: { type: 'album', source: 'tx' } },
-			{ name: 'QQ歌手', type: 'artist', ext: { type: 'artist', source: 'tx' } },
+      { name: 'QQ歌单', type: 'playlist', ext: { type: 'playlist', source: 'tx' } },
+      { name: 'QQ专辑', type: 'album', ext: { type: 'album', source: 'tx' } },
+      { name: 'QQ歌手', type: 'artist', ext: { type: 'artist', source: 'tx' } },
       { name: '网易单曲', type: 'song', ext: { type: 'song', source: 'wy' } },
-			{ name: '网易歌单', type: 'playlist', ext: { type: 'playlist', source: 'wy' } },
-			{ name: '网易专辑', type: 'album', ext: { type: 'album', source: 'wy' } },
-			{ name: '网易歌手', type: 'artist', ext: { type: 'artist', source: 'wy' } },
+      { name: '网易歌单', type: 'playlist', ext: { type: 'playlist', source: 'wy' } },
+      { name: '网易专辑', type: 'album', ext: { type: 'album', source: 'wy' } },
+      { name: '网易歌手', type: 'artist', ext: { type: 'artist', source: 'wy' } },
       { name: '酷我单曲', type: 'song', ext: { type: 'song', source: 'kw' } },
-			{ name: '酷我歌单', type: 'playlist', ext: { type: 'playlist', source: 'kw' } },
-			{ name: '酷我专辑', type: 'album', ext: { type: 'album', source: 'kw' } },
-			{ name: '酷我歌手', type: 'artist', ext: { type: 'artist', source: 'kw' } },
+      { name: '酷我歌单', type: 'playlist', ext: { type: 'playlist', source: 'kw' } },
+      { name: '酷我专辑', type: 'album', ext: { type: 'album', source: 'kw' } },
+      { name: '酷我歌手', type: 'artist', ext: { type: 'artist', source: 'kw' } },
       { name: '酷狗单曲', type: 'song', ext: { type: 'song', source: 'kg' } },
-			{ name: '酷狗歌单', type: 'playlist', ext: { type: 'playlist', source: 'kg' } },
-			{ name: '酷狗专辑', type: 'album', ext: { type: 'album', source: 'kg' } },
-			{ name: '酷狗歌手', type: 'artist', ext: { type: 'artist', source: 'kg' } },
+      { name: '酷狗歌单', type: 'playlist', ext: { type: 'playlist', source: 'kg' } },
+      { name: '酷狗专辑', type: 'album', ext: { type: 'album', source: 'kg' } },
+      { name: '酷狗歌手', type: 'artist', ext: { type: 'artist', source: 'kg' } },
       { name: '喜马单曲', type: 'song', ext: { type: 'song', source: 'xm' } },
-  	  { name: '喜马专辑', type: 'album', ext: { type: 'album', source: 'xm' } }
-  	//  { name: '喜马歌手', type: 'artist', ext: { type: 'artist', source: 'xm' } } 
+      { name: '喜马专辑', type: 'album', ext: { type: 'album', source: 'xm' } }
     ]
   }
 };
@@ -785,6 +783,60 @@ async function getSongInfo(ext) {
     const soundurl = typeof result === 'string' ? result : result?.url ?? result?.data?.url ?? result?.urls?.[0];
     return jsonify({ urls: soundurl ? [soundurl] : [] });
   } catch (e) { return jsonify({ urls: [] }); }
+}
+
+// ========================== 新增：全部聚合核心处理函数 ==========================
+async function getAllAggregateData(page = 1) {
+  // 仅处理有效平台：网易(wy)、QQ(tx)、酷狗(kg)、酷我(kw)、喜马(xm)
+  const platforms = [
+    { source: 'wy', getPlaylists: WY.getPlaylists, ext: { gid: '2', page } }, // 网易推荐歌单
+    { source: 'tx', getPlaylists: QQ.getPlaylists, ext: { gid: '7', categoryId: '6', sortId: '5', page } }, // QQ流行歌单
+    { source: 'kg', getPlaylists: KG.getPlaylists, ext: { gid: '7', page } }, // 酷狗推荐歌单
+    { source: 'kw', getPlaylists: async (ext) => ({ list: [] }) }, // 酷我推荐歌单（需补充KW模块完整逻辑）
+    { source: 'xm', getPlaylists: async (ext) => ({ list: [] }) } // 喜马专辑（需补充XM模块完整逻辑）
+  ];
+
+  // 并行请求所有平台数据
+  const platformData = await Promise.all(
+    platforms.map(async (p) => {
+      try {
+        const res = await p.getPlaylists(p.ext);
+        return res.list || [];
+      } catch (e) {
+        console.log(`[聚合失败] ${p.source}:`, e);
+        return [];
+      }
+    })
+  );
+
+  // 混合多平台数据（去重 + 分页）
+  const mixedData = mixArrays(...platformData);
+  const offset = (page - 1) * PAGE_LIMIT;
+  return mixedData.slice(offset, offset + PAGE_LIMIT);
+}
+
+// ========================== 补充：全局请求分发逻辑（修复all类型） ==========================
+async function dispatchRequest(ext) {
+  const { source, type, gid, page = 1 } = ext;
+  
+  // 处理全部聚合
+  if (source === 'all' && gid === 'all_top' && type === 'playlist') {
+    const list = await getAllAggregateData(page);
+    return { list, hasMore: list.length >= PAGE_LIMIT };
+  }
+
+  // 处理单一平台
+  const platformMap = { wy: WY, tx: QQ, kg: KG, kw: KW, xm: XM }; // 仅保留有效平台
+  const platform = platformMap[source];
+  if (!platform) return { list: [] };
+
+  switch (type) {
+    case 'playlist': return await platform.getPlaylists(ext);
+    case 'song': return await platform.getSongs(ext);
+    case 'album': return await platform.getAlbums(ext);
+    case 'artist': return await platform.getArtists(ext);
+    default: return { list: [] };
+  }
 }
 
 // ========================== 以下为原脚本所有模块代码（WY、QQ、KG、KW、MG、XM）完全未改动 ==========================
