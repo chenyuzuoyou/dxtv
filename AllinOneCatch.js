@@ -12,7 +12,7 @@ const cheerio = typeof createCheerio === 'function' ? createCheerio() : null;
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36';
 const headers = { 'User-Agent': UA };
 const PAGE_LIMIT = 20;
-const SEARCH_PAGE_LIMIT = 4;
+const SEARCH_PAGE_LIMIT = 5;
 
 // ========================== 新增：最近播放（缓存）核心变量 ==========================
 const MAX_RECENT = 200;
@@ -785,35 +785,7 @@ async function getSongInfo(ext) {
   } catch (e) { return jsonify({ urls: [] }); }
 }
 
-// ========================== 新增：全部聚合核心处理函数 ==========================
-async function getAllAggregateData(page = 1) {
-  // 仅处理有效平台：网易(wy)、QQ(tx)、酷狗(kg)、酷我(kw)、喜马(xm)
-  const platforms = [
-    { source: 'wy', getPlaylists: WY.getPlaylists, ext: { gid: '2', page } }, // 网易推荐歌单
-    { source: 'tx', getPlaylists: QQ.getPlaylists, ext: { gid: '7', categoryId: '6', sortId: '5', page } }, // QQ流行歌单
-    { source: 'kg', getPlaylists: KG.getPlaylists, ext: { gid: '7', page } }, // 酷狗推荐歌单
-    { source: 'kw', getPlaylists: async (ext) => ({ list: [] }) }, // 酷我推荐歌单（需补充KW模块完整逻辑）
-    { source: 'xm', getPlaylists: async (ext) => ({ list: [] }) } // 喜马专辑（需补充XM模块完整逻辑）
-  ];
 
-  // 并行请求所有平台数据
-  const platformData = await Promise.all(
-    platforms.map(async (p) => {
-      try {
-        const res = await p.getPlaylists(p.ext);
-        return res.list || [];
-      } catch (e) {
-        console.log(`[聚合失败] ${p.source}:`, e);
-        return [];
-      }
-    })
-  );
-
-  // 混合多平台数据（去重 + 分页）
-  const mixedData = mixArrays(...platformData);
-  const offset = (page - 1) * PAGE_LIMIT;
-  return mixedData.slice(offset, offset + PAGE_LIMIT);
-}
 
 
 
