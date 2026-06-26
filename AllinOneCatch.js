@@ -1,7 +1,7 @@
 /*!
  * @name AllinOneCatch
  * @description 全网聚合音乐 - 增强版：红心改为“红心（缓存）” + 自动最近播放（离线缓存）去咪咕1
- * @version v1.1
+ * @version v1.2
  * @author kobe (增强 by Grok)
  * @key csp_AllinOneCatch
  */
@@ -963,15 +963,15 @@ async function getConfig() { return jsonify(appConfig); }
 async function getPlaylists(ext) {
   const args = argsify(ext), source = args.source || 'all';
   if (source === 'all') {
-    const results = await Promise.all([WY.getPlaylists({ gid: '5', page: args.page }).catch(() => ({ list: [] })), QQ.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] })), KG.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] })), KW.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] })), MG.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] }))]);
+    const results = await Promise.all([WY.getPlaylists({ gid: '5', page: args.page }).catch(() => ({ list: [] })), QQ.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] })), KG.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] })), KW.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] }));// MG.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] }))]);
     return jsonify({ list: mixArrays(results[0].list, results[1].list, results[2].list, results[3].list, results[4].list) });
   }
-  if (source === 'wy') return jsonify(await WY.getPlaylists(args)); if (source === 'tx') return jsonify(await QQ.getPlaylists(args)); if (source === 'kg') return jsonify(await KG.getPlaylists(args)); if (source === 'kw') return jsonify(await KW.getPlaylists(args)); if (source === 'mg') return jsonify(await MG.getPlaylists(args)); if (source === 'xm') return jsonify(await XM.getPlaylists(args));
+  if (source === 'wy') return jsonify(await WY.getPlaylists(args)); if (source === 'tx') return jsonify(await QQ.getPlaylists(args)); if (source === 'kg') return jsonify(await KG.getPlaylists(args)); if (source === 'kw') return jsonify(await KW.getPlaylists(args));  if (source === 'xm') return jsonify(await XM.getPlaylists(args));//if (source === 'mg') return jsonify(await MG.getPlaylists(args)); 
   return jsonify({ list: [] });
 }
 async function getAlbums(ext) {
   const args = argsify(ext), source = args.source || 'all';
-  if (source === 'xm') return jsonify(await XM.getPlaylists(args)); if (source === 'wy') return jsonify(await WY.getAlbums(args)); if (source === 'tx') return jsonify(await QQ.getAlbums(args)); if (source === 'kg') return jsonify(await KG.getAlbums(args)); if (source === 'kw') return jsonify(await KW.getAlbums(args)); if (source === 'mg') return jsonify(await MG.getAlbums(args));
+  if (source === 'xm') return jsonify(await XM.getPlaylists(args)); if (source === 'wy') return jsonify(await WY.getAlbums(args)); if (source === 'tx') return jsonify(await QQ.getAlbums(args)); if (source === 'kg') return jsonify(await KG.getAlbums(args)); if (source === 'kw') return jsonify(await KW.getAlbums(args));//if (source === 'mg') return jsonify(await MG.getAlbums(args));
   return jsonify({ list: [] });
 }
 
