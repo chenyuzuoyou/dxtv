@@ -963,7 +963,7 @@ async function getConfig() { return jsonify(appConfig); }
 async function getPlaylists(ext) {
   const args = argsify(ext), source = args.source || 'all';
   if (source === 'all') {
-    const results = await Promise.all([WY.getPlaylists({ gid: '5', page: args.page }).catch(() => ({ list: [] })), QQ.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] })), KG.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] })), KW.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] }));// MG.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] }))]);
+    const results = await Promise.all([WY.getPlaylists({ gid: '5', page: args.page }).catch(() => ({ list: [] })), QQ.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] })), KG.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] })), KW.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] }));
     return jsonify({ list: mixArrays(results[0].list, results[1].list, results[2].list, results[3].list, results[4].list) });
   }
   if (source === 'wy') return jsonify(await WY.getPlaylists(args)); if (source === 'tx') return jsonify(await QQ.getPlaylists(args)); if (source === 'kg') return jsonify(await KG.getPlaylists(args)); if (source === 'kw') return jsonify(await KW.getPlaylists(args));  if (source === 'xm') return jsonify(await XM.getPlaylists(args));//if (source === 'mg') return jsonify(await MG.getPlaylists(args)); 
