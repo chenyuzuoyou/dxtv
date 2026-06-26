@@ -1,6 +1,6 @@
 /*!
  * @name AllinOneCatch
- * @description 全网聚合音乐 - 增强版：红心改为“红心（缓存）” + 自动最近播放（离线缓存）
+ * @description 全网聚合音乐 - 增强版：红心改为“红心（缓存）” + 自动最近播放（离线缓存）去咪咕
  * @version v1.1
  * @author kobe (增强 by Grok)
  * @key csp_AllinOneCatch
@@ -998,7 +998,7 @@ async function getArtists(ext) {
 async function search(ext) {
   const args = argsify(ext), source = args.source || 'all';
   if (source === 'all') {
-    const promises = [WY.search(args).catch(() => ({ list: [] })), QQ.search(args).catch(() => ({ list: [] })), KG.search(args).catch(() => ({ list: [] })), KW.search(args).catch(() => ({ list: [] })), MG.search(args).catch(() => ({ list: [] }))];
+    const promises = [WY.search(args).catch(() => ({ list: [] })), QQ.search(args).catch(() => ({ list: [] })), KG.search(args).catch(() => ({ list: [] })), KW.search(args).catch(() => ({ list: [] }))];//MG.search(args).catch(() => ({ list: [] })) 
     if (args.type === 'album' || args.type === 'song' || args.type === 'artist') promises.push(XM.search(args).catch(() => ({ list: [] })));
     return jsonify({ list: mixArrays(...(await Promise.all(promises)).map(r => r.list || [])) });
   }
