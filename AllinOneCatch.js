@@ -42,7 +42,7 @@ function withWyHeaders(extra = {}) { return { ...headers, Referer: 'https://musi
 function withQqHeaders(extra = {}) { return { ...headers, Referer: 'https://y.qq.com/', Origin: 'https://y.qq.com', Cookie: 'uin=0;', ...extra }; }
 function withKgHeaders(extra = {}) { return { ...headers, Referer: 'https://www.kugou.com/', Origin: 'https://www.kugou.com', ...extra }; }
 function withKwHeaders(extra = {}) { return { ...headers, Referer: 'https://m.kuwo.cn/newh5app/', Origin: 'https://m.kuwo.cn', ...extra }; }
-function withMgHeaders(extra = {}) { return { ...headers, Referer: 'https://music.migu.cn/', Origin: 'https://music.migu.cn', ...extra }; }
+//function withMgHeaders(extra = {}) { return { ...headers, Referer: 'https://music.migu.cn/', Origin: 'https://music.migu.cn', ...extra }; }
 
 // ========================== 核心接口配置 ==========================
 const appConfig = {
@@ -84,12 +84,12 @@ const appConfig = {
       { name: '酷我-经典歌单', type: 'playlist', ui: 1, showMore: true, ext: { source: 'kw', gid: '8' } },
       { name: '酷我-热门歌手', type: 'artist', ui: 0, showMore: true, ext: { source: 'kw', gid: '9' } },
 
-      { name: '咪咕-新歌榜', type: 'song', ui: 0, showMore: false, ext: { source: 'mg', gid: '1', id: '27553319' } },
-      { name: '咪咕-热歌榜', type: 'song', ui: 0, showMore: false, ext: { source: 'mg', gid: '1', id: '27186466' } },
-      { name: '咪咕-国风热歌', type: 'song', ui: 0, showMore: false, ext: { source: 'mg', gid: '1', id: '83176390' } },
-      { name: '咪咕-会员臻爱', type: 'song', ui: 0, showMore: false, ext: { source: 'mg', gid: '1', id: '76557745' } },
-      { name: '咪咕-排行榜', type: 'playlist', ui: 1, showMore: true, ext: { source: 'mg', gid: '1' } },
-      { name: '咪咕-热门歌手', type: 'artist', ui: 0, showMore: true, ext: { source: 'mg', gid: '2' } },
+      //{ name: '咪咕-新歌榜', type: 'song', ui: 0, showMore: false, ext: { source: 'mg', gid: '1', id: '27553319' } },
+      //{ name: '咪咕-热歌榜', type: 'song', ui: 0, showMore: false, ext: { source: 'mg', gid: '1', id: '27186466' } },
+      //{ name: '咪咕-国风热歌', type: 'song', ui: 0, showMore: false, ext: { source: 'mg', gid: '1', id: '83176390' } },
+      //{ name: '咪咕-会员臻爱', type: 'song', ui: 0, showMore: false, ext: { source: 'mg', gid: '1', id: '76557745' } },
+      //{ name: '咪咕-排行榜', type: 'playlist', ui: 1, showMore: true, ext: { source: 'mg', gid: '1' } },
+      //{ name: '咪咕-热门歌手', type: 'artist', ui: 0, showMore: true, ext: { source: 'mg', gid: '2' } },
 
       { name: '喜马-音乐', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', gid: '2', kw: '音乐' } },
       { name: '喜马-播客', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', gid: '2', kw: '播客' } },
@@ -133,8 +133,8 @@ const appConfig = {
 			{ name: '酷狗歌单', type: 'playlist', ext: { type: 'playlist', source: 'kg' } },
 			{ name: '酷狗专辑', type: 'album', ext: { type: 'album', source: 'kg' } },
 			{ name: '酷狗歌手', type: 'artist', ext: { type: 'artist', source: 'kg' } },
-      { name: '咪咕单曲', type: 'song', ext: { type: 'song', source: 'mg' } },
-      { name: '咪咕歌手', type: 'artist', ext: { type: 'artist', source: 'mg' } },
+      //{ name: '咪咕单曲', type: 'song', ext: { type: 'song', source: 'mg' } },
+      //{ name: '咪咕歌手', type: 'artist', ext: { type: 'artist', source: 'mg' } },
       { name: '喜马单曲', type: 'song', ext: { type: 'song', source: 'xm' } },
   	  { name: '喜马专辑', type: 'album', ext: { type: 'album', source: 'xm' } }
   	//  { name: '喜马歌手', type: 'artist', ext: { type: 'artist', source: 'xm' } } 
@@ -653,7 +653,7 @@ const KW = (function () {
     }
   };
 })();
-
+/*
 // ========================== 咪咕音乐模块 ==========================
 const MG = (function () {
   async function fetchJson(url) { return safeArgs((await $fetch.get(url, { headers: withMgHeaders() })).data); }
@@ -885,6 +885,7 @@ const MG = (function () {
     }
   };
 })();
+*/
 // ========================== 喜马拉雅模块 ==========================
 const XM = (function () {
   async function fetchJson(url, extraHeaders = {}) { return safeArgs((await $fetch.get(url, { headers: { ...headers, ...extraHeaders } })).data); }
