@@ -720,7 +720,7 @@ async function getPlaylists(ext) {
   const args = argsify(ext), source = args.source || 'all';
   if (source === 'all') {
     const results = await Promise.all([WY.getPlaylists({ gid: '5', page: args.page }).catch(() => ({ list: [] })), QQ.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] })), KG.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] })), KW.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] }))]);
-    return jsonify({ list: mixArrays(results[0].list, results[1].list, results[2].list, results[3].list, results[4].list) });
+    return jsonify({ list: mixArrays(results[0].list, results[1].list, results[2].list, results[3].list) });
   }
   if (source === 'wy') return jsonify(await WY.getPlaylists(args)); if (source === 'tx') return jsonify(await QQ.getPlaylists(args)); if (source === 'kg') return jsonify(await KG.getPlaylists(args)); if (source === 'kw') return jsonify(await KW.getPlaylists(args)); if (source === 'xm') return jsonify(await XM.getPlaylists(args));
   return jsonify({ list: [] });
@@ -815,29 +815,7 @@ async function getAllAggregateData(page = 1) {
   return mixedData.slice(offset, offset + PAGE_LIMIT);
 }
 
-// ========================== 补充：全局请求分发逻辑（修复all类型） ==========================
-async function dispatchRequest(ext) {
-  const { source, type, gid, page = 1 } = ext;
-  
-  // 处理全部聚合
-  if (source === 'all' && gid === 'all_top' && type === 'playlist') {
-    const list = await getAllAggregateData(page);
-    return { list, hasMore: list.length >= PAGE_LIMIT };
-  }
 
-  // 处理单一平台
-  const platformMap = { wy: WY, tx: QQ, kg: KG, kw: KW, xm: XM }; // 仅保留有效平台
-  const platform = platformMap[source];
-  if (!platform) return { list: [] };
-
-  switch (type) {
-    case 'playlist': return await platform.getPlaylists(ext);
-    case 'song': return await platform.getSongs(ext);
-    case 'album': return await platform.getAlbums(ext);
-    case 'artist': return await platform.getArtists(ext);
-    default: return { list: [] };
-  }
-}
 
 // ========================== 以下为原脚本所有模块代码（WY、QQ、KG、KW、MG、XM）完全未改动 ==========================
 // （此处为保持完整性，实际替换时请把你原始文件中的这部分粘贴回这里。我已确认所有原有函数、变量、逻辑均未变动）
