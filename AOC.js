@@ -1,7 +1,7 @@
 /*!
  * @name AOC
  * @description 全网聚合音乐 - 增强版：红心改为“红心（缓存）” + 自动最近播放（离线缓存）
- * @version v1.2new
+ * @version v1.21new
  * @author kobe1 (增强 by Grok)
  * @key csp_AOC
  */
@@ -701,10 +701,51 @@ const XM = (function () {
     },
     getSongs: async (ext) => {
       const { id, page = 1, gid = '', text = '' } = ext;
-      if (gid == '3') {
-        if (text) return { list: firstArray((await fetchJson(`https://www.ximalaya.com/revision/search?core=track&kw=${encodeURIComponent(text)}&page=${page}&rows=${PAGE_LIMIT}&spellchecker=true&condition=relation&device=web`))?.data?.result?.response?.docs).filter(e => !isPaidItem(e)).map(e => mapTrack(e)) };
-        for (const url of [`https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${id}&pageNum=${page}&sort=0&pageSize=${PAGE_LIMIT}`, `https://mobile.ximalaya.com/mobile/v1/album/track/?albumId=${id}&pageSize=${PAGE_LIMIT}&pageId=${page}`]) {
-          try { const data = await fetchJson(url, { Referer: `https://www.ximalaya.com/album/${id}` }); const list = firstArray(data?.data?.tracks, data?.data?.list, data?.data?.trackList); if (list.length > 0) return { list: list.filter(e => !isPaidItem(e)).map(e => mapTrack(e)) }; } catch (e) {}
+      
+      // 核心修复1：喜马拉雅的专辑ID必须存在
+      const albumId = id || ext.albumId;
+      if (!albumId && !text) return { list: [] };
+
+      // 如果是搜索逻辑
+      if (text) {
+        try {
+          return { list: firstArray((await fetchJson(`https://www.ximalaya.com/revision/search?core=track&kw=${encodeURIComponent(text)}&page=${page}&rows=${PAGE_LIMIT}&spellchecker=true&condition=relation&device=web`))?.data?.result?.response?.docs).filter(e => !isPaidItem(e)).map(e => mapTrack(e)) };
+        } catch(e) { return { list: [] }; }
+      }
+
+      // 核心修复2：构建“三维一体”新版官方接口池，依次轮询，彻底解决部分歌单加载空列表问题
+      const urls = [
+        // 接口A：最新Web端精简接口
+        `https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${albumId}&pageNum=${page}&sort=0&pageSize=${PAGE_LIMIT}`,
+        // 接口B：移动端通用H5接口（防风控能力强）
+        `https://mobile.ximalaya.com/mobile/v1/album/track/?albumId=${albumId}&pageSize=${PAGE_LIMIT}&pageId=${page}`,
+        // 接口C：官方隐藏的开放平台数据流接口（备用兜底）
+        `https://webapi.ximalaya.com/album/v1/tracks?albumId=${albumId}&pageNum=${page}&pageSize=${PAGE_LIMIT}&sort=0`
+      ];
+
+      for (const url of urls) {
+        try {
+          const data = await fetchJson(url, { 
+            Referer: `https://www.ximalaya.com/album/${albumId}`,
+            'User-Agent': UA 
+          });
+          
+          // 深度解包各种可能的返回结构
+          const list = firstArray(
+            data?.data?.tracks, 
+            data?.data?.list, 
+            data?.data?.trackList, 
+            data?.tracks?.list,
+            data?.data?.items
+          );
+
+          if (Array.isArray(list) && list.length > 0) {
+            // 过滤掉VIP、付费以及没有版权的音频，防止播放时报错
+            return { list: list.filter(e => !isPaidItem(e)).map(e => mapTrack(e)) };
+          }
+        } catch (e) {
+          // 当前接口报错或被风控，无缝进入下一个接口尝试
+          console.log(`[喜马拉雅接口尝试失败]`, e);
         }
       }
       return { list: [] };
@@ -768,14 +809,17 @@ async function getAlbums(ext) {
 async function getSongs(ext) {
   const args = argsify(ext);
 
-  // 新增：红心（缓存）列表返回最近播放记录（支持分页）
-  //if (args.cache === true) {
-    //const page = args.page || 1;
-    //const offset = Math.max(page - 1, 0) * PAGE_LIMIT;
-    //return jsonify({ list: recentPlayed.slice(offset, offset + PAGE_LIMIT) });
-  //}
+  // 【核心修复】放宽判断：只要 ext.source 是 xm，或者通过 ext.id / ext.gid 能够识别为喜马拉雅的，全部交由 XM 模块处理
+  if (args.source === 'xm' || `${args.gid}` === '3' || (args.id && !args.source && `${args.id}`.length > 6)) {
+    return jsonify(await XM.getSongs(args));
+  }
 
-  if (args.source === 'wy') return jsonify(await WY.getSongs(args)); if (args.source === 'tx') return jsonify(await QQ.getSongs(args)); if (args.source === 'kg') return jsonify(await KG.getSongs(args)); if (args.source === 'kw') return jsonify(await KW.getSongs(args));  if (args.source === 'xm') return jsonify(await XM.getSongs(args));
+  // 其余单一平台保持不变
+  if (args.source === 'wy') return jsonify(await WY.getSongs(args)); 
+  if (args.source === 'tx') return jsonify(await QQ.getSongs(args)); 
+  if (args.source === 'kg') return jsonify(await KG.getSongs(args)); 
+  if (args.source === 'kw') return jsonify(await KW.getSongs(args));
+  
   return jsonify({ list: [] });
 }
 
