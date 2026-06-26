@@ -42,6 +42,7 @@ function withWyHeaders(extra = {}) { return { ...headers, Referer: 'https://musi
 function withQqHeaders(extra = {}) { return { ...headers, Referer: 'https://y.qq.com/', Origin: 'https://y.qq.com', Cookie: 'uin=0;', ...extra }; }
 function withKgHeaders(extra = {}) { return { ...headers, Referer: 'https://www.kugou.com/', Origin: 'https://www.kugou.com', ...extra }; }
 function withKwHeaders(extra = {}) { return { ...headers, Referer: 'https://m.kuwo.cn/newh5app/', Origin: 'https://m.kuwo.cn', ...extra }; }
+function withMgHeaders(extra = {}) { return { ...headers, Referer: 'https://music.migu.cn/', Origin: 'https://music.migu.cn', ...extra }; }
 
 // ========================== 核心接口配置 ==========================
 const appConfig = {
@@ -49,7 +50,7 @@ const appConfig = {
   tabLibrary: {
     name: '探索',
     groups: [
-      { name: '★聚合榜单★', type: 'playlist', ui: 1, showMore: true, ext: { source: 'all', gid: 'all_top' } },
+      { name: '★ 全部聚合', type: 'playlist', ui: 1, showMore: true, ext: { source: 'all', gid: 'all_top' } },
       
       { name: '网易-推荐新歌', type: 'song', ui: 0, showMore: false, ext: { source: 'wy', gid: '1' } },
       { name: '网易-推荐歌单', type: 'playlist', ui: 1, showMore: true, ext: { source: 'wy', gid: '2' } },
@@ -82,6 +83,13 @@ const appConfig = {
       { name: '酷我-热门歌单', type: 'playlist', ui: 1, showMore: true, ext: { source: 'kw', gid: '7' } },
       { name: '酷我-经典歌单', type: 'playlist', ui: 1, showMore: true, ext: { source: 'kw', gid: '8' } },
       { name: '酷我-热门歌手', type: 'artist', ui: 0, showMore: true, ext: { source: 'kw', gid: '9' } },
+
+      { name: '咪咕-新歌榜', type: 'song', ui: 0, showMore: false, ext: { source: 'mg', gid: '1', id: '27553319' } },
+      { name: '咪咕-热歌榜', type: 'song', ui: 0, showMore: false, ext: { source: 'mg', gid: '1', id: '27186466' } },
+      { name: '咪咕-国风热歌', type: 'song', ui: 0, showMore: false, ext: { source: 'mg', gid: '1', id: '83176390' } },
+      { name: '咪咕-会员臻爱', type: 'song', ui: 0, showMore: false, ext: { source: 'mg', gid: '1', id: '76557745' } },
+      { name: '咪咕-排行榜', type: 'playlist', ui: 1, showMore: true, ext: { source: 'mg', gid: '1' } },
+      { name: '咪咕-热门歌手', type: 'artist', ui: 0, showMore: true, ext: { source: 'mg', gid: '2' } },
 
       { name: '喜马-音乐', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', gid: '2', kw: '音乐' } },
       { name: '喜马-播客', type: 'album', ui: 1, showMore: true, ext: { source: 'xm', gid: '2', kw: '播客' } },
@@ -125,6 +133,8 @@ const appConfig = {
 			{ name: '酷狗歌单', type: 'playlist', ext: { type: 'playlist', source: 'kg' } },
 			{ name: '酷狗专辑', type: 'album', ext: { type: 'album', source: 'kg' } },
 			{ name: '酷狗歌手', type: 'artist', ext: { type: 'artist', source: 'kg' } },
+      { name: '咪咕单曲', type: 'song', ext: { type: 'song', source: 'mg' } },
+      { name: '咪咕歌手', type: 'artist', ext: { type: 'artist', source: 'mg' } },
       { name: '喜马单曲', type: 'song', ext: { type: 'song', source: 'xm' } },
   	  { name: '喜马专辑', type: 'album', ext: { type: 'album', source: 'xm' } }
   	//  { name: '喜马歌手', type: 'artist', ext: { type: 'artist', source: 'xm' } } 
@@ -644,6 +654,237 @@ const KW = (function () {
   };
 })();
 
+// ========================== 咪咕音乐模块 ==========================
+const MG = (function () {
+  async function fetchJson(url) { return safeArgs((await $fetch.get(url, { headers: withMgHeaders() })).data); }
+  function actionIdOf(actionUrl) { const match = `${actionUrl ?? ''}`.match(/id=(\d+)/); return match?.[1] ?? ''; }
+
+  function normalizeMiguSong(item) {
+    if (item?.songItem) {
+      return {
+        ...item, songId: item?.songItem?.songId, copyrightId: item?.songItem?.copyrightId, txt: item?.txt ?? item?.songItem?.songName,
+        txt2: item?.txt2 ?? item?.songItem?.singerList?.map(each => each?.name ?? '').join('/'), txt3: item?.txt3 ?? item?.songItem?.album,
+        img: toHttps(item?.img ?? item?.songItem?.img2 ?? item?.songItem?.img1 ?? item?.songItem?.img3 ?? ''), songData: item?.songItem,
+      };
+    }
+    return item;
+  }
+
+  function parseSongData(item) {
+    try { return typeof item?.songData === 'string' ? safeArgs(item.songData) : (item?.songData ?? {}); } catch (error) { return {}; }
+  }
+
+  function mapSong(raw) {
+    const item = normalizeMiguSong(raw);
+    const songData = parseSongData(item);
+    const singerList = songData?.singerList ?? [];
+    const songId = `${item?.songId ?? songData?.songId ?? item?.copyrightId ?? item?.id ?? item?.resId ?? ''}`;
+    const copyrightId = `${item?.copyrightId ?? songData?.copyrightId ?? item?.resId ?? songId}`;
+    const albumId = `${songData?.albumId ?? item?.albumId ?? ''}`;
+    const albumName = cleanText(item?.txt3 ?? item?.albumName ?? songData?.album ?? '');
+    const songName = cleanText(item?.txt ?? item?.songName ?? songData?.songName ?? item?.title ?? '');
+    const singer = cleanText(item?.txt2 ?? item?.singerName ?? singerList.map(each => each?.name ?? '').join('/') ?? '');
+    const cover = toHttps(item?.img ?? songData?.img2 ?? songData?.img1 ?? songData?.img3 ?? item?.picUrl ?? singerList?.[0]?.img ?? '');
+
+    return {
+      id: songId, name: songName, cover: cover, duration: parseInt(songData?.duration ?? item?.duration ?? 0),
+      artist: { id: `${singerList?.[0]?.id ?? item?.singerId ?? ''}`, name: singer, cover: toHttps(singerList?.[0]?.img ?? '') }, album: { id: albumId, name: albumName, cover: cover },
+      ext: { source: 'mg', id: songId, songmid: songId, copyrightId: copyrightId, singer: singer, songName: songName, albumName: albumName, albumId: albumId, cover: cover }
+    };
+  }
+
+  function mapToplistCard(item) {
+    const rankId = `${item?.rankId ?? item?.id ?? actionIdOf(item?.actionUrl) ?? ''}`;
+    return {
+      id: rankId, name: cleanText(item?.rankName ?? item?.title ?? item?.txt ?? ''), cover: toHttps(item?.imageUrl ?? item?.img ?? item?.picUrl ?? ''),
+      artist: { id: 'mg', name: cleanText(item?.subTitle ?? item?.updateTime ?? 'mgfm'), cover: '' }, ext: { source: 'mg', gid: '1', id: rankId, type: 'playlist' }
+    };
+  }
+  
+  function mapArtistCard(item) {
+    const artistId = `${item?.id ?? ''}`;
+    const artistCover = toHttps(item?.img ?? item?.cover ?? item?.singerPic ?? '');
+    return {
+      id: artistId, name: cleanText(item?.name ?? item?.singerName ?? item?.title ?? ''), cover: artistCover,
+      groups: [{ name: '热门歌曲', type: 'song', ext: { source: 'mg', gid: '4', id: artistId } }, { name: '专辑', type: 'album', ext: { source: 'mg', gid: '5', id: artistId } }],
+      ext: { source: 'mg', gid: '2', id: artistId }
+    };
+  }
+
+  return {
+    getPlaylists: async (ext) => {
+      const { page = 1, gid = '', from = '' } = ext;
+      if (gid == '1') {
+        let cards = [];
+        ((await fetchJson('https://app.c.nf.migu.cn/pc/bmw/rank/rank-index/v1.0'))?.data?.contents ?? []).forEach(block => {
+          (block?.contents ?? []).forEach(each => { if (each?.rankId || each?.actionUrl) cards.push(mapToplistCard({ ...each, subTitle: each?.subTitle ?? block?.title })); });
+        });
+        const offset = (page - 1) * PAGE_LIMIT;
+        return { list: from === 'index' ? cards.slice(0, PAGE_LIMIT) : cards.slice(offset, offset + PAGE_LIMIT) };
+      }
+      return { list: [] };
+    },
+    getSongs: async (ext) => {
+      const { id, page = 1, gid = '' } = ext;
+      if (gid == '1') {
+        return { list: ((await fetchJson(`https://app.c.nf.migu.cn/pc/bmw/rank/rank-info/v1.0?rankId=${encodeURIComponent(id)}`))?.data?.contents ?? []).map(e => mapSong(e)) };
+      } else if (gid == '4') {
+        const blocks = (await fetchJson(`https://app.c.nf.migu.cn/pc/bmw/singer/song/v1.0?pageNo=${page}&singerId=${encodeURIComponent(id)}&type=1`))?.data?.contents ?? [];
+        return { list: ((blocks.find(each => each?.view == 'ZJ-Singer-Song-Scroll'))?.contents ?? []).map(e => mapSong(e)) };
+      }
+      return { list: [] };
+    },
+    getAlbums: async (ext) => {
+      const { id, page = 1, gid = '' } = ext;
+      if (gid == '5') return { list: ((await fetchJson(`https://app.c.nf.migu.cn/pc/bmw/singer/album/v1.0?pageNo=${page}&singerId=${encodeURIComponent(id)}`))?.data?.contents ?? []).map(e => ({ id: `${e?.resourceId ?? e?.linkId ?? e?.id ?? ''}`, name: e?.title ?? e?.name ?? '', cover: toHttps(e?.img ?? e?.picUrl ?? ''), artist: { id: id, name: '', cover: '' }, ext: { source: 'mg', gid: '6', id: `${e?.resourceId ?? ''}`, type: 'album' } })) };
+      return { list: [] };
+    },
+    getArtists: async (ext) => {
+      const { page = 1, gid = '' } = ext;
+      if (gid == '2' && page == 1) {
+        const artistMap = new Map();
+        for (const rankId of ['27553319', '27186466', '83176390', '76557745']) {
+          for (const song of ((await fetchJson(`https://app.c.nf.migu.cn/pc/bmw/rank/rank-info/v1.0?rankId=${rankId}`))?.data?.contents ?? [])) {
+            const songData = parseSongData(song);
+            const firstSinger = songData?.singerList?.[0];
+            if (firstSinger?.id && firstSinger?.name && !artistMap.has(`${firstSinger.id}`)) {
+              artistMap.set(`${firstSinger.id}`, mapArtistCard({ id: firstSinger.id, name: firstSinger.name, img: firstSinger.img }));
+            }
+          }
+        }
+        return { list: Array.from(artistMap.values()).slice(0, PAGE_LIMIT) };
+      }
+      return { list: [] };
+    },
+    search: async ({ text, page = 1, type = 'song' }) => {
+      const mg = encodeURIComponent(text);
+      
+      // 【终极防线】：构建接口备用池。将 3 个不同域名的官方搜索接口做成轮询，总有一个能用
+      const doSearch = async (switchObj) => {
+         const switchStr = encodeURIComponent(JSON.stringify(switchObj));
+         const urls = [
+            `https://pd.music.migu.cn/mts/app/search/v1/searchAll?searchSwitch=${switchStr}&text=${mg}&pageNo=${page}&pageSize=${PAGE_LIMIT}`,
+            `https://app.c.nf.migu.cn/MIGUM2.0/v1.0/content/search_all.do?searchSwitch=${switchStr}&text=${mg}&pageNo=${page}&pageSize=${PAGE_LIMIT}`,
+            `https://jadeite.migu.cn/music_search/v2/search/searchAll?searchSwitch=${switchStr}&text=${mg}&pageNo=${page}&pageSize=${PAGE_LIMIT}`
+         ];
+         
+         for (const url of urls) {
+             try {
+                 const res = await fetchJson(url);
+                 // 验证是否真正获取到了核心数据，拿到了就立刻停止尝试并返回
+                 if (res?.data?.songResultData || res?.songResultData || res?.data?.songListResultData || res?.songListResultData || res?.data?.albumResultData || res?.albumResultData || res?.data?.singerResultData || res?.singerResultData) {
+                     return res;
+                 }
+             } catch(e) {
+                 // 当前接口被拦截或超时，忽略报错，无缝尝试下一个
+             }
+         }
+         return null;
+      };
+
+      try {
+          if (type === 'song') {
+            const res = await doSearch({ song: 1 });
+            const list = res?.data?.songResultData?.result || res?.songResultData?.result || [];
+            if (list.length > 0) {
+                return { list: list.map(e => {
+                  const songId = `${e?.id ?? e?.songId ?? e?.copyrightId ?? ''}`;
+                  const singers = e?.singers ?? e?.singer ?? [];
+                  return {
+                    id: songId, name: cleanText(e?.name ?? e?.songName ?? ''), cover: toHttps(e?.imgItems?.[0]?.img ?? e?.cover ?? ''), duration: 0,
+                    artist: { id: `${singers[0]?.id ?? ''}`, name: cleanText(singers.map(s=>s.name).join('/')), cover: '' },
+                    ext: { source: 'mg', id: songId, songmid: songId, copyrightId: `${e?.copyrightId ?? e?.songId ?? ''}`, singer: cleanText(singers.map(s=>s.name).join('/')), songName: cleanText(e?.name ?? e?.songName ?? '') }
+                  };
+                })};
+            }
+            
+            // 最老的 H5 接口做最后一次兜底
+            const resOld = await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=2&keyword=${mg}&pgc=${page}`);
+            if (resOld?.musics && resOld.musics.length > 0) {
+                return { list: resOld.musics.map(e => {
+                    const songId = `${e?.songId ?? e?.copyrightId ?? e?.id ?? ''}`;
+                    return {
+                      id: songId, name: cleanText(e?.songName ?? e?.title ?? ''), cover: toHttps(e?.cover ?? e?.albumCover ?? ''), duration: 0,
+                      artist: { id: `${e?.singerId ?? ''}`, name: cleanText(e?.singerName ?? ''), cover: '' },
+                      ext: { source: 'mg', id: songId, songmid: songId, copyrightId: `${e?.copyrightId ?? e?.songId ?? ''}`, singer: cleanText(e?.singerName ?? ''), songName: cleanText(e?.songName ?? e?.title ?? '') }
+                    };
+                 }) };
+            }
+            return { list: [] };
+          }
+          
+          if (type === 'playlist') {
+            const res = await doSearch({ songlist: 1 });
+            const list = res?.data?.songListResultData?.result || res?.songListResultData?.result || [];
+            if (list.length > 0) {
+                // 修复核心：确保 id 字段能取到有效的值
+                return { list: list.map(e => ({ id: `${e?.id ?? e?.resId ?? e?.playlistId ?? ''}`, name: cleanText(e?.name ?? ''), cover: toHttps(e?.img ?? ''), artist: { id: 'mg', name: 'mgfm', cover: '' }, ext: { source: 'mg', gid: '6', id: `${e?.id ?? e?.resId ?? e?.playlistId ?? ''}`, type: 'playlist' } })) };
+            }
+            const resOld = await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=6&keyword=${mg}&pgc=${page}`);
+            return { list: (resOld?.songLists ?? []).map(e => ({ id: `${e?.playListId ?? e?.id ?? ''}`, name: cleanText(e?.playListName ?? e?.name ?? ''), cover: toHttps(e?.img ?? e?.pic ?? ''), artist: { id: 'mg', name: 'mgfm', cover: '' }, ext: { source: 'mg', gid: '6', id: `${e?.playListId ?? e?.id ?? ''}`, type: 'playlist' } })) };
+          }
+          
+          if (type === 'album') {
+            const res = await doSearch({ album: 1 });
+            const list = res?.data?.albumResultData?.result || res?.albumResultData?.result || [];
+            if (list.length > 0) {
+              return {
+                list: list.map(e => {
+                  const singers = e?.singers ?? e?.singer ?? [];
+                  const albId = `${e?.id ?? e?.albumId ?? e?.resId ?? ''}`;
+                  return { id: albId, name: cleanText(e?.albumsName ?? e?.albumName ?? e?.name ?? ''), cover: toHttps(e?.imgItems?.[0]?.img ?? e?.img ?? ''), artist: { id: `${singers[0]?.id ?? ''}`, name: cleanText(singers[0]?.name ?? ''), cover: '' }, ext: { source: 'mg', gid: '6', id: albId, type: 'album' } };
+                })
+              };
+            }
+            // 修正：resOld 必须留在 album 判断块内
+            const resOld = await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=4&keyword=${mg}&pgc=${page}`);
+            return { list: (resOld?.albums ?? []).map(e => ({ id: `${e?.albumId ?? e?.id ?? ''}`, name: cleanText(e?.albumName ?? e?.title ?? ''), cover: toHttps(e?.albumPic ?? e?.img ?? ''), artist: { id: `${e?.singerId ?? ''}`, name: cleanText(e?.singerName ?? ''), cover: '' }, ext: { source: 'mg', gid: '6', id: `${e?.albumId ?? e?.id ?? ''}`, type: 'album' } })) };
+          }
+          
+          if (type === 'artist') {
+            const res = await doSearch({ singer: 1 });
+            // 深度解析：兼容四种可能的返回路径
+            const list = res?.data?.singerResultData?.result || 
+                         res?.singerResultData?.result || 
+                         res?.data?.singerListResultData?.result || 
+                         res?.singerListResultData?.result || [];
+          
+            if (list.length > 0) {
+                return { list: list.map(e => {
+                    const sId = `${e?.id ?? e?.singerId ?? e?.resId ?? ''}`;
+                    const sName = cleanText(e?.name ?? e?.singerName ?? '');
+                    const sPic = toHttps(e?.imgItems?.[0]?.img ?? e?.img ?? e?.picUrl ?? '');
+                    return { 
+                        id: sId, 
+                        name: sName, 
+                        cover: sPic, 
+                        groups: [
+                            { name: '歌曲', type: 'song', ext: { source: 'mg', gid: '4', id: sId } }, 
+                            { name: '专辑', type: 'album', ext: { source: 'mg', gid: '5', id: sId } }
+                        ], 
+                        ext: { source: 'mg', gid: '2', id: sId } 
+                    };
+                })};
+            }
+            // 补全 resOld 的歌手匹配
+            const resOld = await fetchJson(`https://m.music.migu.cn/migu/remoting/scr_search_tag?rows=${PAGE_LIMIT}&type=1&keyword=${mg}&pgc=${page}`);
+            return { list: (resOld?.singers ?? []).map(e => ({ 
+                id: `${e?.singerId ?? e?.id ?? ''}`, 
+                name: cleanText(e?.singerName ?? e?.title ?? ''), 
+                cover: toHttps(e?.singerPic ?? e?.img ?? ''),
+                groups: [{ name: '歌曲', type: 'song', ext: { source: 'mg', gid: '4', id: `${e?.singerId ?? e?.id ?? ''}` } }],
+                ext: { source: 'mg', gid: '2', id: `${e?.singerId ?? e?.id ?? ''}` } 
+            })) };
+          }
+
+
+      } catch(e) {
+          console.log("咪咕搜索彻底报错", e);
+      }
+      return { list: [] };
+    }
+  };
+})();
 // ========================== 喜马拉雅模块 ==========================
 const XM = (function () {
   async function fetchJson(url, extraHeaders = {}) { return safeArgs((await $fetch.get(url, { headers: { ...headers, ...extraHeaders } })).data); }
@@ -721,15 +962,15 @@ async function getConfig() { return jsonify(appConfig); }
 async function getPlaylists(ext) {
   const args = argsify(ext), source = args.source || 'all';
   if (source === 'all') {
-    const results = await Promise.all([WY.getPlaylists({ gid: '5', page: args.page }).catch(() => ({ list: [] })), QQ.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] })), KG.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] })), KW.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] }));
+    const results = await Promise.all([WY.getPlaylists({ gid: '5', page: args.page }).catch(() => ({ list: [] })), QQ.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] })), KG.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] })), KW.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] })), MG.getPlaylists({ gid: '1', page: args.page }).catch(() => ({ list: [] }))]);
     return jsonify({ list: mixArrays(results[0].list, results[1].list, results[2].list, results[3].list, results[4].list) });
   }
-  if (source === 'wy') return jsonify(await WY.getPlaylists(args)); if (source === 'tx') return jsonify(await QQ.getPlaylists(args)); if (source === 'kg') return jsonify(await KG.getPlaylists(args)); if (source === 'kw') return jsonify(await KW.getPlaylists(args)); if (source === 'xm') return jsonify(await XM.getPlaylists(args));
+  if (source === 'wy') return jsonify(await WY.getPlaylists(args)); if (source === 'tx') return jsonify(await QQ.getPlaylists(args)); if (source === 'kg') return jsonify(await KG.getPlaylists(args)); if (source === 'kw') return jsonify(await KW.getPlaylists(args)); if (source === 'mg') return jsonify(await MG.getPlaylists(args)); if (source === 'xm') return jsonify(await XM.getPlaylists(args));
   return jsonify({ list: [] });
 }
 async function getAlbums(ext) {
   const args = argsify(ext), source = args.source || 'all';
-  if (source === 'xm') return jsonify(await XM.getPlaylists(args)); if (source === 'wy') return jsonify(await WY.getAlbums(args)); if (source === 'tx') return jsonify(await QQ.getAlbums(args)); if (source === 'kg') return jsonify(await KG.getAlbums(args)); if (source === 'kw') return jsonify(await KW.getAlbums(args)); 
+  if (source === 'xm') return jsonify(await XM.getPlaylists(args)); if (source === 'wy') return jsonify(await WY.getAlbums(args)); if (source === 'tx') return jsonify(await QQ.getAlbums(args)); if (source === 'kg') return jsonify(await KG.getAlbums(args)); if (source === 'kw') return jsonify(await KW.getAlbums(args)); if (source === 'mg') return jsonify(await MG.getAlbums(args));
   return jsonify({ list: [] });
 }
 
@@ -744,23 +985,23 @@ async function getSongs(ext) {
     //return jsonify({ list: recentPlayed.slice(offset, offset + PAGE_LIMIT) });
   //}
 
-  if (args.source === 'wy') return jsonify(await WY.getSongs(args)); if (args.source === 'tx') return jsonify(await QQ.getSongs(args)); if (args.source === 'kg') return jsonify(await KG.getSongs(args)); if (args.source === 'kw') return jsonify(await KW.getSongs(args)); if (args.source === 'xm') return jsonify(await XM.getSongs(args));
+  if (args.source === 'wy') return jsonify(await WY.getSongs(args)); if (args.source === 'tx') return jsonify(await QQ.getSongs(args)); if (args.source === 'kg') return jsonify(await KG.getSongs(args)); if (args.source === 'kw') return jsonify(await KW.getSongs(args)); if (args.source === 'mg') return jsonify(await MG.getSongs(args)); if (args.source === 'xm') return jsonify(await XM.getSongs(args));
   return jsonify({ list: [] });
 }
 
 async function getArtists(ext) {
   const args = argsify(ext);
-  if (args.source === 'wy') return jsonify(await WY.getArtists(args)); if (args.source === 'tx') return jsonify(await QQ.getArtists(args)); if (args.source === 'kg') return jsonify(await KG.getArtists(args)); if (args.source === 'kw') return jsonify(await KW.getArtists(args)); 
+  if (args.source === 'wy') return jsonify(await WY.getArtists(args)); if (args.source === 'tx') return jsonify(await QQ.getArtists(args)); if (args.source === 'kg') return jsonify(await KG.getArtists(args)); if (args.source === 'kw') return jsonify(await KW.getArtists(args)); if (args.source === 'mg') return jsonify(await MG.getArtists(args));
   return jsonify({ list: [] });
 }
 async function search(ext) {
   const args = argsify(ext), source = args.source || 'all';
   if (source === 'all') {
-    const promises = [WY.search(args).catch(() => ({ list: [] })), QQ.search(args).catch(() => ({ list: [] })), KG.search(args).catch(() => ({ list: [] })), KW.search(args).catch(() => ({ list: [] }))];
+    const promises = [WY.search(args).catch(() => ({ list: [] })), QQ.search(args).catch(() => ({ list: [] })), KG.search(args).catch(() => ({ list: [] })), KW.search(args).catch(() => ({ list: [] })), MG.search(args).catch(() => ({ list: [] }))];
     if (args.type === 'album' || args.type === 'song' || args.type === 'artist') promises.push(XM.search(args).catch(() => ({ list: [] })));
     return jsonify({ list: mixArrays(...(await Promise.all(promises)).map(r => r.list || [])) });
   }
-  if (source === 'wy') return jsonify(await WY.search(args)); if (source === 'tx') return jsonify(await QQ.search(args)); if (source === 'kg') return jsonify(await KG.search(args)); if (source === 'kw') return jsonify(await KW.search(args)); if (source === 'xm') return jsonify(await XM.search(args));
+  if (source === 'wy') return jsonify(await WY.search(args)); if (source === 'tx') return jsonify(await QQ.search(args)); if (source === 'kg') return jsonify(await KG.search(args)); if (source === 'kw') return jsonify(await KW.search(args)); if (source === 'mg') return jsonify(await MG.search(args)); if (source === 'xm') return jsonify(await XM.search(args));
   return jsonify({ list: [] });
 }
 
