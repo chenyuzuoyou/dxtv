@@ -1,0 +1,9 @@
+五星体育cdn,https://cdn15.163189.xyz/163189/wxty 
+五星体育pplee,http://pplee.vicp.net:4022/udp/233.18.204.58:5140 
+五星体育home,http://home.wscxy.fun:30100/udp/233.18.204.58:5140
+五星体育58,http://58.37.29.210:9001/udp/233.18.204.58:5140
+五星体育yyf,http://yyf1991.top:9999/udp/233.18.204.58:5140
+Sky SPORTS F1 UHD,http://line.tivi-ott.net:80/play/live.php?mac=A0:BB:3E:07:67:9C&stream=1312007&extension=ts&play_token=gNnLI9eLi0
+Sky sports F1 HD1,http://line.tivi-ott.net:80/play/live.php?mac=A0:BB:3E:07:67:9C&stream=1311996&extension=ts&play_token=Ex4vCXRruJ
+Sky sports F1 HD2,http://line.tivi-ott.net:80/play/live.php?mac=A0:BB:3E:07:67:9C&stream=1312030&extension=ts&play_token=ZQnYgRAbYD
+Sky sports F1 HD3,http://kstv.us:8080/devs718/9665266915/47865 
