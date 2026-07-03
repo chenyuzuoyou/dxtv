@@ -12,12 +12,13 @@ const UA_MOBILE = 'Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 
 const UA_APP = 'ting_7.3.0(SM-S918B,Android14)'
 // 全局基础请求头（新增AJAX标识，解决403拦截）
 const BASE_HEADERS = {
-  'User-Agent': UA_PC,
-  'Accept': 'application/json, text/plain, */*',
-  'Accept-Language': 'zh-CN,zh;q=0.9',
-  'Cache-Control': 'no-cache',
-  'Origin': 'https://www.ximalaya.com',
-  'X-Requested-With': 'XMLHttpRequest'
+    "User-Agent": UA_PC,
+    "Accept":"application/json,text/plain,*/*",
+    "Accept-Language":"zh-CN,zh;q=0.9",
+    "Referer":"https://www.ximalaya.com/",
+    "Origin":"https://www.ximalaya.com",
+    "X-Requested-With":"XMLHttpRequest",
+    "Connection":"keep-alive"
 }
 const PAGE_LIMIT = 20
 const SEARCH_PAGE_LIMIT = 5
@@ -32,6 +33,13 @@ const appConfig = {
   tabLibrary: {
     name: '探索',
     groups: [
+      {
+    name:"推荐",
+    type:"album",
+    ui:1,
+    showMore:true,
+    ext:{gid:GID.RECOMMENDED_ALBUMS}
+},
       {name: '播客', type: 'album', ui:1, showMore:true, ext:{gid:GID.TAG_ALBUMS, kw:'播客'}},
       {name: '历史', type: 'album', ui:1, showMore:true, ext:{gid:GID.TAG_ALBUMS, kw:'历史'}},
       {name: '图书', type: 'album', ui:1, showMore:true, ext:{gid:GID.TAG_ALBUMS, kw:'图书'}},
@@ -119,19 +127,50 @@ function isPaidItem(item) {
   return fullPay || vipOnlyNoSample || freeExpired
 }
 // 通用请求封装
-async function fetchJson(url, extraHeaders = {}, retry = 1) {
-  let err = null
-  for (let i = 0; i <= retry; i++) {
-    try {
-      const reqHeaders = { ...BASE_HEADERS, ...extraHeaders }
-      const { data } = await $fetch.get(url, { headers: reqHeaders })
-      return safeArgs(data)
-    } catch (e) {
-      err = e
-      await new Promise(res => setTimeout(res, 300)) // 重试前短暂延迟
+async function fetchJson(url, headers={}, retry=2){
+
+    for(let i=0;i<=retry;i++){
+
+        try{
+
+            let h={
+                ...BASE_HEADERS,
+                ...headers
+            }
+
+            const res=await $fetch.get(url,{
+                headers:h,
+                timeout:10000
+            })
+
+            let data=res.data
+
+            if(typeof data==="string"){
+
+                try{
+                    data=JSON.parse(data)
+                }catch(e){}
+            }
+
+            if(data){
+
+                if(data.code===0)return data
+
+                if(data.ret===0)return data
+
+                if(data.success===true)return data
+
+                if(data.data)return data
+
+            }
+
+        }catch(e){}
+
+        await new Promise(r=>setTimeout(r,500))
+
     }
-  }
-  throw err
+
+    return {}
 }
 // 专辑实体映射
 function mapAlbum(item) {
@@ -177,10 +216,14 @@ function mapTrack(item) {
 }
 // 推荐专辑
 async function loadRecommendedAlbums(page = 1) {
-  const urls = [
-    `https://www.ximalaya.com/revision/search?core=album&kw=&page=${page}&rows=${PAGE_LIMIT}&spellchecker=true&condition=relation&device=web`,
-    `https://mobile.ximalaya.com/mobile/discovery/v3/recommend/album?pageId=${page}&pageSize=${PAGE_LIMIT}&device=android`
-  ]
+  const urls=[
+
+"https://mobile.ximalaya.com/mobile/discovery/v4/recommend/albums?pageId="+page+"&pageSize=20",
+
+"https://mobile.ximalaya.com/mobile/discovery/v3/recommend/album?pageId="+page+"&pageSize=20",
+
+"https://www.ximalaya.com/revision/search?core=album..."
+]
   for (const url of urls) {
     try {
       const data = await fetchJson(url)
@@ -213,32 +256,29 @@ async function loadAlbumTracks(albumId, page = 1) {
   const maxPage = 50;
   while (currentPage <= maxPage) {
     // 4套接口按稳定性排序，优先播放器专用接口
-    const apiList = [
-      // 接口1：网页播放器列表接口（最稳定，优先）
+    const apiList=[
+
       {
-        url: `https://www.ximalaya.com/revision/play/v1/show?id=${albumId}&sort=0&size=100&pageNum=${currentPage}&ptype=1`,
-        ua: UA_PC,
-        referer: `https://www.ximalaya.com/album/${albumId}`
+      url:`https://mobile.ximalaya.com/mobile-playpage/album/v1?albumId=${albumId}&pageNum=${currentPage}&pageSize=100`,
+      ua:UA_APP
       },
-      // 接口2：完整参数移动端APP接口（补全device/stat埋点，解决403）
+      
       {
-        url: `https://mobile.ximalaya.com/mobile/v1/album/track/?albumId=${albumId}&device=android&isAsc=true&pageId=${currentPage}&pageSize=100&statEvent=pageview/album&statModule=专辑详情&statPage=album_track`,
-        ua: UA_APP,
-        referer: `https://mobile.ximalaya.com/album/${albumId}`
+      url:`https://mobile.ximalaya.com/mobile/v3/album/track?albumId=${albumId}&pageId=${currentPage}&pageSize=100&device=android`,
+      ua:UA_APP
       },
-      // 接口3：PC网页原版
+      
       {
-        url: `https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${albumId}&pageNum=${currentPage}&pageSize=100`,
-        ua: UA_PC,
-        referer: `https://www.ximalaya.com/album/${albumId}`
+      url:`https://www.ximalaya.com/revision/play/v1/show?id=${albumId}&sort=0&size=100&pageNum=${currentPage}&ptype=1`,
+      ua:UA_PC
       },
-      // 接口4：备用h5网关（降级兜底）
+      
       {
-        url: `https://www.ximalaya.com/gatekeeper/h5-listen-list?albumId=${albumId}&pageNum=${currentPage}&pageSize=100`,
-        ua: UA_MOBILE,
-        referer: `https://www.ximalaya.com/album/${albumId}`
+      url:`https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${albumId}&pageNum=${currentPage}&pageSize=100`,
+      ua:UA_PC
       }
-    ];
+      
+      ];
     let pageTracks = [];
     // 遍历接口，单接口失败重试1次
     for (const api of apiList) {
@@ -249,10 +289,25 @@ async function loadAlbumTracks(albumId, page = 1) {
         }
         const data = await fetchJson(api.url, extraHeader, 1);
         // 多层兜底提取曲目数组
-        const list = firstArray(
-          data?.data?.tracks, data?.data?.list, data?.data?.trackList,
-          data?.tracks, data?.list, data?.trackList, data?.data?.audioList
-        );
+        const list=firstArray(
+
+          data?.data?.tracks,
+          
+          data?.data?.trackList,
+          
+          data?.data?.trackResults,
+          
+          data?.data?.audioList,
+          
+          data?.data?.trackTotalInfo?.tracks,
+          
+          data?.tracks,
+          
+          data?.trackList,
+          
+          data?.list
+          
+          );
         if (list.length > 0) {
           pageTracks = list;
           break;
@@ -383,31 +438,103 @@ async function search(ext) {
   return jsonify({})
 }
 // 播放地址解析增强
+// ==================== 播放地址解析 v2.0 ====================
 async function getSongInfo(ext) {
-  let arg = safeArgs(ext);
-  let trackId = arg?.trackId || arg?.id;
-  if (!trackId && typeof ext === 'string') {
-    try { const parsed = JSON.parse(ext); trackId = parsed.trackId || parsed.id; } catch { trackId = ext; }
-  }
-  if (!trackId) return jsonify({ urls: [] })
-  const urls = [
-    { url: `https://mobile.ximalaya.com/mobile-playpage/track/v3/baseInfo/${Date.now()}?device=android&trackId=${trackId}&trackQualityLevel=2`, ua: UA_APP },
-    { url: `https://m.ximalaya.com/m-revision/common/track/getPlayUrlV4?trackId=${trackId}`, ua: UA_MOBILE },
-    { url: `https://mobile.ximalaya.com/v1/track/baseInfo?device=android&trackId=${trackId}`, ua: UA_APP }
-  ]
-  for (const item of urls) {
-    try {
-      const data = await fetchJson(item.url, { 'User-Agent': item.ua }, 1)
-      const d = data?.data?.trackInfo || data?.data || data?.trackInfo || data;
-      let playUrl =
-        d?.playUrl64 || d?.playUrl32 || d?.playUrl || d?.src || d?.url ||
-        d?.playPathHq || d?.play_path_64 || d?.play_path_32 || d?.play_path ||
-        d?.playPathAacv164 || d?.playPathAacv224 || d?.audioUrl || d?.epPlayUrl || d?.resource?.url;
-      if (playUrl && playUrl.startsWith('http')) {
-        playUrl = playUrl.replace(/^http:\/\//, 'https://')
-        return jsonify({ urls: [playUrl] })
-      }
-    } catch (e) { continue; }
-  }
-  return jsonify({ urls: [] })
+
+    let arg = safeArgs(ext);
+
+    let trackId = arg.trackId || arg.id || "";
+
+    if (!trackId && typeof ext === "string") {
+        try {
+            const t = JSON.parse(ext);
+            trackId = t.trackId || t.id;
+        } catch {}
+    }
+
+    if (!trackId) {
+        return jsonify({
+            urls:[]
+        });
+    }
+
+    const apiList = [
+
+        {
+            url:`https://mobile.ximalaya.com/mobile-playpage/track/v3/baseInfo/${Date.now()}?device=android&trackId=${trackId}&trackQualityLevel=2`,
+            ua:UA_APP
+        },
+
+        {
+            url:`https://mobile.ximalaya.com/mobile-playpage/track/v3/baseInfo/${Date.now()}?device=android&trackId=${trackId}&trackQualityLevel=1`,
+            ua:UA_APP
+        },
+
+        {
+            url:`https://m.ximalaya.com/m-revision/common/track/getPlayUrlV4?trackId=${trackId}`,
+            ua:UA_MOBILE
+        },
+
+        {
+            url:`https://mobile.ximalaya.com/v1/track/baseInfo?device=android&trackId=${trackId}`,
+            ua:UA_APP
+        },
+
+        {
+            url:`https://www.ximalaya.com/revision/play/v1/audio?id=${trackId}`,
+            ua:UA_PC
+        }
+
+    ];
+
+    for(const api of apiList){
+
+        try{
+
+            const json = await fetchJson(api.url,{
+                "User-Agent":api.ua
+            },2);
+
+            const d =
+                json?.data?.trackInfo ||
+                json?.data?.playInfo ||
+                json?.data?.audioInfo ||
+                json?.data ||
+                json?.trackInfo ||
+                json;
+
+            let playUrl =
+                d?.playUrl64 ||
+                d?.playUrl32 ||
+                d?.playUrl ||
+                d?.playPath ||
+                d?.playPathHq ||
+                d?.playPathAacv224 ||
+                d?.playPathAacv164 ||
+                d?.audioUrl ||
+                d?.url ||
+                d?.src ||
+                d?.audioInfo?.src ||
+                d?.resource?.url ||
+                d?.playInfo?.playUrl ||
+                d?.epPlayUrl;
+
+            if(playUrl){
+
+                playUrl = playUrl.replace(/^http:\/\//,"https://");
+
+                return jsonify({
+                    urls:[playUrl]
+                });
+
+            }
+
+        }catch(e){}
+
+    }
+
+    return jsonify({
+        urls:[]
+    });
+
 }
