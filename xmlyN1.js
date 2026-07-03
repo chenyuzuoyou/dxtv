@@ -1,7 +1,7 @@
 /*!
  * @name xmlyfmN
- * @description xmlyfm3.4 喜马拉雅FM 终极修复版 V3 突破音乐/有声书专栏列表拦截
- * @version v1.8.0 FULLFIX
+ * @description xmlyfm3.4 喜马拉雅FM 终极修复版 V4 引入专辑列表空前置过滤检测
+ * @version v1.9.0 FULLFIX
  * @author codex
  * @key csp_xmlyfm
  */
@@ -120,13 +120,12 @@ async function fetchJson(url, extraHeaders = {}, retry = 1) {
       return safeArgs(data)
     } catch (e) {
       err = e
-      await new Promise(res => setTimeout(res, 300))
+      await new Promise(res => setTimeout(res, 200))
     }
   }
   throw err
 }
 
-// 简易生成喜马拉雅 H5 签名兜底逻辑
 function generateXmSign() {
   const now = Date.now();
   return `${now}(${Math.floor(Math.random() * 100)})` + now + `(${Math.floor(Math.random() * 100)})${now}`;
@@ -206,55 +205,40 @@ async function loadAlbumsByKeyword(keyword, page = 1) {
   return []
 }
 
-// 核心修复逻辑：攻克音乐相关专辑列表空白
+// 核心加载逻辑
 async function loadAlbumTracks(albumId, page = 1) {
   let allTracks = [];
   let currentPage = page || 1; 
   const randomDeviceId = '88' + Math.random().toString().substring(2, 16);
   const xmSign = generateXmSign();
 
-  // 将请求大小降低为 30，高度模拟真实客户端行为，防音乐类别触发现流
   const apiList = [
-    // 1. 全新精简高频 H5 网关（音乐专栏首选）
     {
       url: `https://www.ximalaya.com/revision/album/v1/getTracksList?albumId=${albumId}&pageNum=${currentPage}&pageSize=30`,
       ua: UA_PC,
       headers: { 'xm-sign': xmSign, 'Referer': `https://www.ximalaya.com/album/${albumId}` }
     },
-    // 2. 移动端轻量接口
     {
       url: `https://mobile.ximalaya.com/mobile/v1/album/track/ts-${Date.now()}?albumId=${albumId}&device=android&pageId=${currentPage}&pageSize=30&isAsc=true&deviceId=${randomDeviceId}&version=7.3.0`,
       ua: UA_APP,
       headers: { 'Referer': 'https://servicewechat.com/wx70eeac35bc23a1a4/devtools/page-frame.html' }
     },
-    // 3. 公开的移动查询网关
     {
       url: `https://m.ximalaya.com/m-revision/common/album/queryAlbumTrackRecordsPage?albumId=${albumId}&pageId=${currentPage}&pageSize=30`,
       ua: UA_MOBILE,
       headers: { 'Referer': `https://m.ximalaya.com/album/${albumId}` }
-    },
-    // 4. 经典全参数网关
-    {
-      url: `https://www.ximalaya.com/revision/play/v1/show?id=${albumId}&sort=0&size=30&pageNum=${currentPage}&ptype=1`,
-      ua: UA_PC,
-      headers: { 'xm-sign': xmSign, 'Referer': `https://www.ximalaya.com/album/${albumId}` }
     }
   ];
 
   for (const api of apiList) {
     try {
-      const extraHeader = {
-        'User-Agent': api.ua,
-        ...api.headers
-      }
+      const extraHeader = { 'User-Agent': api.ua, ...api.headers }
       const data = await fetchJson(api.url, extraHeader, 1);
-      
       const list = firstArray(
         data?.data?.list, data?.data?.tracks, data?.data?.trackList,
         data?.data?.trackShowPage?.list, data?.list, data?.tracks, 
         data?.trackList, data?.data?.audioList
       );
-      
       if (list.length > 0) {
         allTracks = list;
         break;
@@ -264,6 +248,31 @@ async function loadAlbumTracks(albumId, page = 1) {
     }
   }
   return allTracks;
+}
+
+// 【新增功能】前置检测过滤器：检查单张专辑能否加载出列表
+async function filterEmptyAlbums(albumsList) {
+  if (!Array.isArray(albumsList) || albumsList.length === 0) return [];
+  
+  // 并发预检每张专辑的第一页列表，设置 1500ms 强行超时兜底防卡顿
+  const checkPromises = albumsList.map(async (item) => {
+    const albumId = item?.albumId ?? item?.id ?? item?.album_id;
+    if (!albumId) return null;
+    try {
+      const tracks = await Promise.race([
+        loadAlbumTracks(albumId, 1),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 1500))
+      ]);
+      // 如果曲目列表为空，说明该专辑已被接口静默拦截，返回 null 用于后续剔除
+      return tracks && tracks.length > 0 ? item : null;
+    } catch (e) {
+      // 预检超时或失败时默认放行，防止误杀
+      return item;
+    }
+  });
+
+  const results = await Promise.all(checkPromises);
+  return results.filter(Boolean); // 移除所有被判定为 null 的空列表专辑
 }
 
 async function loadArtistTracks(artistId, page = 1) {
@@ -336,15 +345,16 @@ async function getConfig() { return jsonify(appConfig) }
 async function getAlbums(ext) {
   const { page, gid, kw } = argsify(ext)
   const gidValue = `${gid ?? ''}`
+  let list = [];
   if (gidValue == GID.RECOMMENDED_ALBUMS || !gidValue) {
-    const list = await loadRecommendedAlbums(page)
-    return jsonify({ list: list.filter(item => !isPaidItem(item)).map(mapAlbum) })
+    list = await loadRecommendedAlbums(page)
+  } else if (gidValue == GID.TAG_ALBUMS) {
+    list = await loadAlbumsByKeyword(kw, page)
   }
-  if (gidValue == GID.TAG_ALBUMS) {
-    const list = await loadAlbumsByKeyword(kw, page)
-    return jsonify({ list: list.filter(item => !isPaidItem(item)).map(mapAlbum) })
-  }
-  return jsonify({ list: [] })
+  
+  // 进行空白专辑前置过滤
+  const validList = await filterEmptyAlbums(list.filter(item => !isPaidItem(item)));
+  return jsonify({ list: validList.map(mapAlbum) })
 }
 
 async function getSongs(ext) {
@@ -374,7 +384,9 @@ async function search(ext) {
   if (!text || page > SEARCH_PAGE_LIMIT) return jsonify({})
   if (type == 'album') {
     const list = await loadAlbumsByKeyword(text, page)
-    return jsonify({ list: list.filter(item => !isPaidItem(item)).map(mapAlbum) })
+    // 搜索结果中的专辑同样引入过滤机制
+    const validList = await filterEmptyAlbums(list.filter(item => !isPaidItem(item)));
+    return jsonify({ list: validList.map(mapAlbum) })
   }
   if (type == 'track' || type == 'song') {
     const list = await loadTracksByKeyword(text, page)
