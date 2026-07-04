@@ -1,4 +1,5 @@
 五星体育cdn,https://cdn15.163189.xyz/163189/wxty 
+五星体育82,http://82.156.243.185:54321/kk.php?id=10&smg=1
 五星体育pplee,http://pplee.vicp.net:4022/udp/233.18.204.58:5140 
 五星体育home,http://home.wscxy.fun:30100/udp/233.18.204.58:5140
 五星体育58,http://58.37.29.210:9001/udp/233.18.204.58:5140
