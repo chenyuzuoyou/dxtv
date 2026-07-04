@@ -7,3 +7,13 @@ Sky SPORTS F1 UHD,http://line.tivi-ott.net:80/play/live.php?mac=A0:BB:3E:07:67:9
 Sky sports F1 HD1,http://line.tivi-ott.net:80/play/live.php?mac=A0:BB:3E:07:67:9C&stream=1311996&extension=ts&play_token=Ex4vCXRruJ
 Sky sports F1 HD2,http://line.tivi-ott.net:80/play/live.php?mac=A0:BB:3E:07:67:9C&stream=1312030&extension=ts&play_token=ZQnYgRAbYD
 Sky sports F1 HD3,http://kstv.us:8080/devs718/9665266915/47865 
+Fox 506 smootvone,http://line.smootvone.vip:80/play/live.php?mac=00:1A:79:19:0B:7D&stream=1091519&extension=ts&play_token=zbMNq4EBgR
+F1 TV,http://line.smootvone.vip:80/play/live.php?mac=00:1A:79:19:0B:7D&stream=36303&extension=ts&play_token=so52UzkZpp
+F1 TV2,http://line.smootvone.vip:80/play/live.php?mac=00:1A:79:19:0B:7D&stream=1160327&extension=ts&play_token=fjw1h2F2D6
+sky F1 UHD smootvone,http://line.smootvone.vip:80/play/live.php?mac=00:1A:79:19:0B:7D&stream=1312007&extension=ts&play_token=rfBvoeXOgO
+SKY main event UHD,http://line.smootvone.vip:80/play/live.php?mac=00:1A:79:19:0B:7D&stream=1312008&extension=ts&play_token=dfnt1R7iTU
+sky F1 hd,http://line.smootvone.vip:80/play/live.php?mac=00:1A:79:19:0B:7D&stream=1311996&extension=ts&play_token=Gs6as83273
+
+
+
+
