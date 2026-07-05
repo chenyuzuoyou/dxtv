@@ -14,7 +14,7 @@ F1 TV2,http://line.smootvone.vip:80/play/live.php?mac=00:1A:79:19:0B:7D&stream=1
 sky F1 UHD smootvone,http://line.smootvone.vip:80/play/live.php?mac=00:1A:79:19:0B:7D&stream=1312007&extension=ts&play_token=rfBvoeXOgO
 SKY main event UHD,http://line.smootvone.vip:80/play/live.php?mac=00:1A:79:19:0B:7D&stream=1312008&extension=ts&play_token=dfnt1R7iTU
 sky F1 hd,http://line.smootvone.vip:80/play/live.php?mac=00:1A:79:19:0B:7D&stream=1311996&extension=ts&play_token=Gs6as83273
-
+F1 apple tv 4k,https://jpeg.71890322.cc/live/stream-efff6225-e24b-42b9-a74e-d5fa435cf7fd/index.m3u8
 
 
 
