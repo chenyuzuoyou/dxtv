@@ -13,12 +13,6 @@ F1 uhd,http://mag.tivi-one-iptv.net:80/play/live.php?mac=00:1A:79:75:28:AC&strea
 F1 raw 50帧,http://mag.tivi-one-iptv.net:80/play/live.php?mac=00:1A:79:75:28:AC&stream=1311996&extension=ts&play_token=P9ZiYsqcvf 
 F1 fhd 6,http://mag.tivi-one-iptv.net:80/play/live.php?mac=00:1A:79:75:28:AC&stream=1312030&extension=ts&play_token=YrqwMgUZIZ
 F1 FHD8,http://mag.tivi-one-iptv.net:80/play/live.php?mac=00:1A:79:75:28:AC&stream=394543&extension=ts&play_token=TPLIyi0jRh
-Fox 506 smootvone,http://line.smootvone.vip:80/play/live.php?mac=00:1A:79:19:0B:7D&stream=1091519&extension=ts&play_token=zbMNq4EBgR
-F1 TV,http://line.smootvone.vip:80/play/live.php?mac=00:1A:79:19:0B:7D&stream=36303&extension=ts&play_token=so52UzkZpp
-F1 TV2,http://line.smootvone.vip:80/play/live.php?mac=00:1A:79:19:0B:7D&stream=1160327&extension=ts&play_token=fjw1h2F2D6
-sky F1 UHD smootvone,http://line.smootvone.vip:80/play/live.php?mac=00:1A:79:19:0B:7D&stream=1312007&extension=ts&play_token=rfBvoeXOgO
-SKY main event UHD,http://line.smootvone.vip:80/play/live.php?mac=00:1A:79:19:0B:7D&stream=1312008&extension=ts&play_token=dfnt1R7iTU
-sky F1 hd,http://line.smootvone.vip:80/play/live.php?mac=00:1A:79:19:0B:7D&stream=1311996&extension=ts&play_token=Gs6as83273
 F1 apple tv 4k,https://jpeg.71890322.cc/live/stream-efff6225-e24b-42b9-a74e-d5fa435cf7fd/index.m3u8
 
 
