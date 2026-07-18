@@ -13,6 +13,14 @@ F1 uhd,http://mag.tivi-one-iptv.net:80/play/live.php?mac=00:1A:79:75:28:AC&strea
 F1 raw 50帧,http://mag.tivi-one-iptv.net:80/play/live.php?mac=00:1A:79:75:28:AC&stream=1311996&extension=ts&play_token=P9ZiYsqcvf 
 F1 fhd 6,http://mag.tivi-one-iptv.net:80/play/live.php?mac=00:1A:79:75:28:AC&stream=1312030&extension=ts&play_token=YrqwMgUZIZ
 F1 FHD8,http://mag.tivi-one-iptv.net:80/play/live.php?mac=00:1A:79:75:28:AC&stream=394543&extension=ts&play_token=TPLIyi0jRh
-
-
+sky F1,http://line.tivi-one.net:80/play/live.php?mac=00:1A:79:79:1E:33&stream=1311996&extension=ts&play_token=aMt5VX9Agt
+sky F1 4K,http://line.tivi-one.net:80/play/live.php?mac=00:1A:79:79:1E:33&stream=1312007&extension=ts&play_token=6QgViJPEVp
+sky f1 hevc,http://line.tivi-one.net:80/play/live.php?mac=00:1A:79:79:1E:33&stream=1312030&extension=ts&play_token=ybgHzxxbK7
+sky f1 5,http://line.tivi-one.net:80/play/live.php?mac=00:1A:79:79:1E:33&stream=394543&extension=ts&play_token=eAnUGhuQEw 
+sky f1 6,http://line.tivi-one.net:80/play/live.php?mac=00:1A:79:79:1E:33&stream=1172224&extension=ts&play_token=3DXnspo46n
+sky f17,http://line.tivi-one.net:80/play/live.php?mac=00:1A:79:79:1E:33&stream=1172225&extension=ts&play_token=NTj099To7Q
+sky f1 8,http://line.tivi-one.net:80/play/live.php?mac=00:1A:79:79:1E:33&stream=1172221&extension=ts&play_token=FsmYYlTYBO
+sky f1 9,http://line.tivi-one.net:80/play/live.php?mac=00:1A:79:79:1E:33&stream=1172220&extension=ts&play_token=FN5DoqBO01
+F1 tv,http://line.tivi-one.net:80/play/live.php?mac=00:1A:79:79:1E:33&stream=1172218&extension=ts&play_token=B8dT9QE0Qe
+f1tv,http://line.tivi-one.net:80/play/live.php?mac=00:1A:79:79:1E:33&stream=1172194&extension=ts&play_token=2bKNMVOiZ1 
 
