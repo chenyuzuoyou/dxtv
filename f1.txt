@@ -23,4 +23,4 @@ sky f1 8,http://line.tivi-one.net:80/play/live.php?mac=00:1A:79:79:1E:33&stream=
 sky f1 9,http://line.tivi-one.net:80/play/live.php?mac=00:1A:79:79:1E:33&stream=1172220&extension=ts&play_token=FN5DoqBO01
 F1 tv,http://line.tivi-one.net:80/play/live.php?mac=00:1A:79:79:1E:33&stream=1172218&extension=ts&play_token=B8dT9QE0Qe
 f1tv,http://line.tivi-one.net:80/play/live.php?mac=00:1A:79:79:1E:33&stream=1172194&extension=ts&play_token=2bKNMVOiZ1 
-
+appletv F1,http://82.156.243.185:55221/appletvf1.m3u8 
