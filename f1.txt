@@ -24,7 +24,7 @@ sky f1 9,http://line.tivi-one.net:80/play/live.php?mac=00:1A:79:79:1E:33&stream=
 F1 tv,http://line.tivi-one.net:80/play/live.php?mac=00:1A:79:79:1E:33&stream=1172218&extension=ts&play_token=B8dT9QE0Qe
 f1tv,http://line.tivi-one.net:80/play/live.php?mac=00:1A:79:79:1E:33&stream=1172194&extension=ts&play_token=2bKNMVOiZ1 
 appletv F1,http://82.156.243.185:55221/appletvf1.m3u8 
-
+apple tvf1,http://89.187.179.148:826/TammyMccready/eGj6lFxVyG/119317
 中天新闻,http://173.208.234.146/live/ctinews.m3u8
 美亚电影,http://173.208.234.146/live/mymovie.m3u8
 天映频道,http://173.208.234.146/live/typd.m3u8
