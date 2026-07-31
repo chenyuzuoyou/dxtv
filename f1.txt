@@ -24,6 +24,10 @@ sky sports  pierre,http://89223-pierre.cdn-o2.me:80/play/live.php?mac=00:1A:79:B
 天映频道,http://173.208.234.146/live/typd.m3u8
 NOW星影台,http://173.208.234.146/live/nowxy.m3u8
 NOW爆谷台,http://173.208.234.146/live/nowbg.m3u8
+天影CCM,https://cdn.qd.je/163189/ccm
+龙华洋片,https://cdn.qd.je/163189/lhyp
+龙华电影,https://cdn.qd.je/163189/lhdy
+龙华经典,https://cdn.qd.je/163189/lhjd
 亮剑,http://173.208.234.146/live/lbliangjian.m3u8
 我的团长我的团,http://173.208.234.146/live/lbwdtz.m3u8
 武林外传,http://173.208.234.146/live/lbwlwz.m3u8
