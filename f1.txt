@@ -1,3 +1,4 @@
+五星体育直,http://82.156.243.185:54321/wxty.php
 五星体育cdn,https://cdn15.163189.xyz/163189/wxty
 五星体育2,https://cdn.gd.je/163189.php?id=wxty 
 五星体育82,http://82.156.243.185:54321/kk.php?id=10&smg=1
@@ -17,7 +18,6 @@ sky F1,http://line.tivi-one.net:80/play/live.php?mac=00:1A:79:b7:29:67&stream=13
 fox506,http://line.tivi-one.net:80/play/live.php?mac=00:1A:79:b7:29:67&stream=1091519&extension=ts&play_token=ChP0qwC093
 appletv F1,http://82.156.243.185:55221/appletvf1.m3u8 
 sky f1 uhd 89,http://89.187.179.148:826/TammyMccready/eGj6lFxVyG/119317
-sky sports  pierre,http://89223-pierre.cdn-o2.me:80/play/live.php?mac=00:1A:79:BD:87:EC&stream=577990&extension=ts&play_token=kJ1WDE0l10
 
 中天新闻,http://173.208.234.146/live/ctinews.m3u8
 美亚电影,http://173.208.234.146/live/mymovie.m3u8
