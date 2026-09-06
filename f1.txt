@@ -1,3 +1,4 @@
+五星体育38.75,http://38.75.136.137:98/gslb/dsdqbv/wxtyhd.m3u8?auth=test20251009
 五星体育直,http://82.156.243.185:54321/wxty.php
 五星体育cdn,https://cdn15.163189.xyz/163189/wxty
 五星体育2,https://cdn.gd.je/163189.php?id=wxty 
