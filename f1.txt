@@ -19,6 +19,26 @@ sky F1,http://line.tivi-one.net:80/play/live.php?mac=00:1A:79:b7:29:67&stream=13
 fox506,http://line.tivi-one.net:80/play/live.php?mac=00:1A:79:b7:29:67&stream=1091519&extension=ts&play_token=ChP0qwC093
 appletv F1,http://82.156.243.185:55221/appletvf1.m3u8 
 sky f1 uhd 89,http://89.187.179.148:826/TammyMccready/eGj6lFxVyG/119317
+美亚电影https://hls.9kds.com/20260909/mymovie.m3u8
+纬来体育https://hls.9kds.com/20260909/wlty.m3u8
+凤凰中文,https://hls.9kds.com/20260909/fhzw.m3u8
+凤凰资讯,https://hls.9kds.com/20260909/fhzx.m3u8
+凤凰香港,https://hls.9kds.com/20260909/fhxg.m3u8
+凤凰美洲,https://hls.9kds.com/20260909/fhmz.m3u8
+凤凰电影,https://hls.9kds.com/20260909/fhdy.m3u8
+中国电影频道（北美版）,https://hls.9kds.com/20260909/zgdy.m3u8
+中国电影频道（香港版）,https://hls.9kds.com/20260909/zgdyhk.m3u8
+TVB明珠台,https://hls.9kds.com/20260909/tvbpearl.m3u8
+TVB翡翠台,https://hls.9kds.com/20260909/tvbjade.m3u8
+TVB娱乐新闻台,https://hls.9kds.com/20260909/tvben.m3u8
+TVB星河台,https://hls.9kds.com/20260909/tvbstar.m3u8
+环球电视台,https://hls.9kds.com/20260909/huanqiu.m3u8
+亚洲卫视,https://hls.9kds.com/20260909/yzws.m3u8
+香港卫视,https://hls.9kds.com/20260909/hkstv.m3u8
+NOW爆谷台,https://hls.9kds.com/20260909/nowbg.m3u8
+NOW爆谷星影台,https://hls.9kds.com/20260909/nowxy.m3u8
+美亚电影粤语台,https://hls.9kds.com/20260909/mymovie.m3u8
+澳门莲花卫视,https://hls.9kds.com/20260909/aomenlh.m3u8
 CCTV1综合,http://74.91.26.218:82/live/cctv1hd.m3u8 
     CCTV2财经,http://74.91.26.218:82/live/cctv2hd.m3u8 
     CCTV3综艺,http://74.91.26.218:82/live/cctv3hd.m3u8 
