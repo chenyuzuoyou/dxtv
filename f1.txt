@@ -19,6 +19,11 @@ sky F1,http://line.tivi-one.net:80/play/live.php?mac=00:1A:79:b7:29:67&stream=13
 fox506,http://line.tivi-one.net:80/play/live.php?mac=00:1A:79:b7:29:67&stream=1091519&extension=ts&play_token=ChP0qwC093
 appletv F1,http://82.156.243.185:55221/appletvf1.m3u8 
 sky f1 uhd 89,http://89.187.179.148:826/TammyMccready/eGj6lFxVyG/119317
+hdo家庭影院,https://play-drm.aliiptv.com/live/HBOfamilyHD.m3u8?verify=1790056355-vU35IFSqkMxqvpHU0KJxCMNj5nAMyF5RqG6f0Vmevz
+hdo强档影院,https://play-drm.aliiptv.com/live/HBOHitsHD.m3u8?verify=1790056376-3h4Cr8Ngj_O6ExW3QRz_qEjYgxMOSj9PVrSZRMaFZz
+hdo原创影院,https://play-drm.aliiptv.com/live/HBOSignature.m3u8?verify=1790056398-aY7FJgRtwYT7vaYqSY2n72NJLtpKXweF7dZ3yOWnKX4
+星空卫视,https://play-drm.aliiptv.com/live/xingkong.m3u8?verify=1790054972-Smfm772Wy2uI69LaUvee--kEJSMboXGN2SMYj-fJLwU
+星空国际,https://play-drm.aliiptv.com/live/xkgj.m3u8?verify=1790054805-EPJeQOmhKMiK44wp96qTU7t9IW29uC-4c6Uwj7ihjXg
 CCTV1综合,http://74.91.26.218:82/live/cctv1hd.m3u8 
     CCTV2财经,http://74.91.26.218:82/live/cctv2hd.m3u8 
     CCTV3综艺,http://74.91.26.218:82/live/cctv3hd.m3u8 
