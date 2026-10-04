@@ -9,7 +9,7 @@
 五星体育yyf,http://yyf1991.top:9999/udp/233.18.204.58:5140
 skyf1 uhd lofty,http://loftytv.xyz:80/66C650F999D431D/U7Oc4OQ0VE/1171970
 skyf1 lofty,http://loftytv.xyz:80/66C650F999D431D/U7Oc4OQ0VE/17289
-F1 tv,http://loftytv.xyz:80/66C650F999D431D/U7Oc4OQ0VE/1311458
+F1 tv,http://loftytv.xyz:80/66C650F999D431D/U7Oc4OQ0VE/1171972
 skyf1 lofty,http://loftytv.xyz:80/66C650F999D431D/U7Oc4OQ0VE/1015492
 Sky SPORTS F1 UHD,http://line.tivi-ott.net:80/play/live.php?mac=A0:BB:3E:07:67:9C&stream=1312007&extension=ts&play_token=gNnLI9eLi0
 Sky sports F1 HD1,http://line.tivi-ott.net:80/play/live.php?mac=A0:BB:3E:07:67:9C&stream=1311996&extension=ts&play_token=Ex4vCXRruJ
