@@ -13,6 +13,9 @@ F1 tv,http://loftytv.xyz:80/66C650F999D431D/U7Oc4OQ0VE/1171972
 skyf1 lofty,http://loftytv.xyz:80/66C650F999D431D/U7Oc4OQ0VE/1015492
 ts1,http://loftytv.xyz:80//live/66C650F999D431D/U7Oc4OQ0VE/42917.ts
 ts5,http://loftytv.xyz:80//live/66C650F999D431D/U7Oc4OQ0VE/42913.ts
+TSN 1,http://doubleclicktv.live:80/dusty/dusty/3996
+sky main,http://doubleclicktv.live:80/dusty/dusty/276918
+http://rapideeiptvv.org/88AWW452BLWYVPR/lF12jdVfLy/1015492
 Sky SPORTS F1 UHD,http://line.tivi-ott.net:80/play/live.php?mac=A0:BB:3E:07:67:9C&stream=1312007&extension=ts&play_token=gNnLI9eLi0
 Sky sports F1 HD1,http://line.tivi-ott.net:80/play/live.php?mac=A0:BB:3E:07:67:9C&stream=1311996&extension=ts&play_token=Ex4vCXRruJ
 Sky sports F1 HD2,http://line.tivi-ott.net:80/play/live.php?mac=A0:BB:3E:07:67:9C&stream=1312030&extension=ts&play_token=ZQnYgRAbYD
