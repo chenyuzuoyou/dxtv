@@ -1,5 +1,4 @@
 五星体育38.75,http://38.75.136.137:98/gslb/dsdqbv/wxtyhd.m3u8?auth=test20251009
-五星体育直,http://82.156.243.185:54321/wxty.php
 五星体育cdn,https://cdn15.163189.xyz/163189/wxty
 五星体育2,https://cdn.gd.je/163189.php?id=wxty 
 五星体育82,http://82.156.243.185:54321/kk.php?id=10&smg=1
@@ -19,133 +18,15 @@ skysport,http://rapideeiptvv.org/88AWW452BLWYVPR/lF12jdVfLy/1015492
 Sky SPORTS F1 UHD,http://line.tivi-ott.net:80/play/live.php?mac=A0:BB:3E:07:67:9C&stream=1312007&extension=ts&play_token=gNnLI9eLi0
 Sky sports F1 HD1,http://line.tivi-ott.net:80/play/live.php?mac=A0:BB:3E:07:67:9C&stream=1311996&extension=ts&play_token=Ex4vCXRruJ
 Sky sports F1 HD2,http://line.tivi-ott.net:80/play/live.php?mac=A0:BB:3E:07:67:9C&stream=1312030&extension=ts&play_token=ZQnYgRAbYD
-Sky sports F1 HD3,http://kstv.us:8080/devs718/9665266915/47865 
 F1 uhd,http://mag.tivi-one-iptv.net:80/play/live.php?mac=00:1A:79:75:28:AC&stream=1312007&extension=ts&play_token=LOCola5KRe
 F1 raw 50帧,http://mag.tivi-one-iptv.net:80/play/live.php?mac=00:1A:79:75:28:AC&stream=1311996&extension=ts&play_token=P9ZiYsqcvf 
 F1 fhd 6,http://mag.tivi-one-iptv.net:80/play/live.php?mac=00:1A:79:75:28:AC&stream=1312030&extension=ts&play_token=YrqwMgUZIZ
 F1 FHD8,http://mag.tivi-one-iptv.net:80/play/live.php?mac=00:1A:79:75:28:AC&stream=394543&extension=ts&play_token=TPLIyi0jRh
-sky F1,http://line.tivi-one.net:80/play/live.php?mac=00:1A:79:b7:29:67&stream=1311996&extension=ts&play_token=aMt5VX9Agt
 fox506,http://line.tivi-one.net:80/play/live.php?mac=00:1A:79:b7:29:67&stream=1091519&extension=ts&play_token=ChP0qwC093
 appletv F1,http://82.156.243.185:55221/appletvf1.m3u8 
-sky f1 uhd 89,http://89.187.179.148:826/TammyMccready/eGj6lFxVyG/119317
 hdo家庭影院,https://play-drm.aliiptv.com/live/HBOfamilyHD.m3u8?verify=1790056355-vU35IFSqkMxqvpHU0KJxCMNj5nAMyF5RqG6f0Vmevz
 hdo强档影院,https://play-drm.aliiptv.com/live/HBOHitsHD.m3u8?verify=1790056376-3h4Cr8Ngj_O6ExW3QRz_qEjYgxMOSj9PVrSZRMaFZz
 hdo原创影院,https://play-drm.aliiptv.com/live/HBOSignature.m3u8?verify=1790056398-aY7FJgRtwYT7vaYqSY2n72NJLtpKXweF7dZ3yOWnKX4
-星空卫视,https://play-drm.aliiptv.com/live/xingkong.m3u8?verify=1790054972-Smfm772Wy2uI69LaUvee--kEJSMboXGN2SMYj-fJLwU
-星空国际,https://play-drm.aliiptv.com/live/xkgj.m3u8?verify=1790054805-EPJeQOmhKMiK44wp96qTU7t9IW29uC-4c6Uwj7ihjXg
-CCTV1综合,http://74.91.26.218:82/live/cctv1hd.m3u8 
-    CCTV2财经,http://74.91.26.218:82/live/cctv2hd.m3u8 
-    CCTV3综艺,http://74.91.26.218:82/live/cctv3hd.m3u8 
-    CCTV4中文国际,http://74.91.26.218:82/live/cctv4hd.m3u8 
-    CCTV5体 育,http://74.91.26.218:82/live/cctv5hd.m3u8 
-    CCTV6电影,http://74.91.26.218:82/live/cctv6hd.m3u8 
-    CCTV7国防军事,http://74.91.26.218:82/live/cctv7hd.m3u8 
-    CCTV8电视剧,http://74.91.26.218:82/live/cctv8hd.m3u8 
-    CCTV9纪录,http://74.91.26.218:82/live/cctv9hd.m3u8 
-    CCTV10科教,http://74.91.26.218:82/live/cctv10hd.m3u8 
-    CCTV11戏曲,http://74.91.26.218:82/live/cctv11hd.m3u8 
-    CCTV12社会与法,http://74.91.26.218:82/live/cctv12hd.m3u8 
-    CCTV13新闻,http://74.91.26.218:82/live/cctv13hd.m3u8 
-    CCTV14少儿,http://74.91.26.218:82/live/cctv14hd.m3u8 
-    CCTV15音乐,http://74.91.26.218:82/live/cctv15hd.m3u8 
-    CCTV16奥利匹克,http://74.91.26.218:82/live/cctv16hd.m3u8 
-    CCTV17农业农村,http://74.91.26.218:82/live/cctv17hd.m3u8 
-    CCTV5+体 育赛事,http://74.91.26.218:82/live/cctv5p.m3u8 
-    CCTV16奥林匹克,http://74.91.26.218:82/live/cctv16hd.m3u8 
- 
-    CCTV-1综合,http://173.208.212.130:8181/720p/cctv1.m3u8 
-    CCTV-2财经,http://173.208.212.130:8181/720p/cctv2.m3u8 
-    CCTV-3综艺,http://173.208.212.130:8181/720p/cctv3.m3u8 
-    CCTV-4中文国际,http://173.208.212.130:8181/720p/cctv4.m3u8 
-    CCTV-5体育,http://173.208.212.130:8181/720p/cctv5.m3u8 
-    CCTV-6电影,http://173.208.212.130:8181/720p/cctv6.m3u8 
-    CCTV-7国防军事,http://173.208.212.130:8181/720p/cctv7.m3u8 
-    CCTV-8电视剧,http://173.208.212.130:8181/720p/cctv8.m3u8 
-    CCTV-9纪录,http://173.208.212.130:8181/720p/cctv9.m3u8 
-    CCTV-10科教,http://173.208.212.130:8181/720p/cctv10.m3u8 
-    CCTV-11戏曲,http://173.208.212.130:8181/720p/cctv11.m3u8 
-    CCTV-12社会与法,http://173.208.212.130:8181/720p/cctv12.m3u8 
-    CCTV-13新闻,http://173.208.212.130:8181/720p/cctv13.m3u8 
-    CCTV-14少儿,http://173.208.212.130:8181/720p/cctv14.m3u8 
-    CCTV-15音乐,http://173.208.212.130:8181/720p/cctv15.m3u8 
-    CCTV-16奥林匹克,http://173.208.212.130:8181/720p/cctv16.m3u8 
-    CCTV-17农业农村,http://173.208.212.130:8181/720p/cctv17.m3u8 
-    CCTV-5+HD,http://173.208.212.130:8181/720p/cctv5p.m3u8 
-    CCTV-4K超高清,http://173.208.212.130:8181/720p/cctv4k.m3u8 
-    CCTV-8K超高清,http://173.208.212.130:8181/720p/cctv8k.m3u8 
-    重温经典,http://173.208.212.130:8181/720p/cwjd.m3u8 
-    CCTV-第一剧场,http://173.208.212.130:8181/720p/dyjc.m3u8 
-    CCTV-风云剧场,http://173.208.212.130:8181/720p/fyjc.m3u8 
-    CCTV-怀旧剧场,http://173.208.212.130:8181/720p/hjjc.m3u8 
-    CCTV-兵器科技,http://173.208.212.130:8181/720p/gfjs.m3u8 
-    CCTV-女性时尚,http://173.208.212.130:8181/720p/nxss.m3u8 
-    CCTV-世界地理,http://173.208.212.130:8181/720p/sjdl.m3u8 
-    CCTV-卫生健康,http://173.208.212.130:8181/720p/wsjk.m3u8 
-    CCTV-央视文化精品,http://173.208.212.130:8181/720p/ysjp.m3u8 
-    CCTV-风云音乐,http://173.208.212.130:8181/720p/fyyy.m3u8 
-    CCTV-央视台球,http://173.208.212.130:8181/720p/ystq.m3u8 
-    CCTV-风云足球,http://173.208.212.130:8181/720p/fyzq.m3u8 
-    CCTV-高尔夫网球,http://173.208.212.130:8181/720p/ge购物.m3u8 
-    湖南卫视,http://173.208.212.130:8181/720p/hnws.m3u8 
-    河北卫视,http://173.208.212.130:8181/720p/hews.m3u8 
-    山东卫视,http://173.208.212.130:8181/720p/sdws.m3u8 
-    天津卫视,http://173.208.212.130:8181/720p/tjws.m3u8 
-    安徽卫视,http://173.208.212.130:8181/720p/ahws.m3u8 
-    北京卫视,http://173.208.212.130:8181/720p/bjws.m3u8 
-    东方卫视,http://173.208.212.130:8181/720p/dfws.m3u8 
-    广东卫视,http://173.208.212.130:8181/720p/gdws.m3u8 
-    河南卫视,http://173.208.212.130:8181/720p/haws.m3u8 
-    江苏卫视,http://173.208.212.130:8181/720p/jsws.m3u8 
-    深圳卫视,http://173.208.212.130:8181/720p/szws.m3u8 
-    浙江卫视,http://173.208.212.130:8181/720p/zjws.m3u8 
-    
-    CCTV-1综合,http://173.208.212.130:8181/1080p/cctv1.m3u8 
-    CCTV-2财经,http://173.208.212.130:8181/1080p/cctv2.m3u8 
-    CCTV-3综艺,http://173.208.212.130:8181/1080p/cctv3.m3u8
-CCTV-4中文国际,http://173.208.212.130:8181/1080p/cctv4.m3u8 
-    CCTV-5体育,http://173.208.212.130:8181/1080p/cctv5.m3u8 
-    CCTV-6电影,http://173.208.212.130:8181/1080p/cctv6.m3u8 
-    CCTV-7国防军事,http://173.208.212.130:8181/1080p/cctv7.m3u8 
-    CCTV-8电视剧,http://173.208.212.130:8181/1080p/cctv8.m3u8 
-    CCTV-9纪录,http://173.208.212.130:8181/1080p/cctv9.m3u8 
-    CCTV-10科教,http://173.208.212.130:8181/1080p/cctv10.m3u8 
-    CCTV-11戏曲,http://173.208.212.130:8181/1080p/cctv11.m3u8 
-    CCTV-12社会与法,http://173.208.212.130:8181/1080p/cctv12.m3u8 
-    CCTV-13新闻,http://173.208.212.130:8181/1080p/cctv13.m3u8 
-    CCTV-14少儿,http://173.208.212.130:8181/1080p/cctv14.m3u8 
-    CCTV-15音乐,http://173.208.212.130:8181/1080p/cctv15.m3u8 
-    CCTV-16奥林匹克,http://173.208.212.130:8181/1080p/cctv16.m3u8 
-    CCTV-17农业农村,http://173.208.212.130:8181/1080p/cctv17.m3u8 
-    CCTV-5+HD,http://173.208.212.130:8181/1080p/cctv5p.m3u8 
-    湖南卫视,http://173.208.212.130:8181/1080p/hnws.m3u8 
-    浙江卫视,http://173.208.212.130:8181/1080p/zjws.m3u8 
-    江苏卫视,http://173.208.212.130:8181/1080p/jsws.m3u8 
-    劲爆体育,http://173.208.212.130:8181/1080p/jbty.m3u8 
-    成龙影院,http://173.208.212.130:8181/1080p/vlcl.m3u8 
-    周星驰影院,http://173.208.212.130:8181/1080p/vlzxc.m3u8 
-    林正英影院,http://173.208.212.130:8181/1080p/vllzy.m3u8 
-    邵氏楚原专场,http://173.208.212.130:8181/1080p/sscy.m3u8 
-    邵氏功夫电影,http://173.208.212.130:8181/1080p/ssgf.m3u8 
-    邵氏女侠,http://173.208.212.130:8181/1080p/ssnx.m3u8 
-    邵氏奇案,http://173.208.212.130:8181/1080p/ssqa.m3u8 
-    邵氏武侠电影,http://173.208.212.130:8181/1080p/sswx.m3u8 
-    邵氏喜剧电影,http://173.208.212.130:8181/1080p/ssxj.m3u8 
-    邵氏张彻专场,http://173.208.212.130:8181/1080p/sszc.m3u8
-
-中天新闻,http://173.208.234.146/live/ctinews.m3u8
-美亚电影,http://173.208.234.146/live/mymovie.m3u8
-viu剧集,http://175.178.245.82:1133/iptv-admin/api/stream.php?id=61&d=510_8825921da6076a9a&e=1789278482&t=ca03626fa949d3bea09e3216b84d9e2b4186a635e630de6d56d4ad89df055835&n=ff672ee63fba5d9eab62cd17a751726e&s=0&r=20c5e6fa
-Now爆谷星影(国),http://175.178.245.82:1133/iptv-admin/api/stream.php?id=71&d=510_8825921da6076a9a&e=1789278632&t=e986cbb6b0ac43ceeaa68aa662a48adf293fcd9713a1b7bd1a854bf6646846a9&n=a6fd3aaf286154193d3ef529f07ce439&s=0&r=a853a4e5
-Now爆谷(国),http://175.178.245.82:1133/iptv-admin/api/stream.php?id=72&d=510_8825921da6076a9a&e=1789278672&t=055b1f227eecc6986003d79f0c46c7e9e463c17c7996de4149bec6b45cec1ec8&n=0f96671ab4b27287822d63455faabe10&s=0&r=ad9d7d51
-Now华剧台,http://175.178.245.82:1133/iptv-admin/api/stream.php?id=73&d=510_8825921da6076a9a&e=1789278807&t=86623bcb067ebf54afb1592ec1b87ee0a89262c999554766728a87fe28728f76&n=ab6cd9f7f4c2585dfdb1a1e7d44f8bc3&s=0&r=5274d39b
-Now英超,http://175.178.245.82:1133/iptv-admin/api/stream.php?id=78&d=510_8825921da6076a9a&e=1789278929&t=80368db2ea423bd9929e729c140d64e5b8fd1be23abaa2864f2e30110bfe24a2&n=46235f73bcfef4f520ea459dd03410ee&s=0&r=8d610eb8
-天映频道,http://173.208.234.146/live/typd.m3u8
-NOW星影台,http://173.208.234.146/live/nowxy.m3u8
-NOW爆谷台,http://173.208.234.146/live/nowbg.m3u8
-天影CCM,https://cdn.qd.je/163189/ccm
-龙华洋片,https://cdn.qd.je/163189/lhyp
-龙华电影,https://cdn.qd.je/163189/lhdy
-龙华经典,https://cdn.qd.je/163189/lhjd
 亮剑,http://173.208.234.146/live/lbliangjian.m3u8
 我的团长我的团,http://173.208.234.146/live/lbwdtz.m3u8
 武林外传,http://173.208.234.146/live/lbwlwz.m3u8
