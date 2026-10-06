@@ -24,6 +24,7 @@ F1 fhd 6,http://mag.tivi-one-iptv.net:80/play/live.php?mac=00:1A:79:75:28:AC&str
 F1 FHD8,http://mag.tivi-one-iptv.net:80/play/live.php?mac=00:1A:79:75:28:AC&stream=394543&extension=ts&play_token=TPLIyi0jRh
 fox506,http://line.tivi-one.net:80/play/live.php?mac=00:1A:79:b7:29:67&stream=1091519&extension=ts&play_token=ChP0qwC093
 appletv F1,http://82.156.243.185:55221/appletvf1.m3u8 
+apple  F1,https://kan.waiguotai.top/appletvf1.m3u8
 hdo家庭影院,https://play-drm.aliiptv.com/live/HBOfamilyHD.m3u8?verify=1790056355-vU35IFSqkMxqvpHU0KJxCMNj5nAMyF5RqG6f0Vmevz
 hdo强档影院,https://play-drm.aliiptv.com/live/HBOHitsHD.m3u8?verify=1790056376-3h4Cr8Ngj_O6ExW3QRz_qEjYgxMOSj9PVrSZRMaFZz
 hdo原创影院,https://play-drm.aliiptv.com/live/HBOSignature.m3u8?verify=1790056398-aY7FJgRtwYT7vaYqSY2n72NJLtpKXweF7dZ3yOWnKX4
