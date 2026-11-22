@@ -37,6 +37,7 @@ F1 FHD8,http://mag.tivi-one-iptv.net:80/play/live.php?mac=00:1A:79:75:28:AC&stre
 fox506,http://line.tivi-one.net:80/play/live.php?mac=00:1A:79:b7:29:67&stream=1091519&extension=ts&play_token=ChP0qwC093
 appletv F1,http://82.156.243.185:55221/appletvf1.m3u8 
 apple  F1,https://kan.waiguotai.top/appletvf1.m3u8
+Fashion TV,http://caonima.898757.xyz/l/ijZpo98Nz6b8nQ19TQjb7EwFtXWUjlwcMD29lK1kNs5CJt2A1rDxpzB3I5Z2BAEb/play
 亮剑,http://173.208.234.146/live/lbliangjian.m3u8
 我的团长我的团,http://173.208.234.146/live/lbwdtz.m3u8
 武林外传,http://173.208.234.146/live/lbwlwz.m3u8
