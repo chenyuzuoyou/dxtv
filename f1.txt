@@ -6,6 +6,26 @@
 五星体育home,http://home.wscxy.fun:30100/udp/233.18.204.58:5140
 五星体育58,http://58.37.29.210:9001/udp/233.18.204.58:5140
 五星体育yyf,http://yyf1991.top:9999/udp/233.18.204.58:5140
+纬来体育,http://caonima.898757.xyz/l/KZ1a17pDlr64Go2RYUh1ZlWDlYyIB87AMkVqr2a-BldEOO4meFHTlzGkKUHCJPvo/index.m3u8
+Elta体育4,http://caonima.898757.xyz/l/F12a8Dm85cx3MuxZjaqVKR6Gxq2joClr9KtybsfSskEB5CvyWosHj0DVqAtgjZJu/index.m3u8
+Elta体育3,http://caonima.898757.xyz/l/57emLW00Uk5ytJJt9h0slZHx07bz2-PHufwB_Nlg7RbQKoUkiBnzS8VFpLNXFGlj/index.m3u8
+Elta体育2,http://caonima.898757.xyz/l/_DChMEaGAUS0OH2z8aTCiedl86ZVQ5KdFRkZWFoHC0_92jK8rhQpnOcKjWv5BO9O/index.m3u8
+Elta体育1,http://caonima.898757.xyz/l/f3st-6P-laMMttRw67GBnH97zfeck5-DC9wrDHmbSu5vfjPC2HpT8FaAL7EPYjvZ/index.m3u8
+CCTV 5+,http://caonima.898757.xyz/l/tBBhgyrpPytz0tkk2l69GQl_XnUu4wTIlbzkVUTxdfCG7SXqYM_BovCcVHIYINJA/index.m3u8
+CCTV5,http://caonima.898757.xyz/l/pnp0ol-6ExnZnp9CJybQGf_QKybEO83AeZNYw_vwu1lvLeyoLMAFCwhwZaN0DoBE/index.m3u8
+sky sports F1,http://caonima.898757.xyz/l/rGmpNxiL0B1_x9QybyAV_ABum_AtSYSj16Yw2O-RaFTcfdDc_rhpXcPqiLl4Xd0b/index.m3u8
+sky sports main events,http://caonima.898757.xyz/l/l5jJOmSfk0izy-FDqKsWdGHEemGLw0bWRO-LHm_aPZlKnwyc3ts8VEzR8Rw6CpMN/index.m3u8
+Now Sports 4K 2,http://caonima.898757.xyz/l/hJ2MUUHAmlcV3KtH57kbPacv0Ct7fFiiIjp54am_U7H0wn3fpVGw7yf0zmxeVqGC/play
+Sportsnet one 4k,http://caonima.898757.xyz/l/FRVQX17HDX1bHa9eV4qegy3__jXwJZuZjIyQfY4zwQjX7pohGnijvUHBbE0Vuvk7/play
+Sportsnet 4k,http://caonima.898757.xyz/l/RNNrYHlBgbtH2pT3JAPW85GtmJ4TEwxHO4nsWE13dIsI9Cd828XLeB0DxfLqZvYA/play
+TSN 4K,http://caonima.898757.xyz/l/7s3tilmeYXqTnLRGmf5rDZwaCaRiY0KkyI5n_6arMogcOFIMzS4YnxMvhNAYbDQu/play
+Love Nature 4k,http://caonima.898757.xyz/l/vN2o3L3PND8ZM4B_MbtkxNr8Q2ys4OpzO5kDGZyY4ahB0RXtqcpUzjxz1OVrwNzx/play
+Sky Sports Main Events 4K,http://caonima.898757.xyz/l/6eEM6FVSCqWSqyfXlJJVnEpaBymwEwGTGxlDRj5kl6KMJWN3HQchM4OAGJlmdPnl/play
+Sky  Sports F1 UHD0,http://caonima.898757.xyz/l/nfekYlvA7TmTAVIl__2g8qKv9PvUt5y6hwGXVNbx-Cd3GSvSVRm53KDlXs2_ig4d/play
+Sky Sports 1 UHD,http://caonima.898757.xyz/l/ETFiA_V-DuO8lSDluZdPFACx4L0mzswobkzataBqPDqTcnTc4oCuq5LaEWOFx-nV/play
+Sky Sports 2 UHD,http://caonima.898757.xyz/l/EMkA0cl5tfW0tdCta7_Md59YjEWNgZmWEMzX51woYIRdAZnZS6PQjby6rpZOwvjc/play
+TNT SPORTS UHD,http://caonima.898757.xyz/l/EMkA0cl5tfW0tdCta7_Md59YjEWNgZmWEMzX51woYIRdAZnZS6PQjby6rpZOwvjc/play
+
 skyf1 uhd lofty,http://loftytv.xyz:80/66C650F999D431D/U7Oc4OQ0VE/1171970
 skyf1 lofty,http://loftytv.xyz:80/66C650F999D431D/U7Oc4OQ0VE/17289
 F1 tv,http://loftytv.xyz:80/66C650F999D431D/U7Oc4OQ0VE/1171972
